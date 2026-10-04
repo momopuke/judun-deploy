@@ -52,8 +52,6 @@ jobs:
             if [[ "$VERSION" == "v1.2.84" && "$ARTIFACT" == "JUDUN-1.2.84-3D98B45C9227" && "$INSTANCE" == "1.2.84-20261004-7EFB43BF4A7E" ]]; then
               DEEP="$(curl -4 --http1.1 -fsS --connect-timeout 10 --max-time 120 -H 'Cache-Control: no-cache' "$BASE/health/artifact?deep=true&probe=$(date +%s)")"
               echo "$DEEP"
-              python3 - <<'PY' <<<"$DEEP"
-          PY
               python3 -c 'import json,sys; x=json.load(sys.stdin); assert x.get("deep_verified") is True and x.get("manifest_file_count")==52 and x.get("files_verified")==52 and x.get("mismatch_count")==0, x; print("LIVE_DEEP_52_52_PASS")' <<<"$DEEP"
               exit 0
             fi
