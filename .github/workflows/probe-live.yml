@@ -1,0 +1,24 @@
+name: Probe live JUDUN
+
+on:
+  push:
+    paths:
+      - ".github/workflows/probe-live.yml"
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Read live health endpoints
+        shell: bash
+        run: |
+          set -x
+          BASE="https://judun.142-93-91-214.sslip.io"
+          nonce="$(date +%s)"
+          curl -4 --http1.1 -fsS --connect-timeout 10 --max-time 30 -H "Cache-Control: no-cache" "$BASE/health/build?probe=$nonce" || true
+          echo
+          curl -4 --http1.1 -fsS --connect-timeout 10 --max-time 30 -H "Cache-Control: no-cache" "$BASE/health/data-expansion?probe=$nonce" || true
+          echo
+          curl -4 --http1.1 -fsS --connect-timeout 10 --max-time 120 -H "Cache-Control: no-cache" "$BASE/health/artifact?deep=true&probe=$nonce" || true
+          echo
