@@ -1,0 +1,63 @@
+name: Verify JUDUN v1.2.84 live
+
+on:
+  push:
+    paths:
+      - ".github/workflows/verify-v1284-live.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify signed channel and payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import base64,hashlib,json
+          from pathlib import Path
+          m=json.loads(Path("channel/stable.json").read_text())
+          assert m["release_id"]=="v1.2.84-learning-enforcement-r2-20261004",m
+          assert m["base_artifact_id"]=="JUDUN-1.2.83-B66DE6801DB6",m
+          assert m["target_artifact_id"]=="JUDUN-1.2.84-3D98B45C9227",m
+          assert m["target_build_instance_id"]=="1.2.84-20261004-7EFB43BF4A7E",m
+          raw=base64.b64decode("".join(Path(m["payload_path"]).read_text().split()))
+          got=hashlib.sha256(raw).hexdigest()
+          print("payload_sha_expected",m["payload_sha256"])
+          print("payload_sha_actual  ",got)
+          assert got==m["payload_sha256"]
+          PY
+          base64 -d channel/stable.json.sig.b64 > /tmp/stable.sig
+          openssl pkeyutl -verify -pubin -inkey keys/release_signing_public.pem -rawin -in channel/stable.json -sigfile /tmp/stable.sig
+
+      - name: Wait for AutoDeploy and verify production
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://judun.142-93-91-214.sslip.io"
+          for i in 1 2 3 4 5 6 7 8; do
+            echo "===== attempt $i ====="
+            BUILD="$(curl -4 --http1.1 -fsS --connect-timeout 10 --max-time 30 -H 'Cache-Control: no-cache' "$BASE/health/build?probe=$(date +%s)")"
+            echo "$BUILD"
+            VERSION="$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("display_version",""))' <<<"$BUILD")"
+            ARTIFACT="$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("artifact_id",""))' <<<"$BUILD")"
+            INSTANCE="$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("build_instance_id",""))' <<<"$BUILD")"
+            if [[ "$VERSION" == "v1.2.84" && "$ARTIFACT" == "JUDUN-1.2.84-3D98B45C9227" && "$INSTANCE" == "1.2.84-20261004-7EFB43BF4A7E" ]]; then
+              DEEP="$(curl -4 --http1.1 -fsS --connect-timeout 10 --max-time 120 -H 'Cache-Control: no-cache' "$BASE/health/artifact?deep=true&probe=$(date +%s)")"
+              echo "$DEEP"
+              python3 - <<'PY' <<<"$DEEP"
+          PY
+              python3 -c 'import json,sys; x=json.load(sys.stdin); assert x.get("deep_verified") is True and x.get("manifest_file_count")==52 and x.get("files_verified")==52 and x.get("mismatch_count")==0, x; print("LIVE_DEEP_52_52_PASS")' <<<"$DEEP"
+              exit 0
+            fi
+            sleep 20
+          done
+          echo "v1.2.84 did not become live within verification window" >&2
+          exit 1
