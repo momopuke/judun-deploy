@@ -5,7 +5,7 @@
   "target_artifact_id": "JUDUN-1.2.82-7D9A15B2C8C3",
   "target_build_instance_id": "1.2.82-20261004-42AE5C05086C",
   "expected_display_version": "v1.2.82",
-  "payload_path": "releases/v1.2.82-persistent-learning-20261004.cms.b64",
-  "payload_sha256": "e3b1fdefef52dc4b0c54757d79b2f61d487d3ade95aae9db288313276bfe26de",
+  "payload_path": "releases/v1.2.82-persistent-learning-r2-20261004.cms.b64",
+  "payload_sha256": "a054a2e990b6c85c72af5548369b55cf9e62d11cb2b822525329c68f965e4be5",
   "noop": false
 }
