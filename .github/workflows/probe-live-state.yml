@@ -1,0 +1,63 @@
+name: Probe JUDUN live state
+
+on:
+  push:
+    paths:
+      - ".github/workflows/probe-live-state.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Probe live health and record result
+        shell: bash
+        run: |
+          set -u
+          BASE="https://judun.142-93-91-214.sslip.io"
+          BUILD=""
+          DEEP=""
+          BUILD_RC=0
+          DEEP_RC=0
+          BUILD="$(curl -4 --http1.1 -sS --connect-timeout 10 --max-time 30 -H 'Cache-Control: no-cache' "$BASE/health/build?probe=$(date +%s)")" || BUILD_RC=$?
+          if [[ "$BUILD_RC" == "0" ]]; then
+            DEEP="$(curl -4 --http1.1 -sS --connect-timeout 10 --max-time 120 -H 'Cache-Control: no-cache' "$BASE/health/artifact?deep=true&probe=$(date +%s)")" || DEEP_RC=$?
+          fi
+          printf '%s' "$BUILD" > /tmp/build.txt
+          printf '%s' "$DEEP" > /tmp/deep.txt
+          export BUILD_RC DEEP_RC
+          mkdir -p verification
+          python3 - <<'PY'
+          import datetime,json,os
+          from pathlib import Path
+          def parse(path):
+              raw=Path(path).read_text(errors="replace")
+              try:return json.loads(raw),raw
+              except Exception:return {},raw
+          build,build_raw=parse("/tmp/build.txt")
+          deep,deep_raw=parse("/tmp/deep.txt")
+          target=(build.get("display_version")=="v1.2.85" and build.get("artifact_id")=="JUDUN-1.2.85-19A955700B55" and build.get("build_instance_id")=="1.2.85-20261005-57FBA1B1CB56")
+          deep_ok=(deep.get("deep_verified") is True and deep.get("manifest_file_count")==52 and deep.get("files_verified")==52 and deep.get("mismatch_count")==0)
+          out={
+            "probed_at_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "build_curl_rc":int(os.environ.get("BUILD_RC","0")),
+            "deep_curl_rc":int(os.environ.get("DEEP_RC","0")),
+            "target_v1_2_85_live":bool(target),
+            "deep_52_52_ok":bool(deep_ok),
+            "build":build if build else {"raw":build_raw[:2000]},
+            "deep":deep if deep else {"raw":deep_raw[:2000]},
+          }
+          Path("verification/live-probe.json").write_text(json.dumps(out,ensure_ascii=False,indent=2)+"\n")
+          PY
+          git config user.name "judun-live-prober"
+          git config user.email "actions@users.noreply.github.com"
+          git add verification/live-probe.json
+          git commit -m "Record JUDUN live probe"
+          git push
