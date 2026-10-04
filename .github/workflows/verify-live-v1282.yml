@@ -1,0 +1,46 @@
+name: Verify live JUDUN v1.2.82
+
+on:
+  push:
+    paths:
+      - ".github/workflows/verify-live-v1282.yml"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Wait for AutoDeploy and verify public live site
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://judun.142-93-91-214.sslip.io"
+          ok=0
+          for i in $(seq 1 24); do
+            nonce="$(date +%s)-$i"
+            if curl -4 --http1.1 -fsS --connect-timeout 10 --max-time 30                 -H "Cache-Control: no-cache"                 "$BASE/health/build?gha_verify=$nonce" -o build.json               && curl -4 --http1.1 -fsS --connect-timeout 10 --max-time 30                 -H "Cache-Control: no-cache"                 "$BASE/health/data-expansion?gha_verify=$nonce" -o expansion.json               && curl -4 --http1.1 -fsS --connect-timeout 10 --max-time 120                 -H "Cache-Control: no-cache"                 "$BASE/health/artifact?deep=true&gha_verify=$nonce" -o deep.json; then
+              if python3 - <<'PY'
+import json
+b=json.load(open("build.json"))
+e=json.load(open("expansion.json"))
+d=json.load(open("deep.json"))
+assert b.get("artifact_id")=="JUDUN-1.2.82-7D9A15B2C8C3", b
+assert b.get("build_instance_id")=="1.2.82-20261004-42AE5C05086C", b
+assert e.get("display_version")=="v1.2.82", e
+assert d.get("status")=="ok", d
+assert d.get("artifact_id")=="JUDUN-1.2.82-7D9A15B2C8C3", d
+assert d.get("build_instance_id")=="1.2.82-20261004-42AE5C05086C", d
+assert int(d.get("files_verified") or 0) >= 52, d
+print("LIVE_VERIFY_PASS", b, e, d)
+PY
+              then
+                ok=1
+                break
+              fi
+            fi
+            echo "Attempt $i not ready yet"
+            cat build.json 2>/dev/null || true
+            cat expansion.json 2>/dev/null || true
+            sleep 15
+          done
+          test "$ok" = 1
