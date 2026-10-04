@@ -1,11 +1,11 @@
 {
   "schema": "judun-autodeploy-v1",
-  "release_id": "v1.2.84-learning-enforcement-r2-20261004",
-  "base_artifact_id": "JUDUN-1.2.83-B66DE6801DB6",
-  "target_artifact_id": "JUDUN-1.2.84-3D98B45C9227",
-  "target_build_instance_id": "1.2.84-20261004-7EFB43BF4A7E",
-  "expected_display_version": "v1.2.84",
-  "payload_path": "releases/v1.2.84-learning-enforcement-r2-20261004.cms.b64",
-  "payload_sha256": "ae00970b8f0227f83cc7223c8afd76420c8ace23b1e992ddbc2b9fa1dcd6c933",
+  "release_id": "v1.2.85-report-links-r1-20261005",
+  "base_artifact_id": "JUDUN-1.2.84-3D98B45C9227",
+  "target_artifact_id": "JUDUN-1.2.85-19A955700B55",
+  "target_build_instance_id": "1.2.85-20261005-57FBA1B1CB56",
+  "expected_display_version": "v1.2.85",
+  "payload_path": "releases/v1.2.85-report-links-r1-20261005.cms.b64",
+  "payload_sha256": "738008d1a430c6c8d28f22caee8f762a662e9e9d7841f7943836bf8be5c3666d",
   "noop": false
 }
