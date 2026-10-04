@@ -1,11 +1,11 @@
 {
   "schema": "judun-autodeploy-v1",
-  "release_id": "v1.2.82-persistent-learning-r2-20261004",
+  "release_id": "v1.2.82-persistent-learning-r6-20261004",
   "base_artifact_id": "JUDUN-1.2.80-AD5C0A24EDEC",
   "target_artifact_id": "JUDUN-1.2.82-7D9A15B2C8C3",
   "target_build_instance_id": "1.2.82-20261004-42AE5C05086C",
   "expected_display_version": "v1.2.82",
-  "payload_path": "releases/v1.2.82-persistent-learning-r2-20261004.cms.b64",
-  "payload_sha256": "a054a2e990b6c85c72af5548369b55cf9e62d11cb2b822525329c68f965e4be5",
+  "payload_path": "releases/v1.2.82-persistent-learning-r6-20261004.cms.b64",
+  "payload_sha256": "df50244dd31211bad7bb80c7129aefc9a7db0131432a5dc1ac3d6e6f4f966326",
   "noop": false
 }
