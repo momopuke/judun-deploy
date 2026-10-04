@@ -1,0 +1,11 @@
+{
+  "schema": "judun-autodeploy-v1",
+  "release_id": "baseline-v1.2.80-20261004",
+  "base_artifact_id": "JUDUN-1.2.80-AD5C0A24EDEC",
+  "target_artifact_id": "JUDUN-1.2.80-AD5C0A24EDEC",
+  "target_build_instance_id": "1.2.80-20261004-FBEE44501DF8",
+  "expected_display_version": "v1.2.80",
+  "payload_path": "",
+  "payload_sha256": "",
+  "noop": true
+}
