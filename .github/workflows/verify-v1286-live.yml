@@ -12,7 +12,7 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -24,9 +24,9 @@ jobs:
           import base64,hashlib,json
           from pathlib import Path
           m=json.loads(Path("channel/stable.json").read_text())
-          assert m["release_id"]=="v1.2.86-source-links-keyword-r2-20261005",m
+          assert m["release_id"]=="v1.2.86-source-links-keyword-r3-20261005",m
           assert m["base_artifact_id"]=="JUDUN-1.2.85-19A955700B55",m
-          assert m["target_artifact_id"]=="JUDUN-1.2.86-FA163925480E",m
+          assert m["target_artifact_id"]=="JUDUN-1.2.86-6A3F2D92C8E1",m
           raw=base64.b64decode("".join(Path(m["payload_path"]).read_text().split()))
           got=hashlib.sha256(raw).hexdigest()
           assert got==m["payload_sha256"],(got,m["payload_sha256"])
@@ -41,7 +41,7 @@ jobs:
         run: |
           set -euo pipefail
           BASE="https://judun.142-93-91-214.sslip.io"
-          for i in $(seq 1 36); do
+          for i in $(seq 1 48); do
             echo "attempt=$i"
             if BUILD="$(curl -4 --http1.1 -kfsS --connect-timeout 5 --max-time 15 -H 'Cache-Control: no-cache' "$BASE/health/build?probe=$(date +%s)")"; then
               echo "$BUILD"
