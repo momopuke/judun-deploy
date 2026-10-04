@@ -1,11 +1,11 @@
 {
   "schema": "judun-autodeploy-v1",
-  "release_id": "v1.2.83-unlock-cache-selfheal-r1-20261004",
+  "release_id": "v1.2.84-learning-enforcement-r1-20261004",
   "base_artifact_id": "JUDUN-1.2.82-7D9A15B2C8C3",
-  "target_artifact_id": "JUDUN-1.2.83-B66DE6801DB6",
-  "target_build_instance_id": "1.2.83-20261004-25476F9DE0F9",
-  "expected_display_version": "v1.2.83",
-  "payload_path": "releases/v1.2.83-unlock-cache-selfheal-r1-20261004.cms.b64",
-  "payload_sha256": "3f3cbeb85765d653b12b29a728c29a55f7a009de64a03f7616f19f45ad225e80",
+  "target_artifact_id": "JUDUN-1.2.84-3D98B45C9227",
+  "target_build_instance_id": "1.2.84-20261004-7EFB43BF4A7E",
+  "expected_display_version": "v1.2.84",
+  "payload_path": "releases/v1.2.84-learning-enforcement-r1-20261004.cms.b64",
+  "payload_sha256": "17e7d43301e15869d2e3c190b7a1a4bbff6e108395ecf100966ffbb45aa65e70",
   "noop": false
 }
