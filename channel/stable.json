@@ -1,6 +1,6 @@
 {
   "schema": "judun-autodeploy-v1",
-  "release_id": "v1.2.82-persistent-learning-20261004",
+  "release_id": "v1.2.82-persistent-learning-r2-20261004",
   "base_artifact_id": "JUDUN-1.2.80-AD5C0A24EDEC",
   "target_artifact_id": "JUDUN-1.2.82-7D9A15B2C8C3",
   "target_build_instance_id": "1.2.82-20261004-42AE5C05086C",
