@@ -1,0 +1,135 @@
+name: JUDUN v1.2.82 R6 release verification
+
+on:
+  push:
+    paths:
+      - ".github/workflows/judun-r6-verify.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-and-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Reconstruct R6 delta asset
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out/reconstructed out/release
+          cat assets/v1.2.82-r6/part*.b64 > /tmp/r6.full.b64
+          base64 -d /tmp/r6.full.b64 > /tmp/r6.gz
+          gzip -t /tmp/r6.gz
+          gzip -dc /tmp/r6.gz > out/reconstructed/r6_delta.bin
+          sha256sum /tmp/r6.gz out/reconstructed/r6_delta.bin | tee out/reconstructed/SHA256_RECONSTRUCTED.txt
+          file out/reconstructed/r6_delta.bin | tee out/reconstructed/FILE_TYPE.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("out/reconstructed/r6_delta.bin")
+          b=p.read_bytes()
+          print("reconstructed_bytes=", len(b))
+          print("magic=", b[:32].hex())
+          if b[:2] == b"PK":
+              import zipfile
+              with zipfile.ZipFile(p) as z:
+                  bad=z.testzip()
+                  if bad:
+                      raise SystemExit(f"ZIP CRC failure: {bad}")
+                  print("zip_entries=", len(z.infolist()))
+                  for x in z.infolist():
+                      print("ZIP", x.filename, x.file_size)
+          PY
+
+      - name: Verify stable manifest payload SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, hashlib, base64
+          from pathlib import Path
+          m=json.loads(Path("channel/stable.json").read_text(encoding="utf-8"))
+          assert m["release_id"] == "v1.2.82-persistent-learning-r6-20261004", m
+          assert m["expected_display_version"] == "v1.2.82", m
+          pp=Path(m["payload_path"])
+          raw=base64.b64decode("".join(pp.read_text().split()))
+          got=hashlib.sha256(raw).hexdigest()
+          print("payload_path=", pp)
+          print("payload_bytes=", len(raw))
+          print("payload_sha256_expected=", m["payload_sha256"])
+          print("payload_sha256_actual  =", got)
+          if got != m["payload_sha256"]:
+              raise SystemExit("payload SHA mismatch")
+          PY
+
+      - name: Verify stable manifest Ed25519 signature
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 -d channel/stable.json.sig.b64 > /tmp/stable.sig
+          openssl pkeyutl -verify -pubin -inkey keys/release_signing_public.pem -rawin -in channel/stable.json -sigfile /tmp/stable.sig
+          echo "manifest_signature=PASS"
+
+      - name: Probe live production
+        shell: bash
+        run: |
+          set +e
+          mkdir -p out/live
+          LIVE="https://judun.142-93-91-214.sslip.io"
+          ok=0
+          for i in 1 2 3 4 5 6; do
+            echo "===== attempt $i =====" | tee -a out/live/probe.log
+            for p in /version /health /health/build; do
+              echo "--- $p" | tee -a out/live/probe.log
+              curl -kfsS --connect-timeout 10 --max-time 25 "$LIVE$p" 2>&1 | tee -a out/live/probe.log
+              echo | tee -a out/live/probe.log
+            done
+            if curl -kfsS --connect-timeout 10 --max-time 25 "$LIVE/version" 2>/dev/null | grep -Fq "v1.2.82"; then
+              ok=1
+              break
+            fi
+            sleep 20
+          done
+          echo "live_v1_2_82=$ok" | tee out/live/RESULT.txt
+          exit 0
+
+      - name: Build downloadable release bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out/release/Judun_v1.2.82_R6_AutoDeploy_ReleaseBundle
+          cp channel/stable.json out/release/Judun_v1.2.82_R6_AutoDeploy_ReleaseBundle/
+          cp channel/stable.json.sig.b64 out/release/Judun_v1.2.82_R6_AutoDeploy_ReleaseBundle/
+          cp releases/v1.2.82-persistent-learning-r6-20261004.cms.b64 out/release/Judun_v1.2.82_R6_AutoDeploy_ReleaseBundle/
+          cp -r assets/v1.2.82-r6 out/release/Judun_v1.2.82_R6_AutoDeploy_ReleaseBundle/
+          cp -r keys out/release/Judun_v1.2.82_R6_AutoDeploy_ReleaseBundle/
+          cp out/reconstructed/r6_delta.bin out/release/Judun_v1.2.82_R6_AutoDeploy_ReleaseBundle/
+          cp out/reconstructed/SHA256_RECONSTRUCTED.txt out/release/Judun_v1.2.82_R6_AutoDeploy_ReleaseBundle/
+          cp out/reconstructed/FILE_TYPE.txt out/release/Judun_v1.2.82_R6_AutoDeploy_ReleaseBundle/
+          cp out/live/probe.log out/release/Judun_v1.2.82_R6_AutoDeploy_ReleaseBundle/LIVE_PROBE.log
+          cp out/live/RESULT.txt out/release/Judun_v1.2.82_R6_AutoDeploy_ReleaseBundle/LIVE_RESULT.txt
+          cat > out/release/Judun_v1.2.82_R6_AutoDeploy_ReleaseBundle/README.txt <<'EOF'
+          JUDUN v1.2.82 R6 AutoDeploy Release Bundle
+          Release: v1.2.82-persistent-learning-r6-20261004
+          This bundle was reconstructed from all R6 parts and verified in GitHub Actions.
+          It includes the signed stable channel manifest, encrypted deployment payload,
+          public verification keys/certificate, source R6 chunks, reconstructed delta,
+          checksums, and production probe logs.
+          EOF
+          cd out/release
+          zip -r -9 ../Judun_v1.2.82_R6_AutoDeploy_ReleaseBundle.zip Judun_v1.2.82_R6_AutoDeploy_ReleaseBundle
+          cd ../..
+          unzip -t out/Judun_v1.2.82_R6_AutoDeploy_ReleaseBundle.zip
+          sha256sum out/Judun_v1.2.82_R6_AutoDeploy_ReleaseBundle.zip | tee out/Judun_v1.2.82_R6_AutoDeploy_ReleaseBundle.zip.sha256
+
+      - name: Upload verified bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: Judun_v1.2.82_R6_AutoDeploy_ReleaseBundle
+          path: |
+            out/Judun_v1.2.82_R6_AutoDeploy_ReleaseBundle.zip
+            out/Judun_v1.2.82_R6_AutoDeploy_ReleaseBundle.zip.sha256
+          if-no-files-found: error
+          retention-days: 30
