@@ -22,3 +22,5 @@ jobs:
           echo
           curl -4 --http1.1 -fsS --connect-timeout 10 --max-time 120 -H "Cache-Control: no-cache" "$BASE/health/artifact?deep=true&probe=$nonce" || true
           echo
+
+# probe-trigger v1.2.83 publish 20261004
