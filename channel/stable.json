@@ -6,6 +6,6 @@
   "target_build_instance_id": "1.2.86-20261005-R3-6A3F2D92C8E1",
   "expected_display_version": "v1.2.86",
   "payload_path": "releases/v1.2.86-source-links-keyword-r3-20261005.cms.b64",
-  "payload_sha256": "d9788065b83eaec0ab7c0fddb0a2326c5b8548dbb461a6957e8f07bbf8de0fc6",
+  "payload_sha256": "cea976a21a56560fb88f0d906d976784df3d6ce492890d0f7ca1b47d85794c2f",
   "noop": false
 }
