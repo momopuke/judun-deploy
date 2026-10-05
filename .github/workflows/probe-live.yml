@@ -24,4 +24,4 @@ jobs:
           echo
 
 
-# probe-trigger v1.2.83 verify
+# probe-trigger v1.2.86 post-manifest-fix
