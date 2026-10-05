@@ -12,9 +12,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/upload-artifact@v4
         with:
-          name: judun-release-deltas
+          name: judun-release-deltas-and-assets
           path: |
             releases/v1.2.83-unlock-cache-selfheal-r1-20261004.cms.b64
             releases/v1.2.84-learning-enforcement-r2-20261004.cms.b64
             releases/v1.2.85-report-links-r1-20261005.cms.b64
+            assets/v1.2.83-r1/**
           if-no-files-found: error
