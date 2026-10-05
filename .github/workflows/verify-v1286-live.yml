@@ -4,6 +4,9 @@ on:
   push:
     paths:
       - ".github/workflows/verify-v1286-live.yml"
+      - "channel/stable.json"
+      - "channel/stable.json.sig.b64"
+      - "releases/v1.2.86-source-links-keyword-r3-20261005.cms.b64"
   workflow_dispatch:
 
 permissions:
@@ -47,7 +50,7 @@ jobs:
               echo "$BUILD"
               VERSION="$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("display_version",""))' <<<"$BUILD" 2>/dev/null || true)"
               ARTIFACT="$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("artifact_id",""))' <<<"$BUILD" 2>/dev/null || true)"
-              if [[ "$VERSION" == "v1.2.86" && "$ARTIFACT" == "JUDUN-1.2.86-FA163925480E" ]]; then
+              if [[ "$VERSION" == "v1.2.86" && "$ARTIFACT" == "JUDUN-1.2.86-6A3F2D92C8E1" ]]; then
                 echo "LIVE_V1286_PASS"
                 exit 0
               fi
