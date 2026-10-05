@@ -1,12 +1,13 @@
-name: Verify JUDUN v1.2.86 live
+name: Verify JUDUN signed release and production
 
 on:
   push:
     paths:
       - ".github/workflows/verify-v1286-live.yml"
+      - ".github/scripts/verify_release.py"
       - "channel/stable.json"
       - "channel/stable.json.sig.b64"
-      - "releases/v1.2.86-source-links-keyword-r4-20261005.cms.b64"
+      - "releases/**"
   workflow_dispatch:
 
 permissions:
@@ -14,48 +15,11 @@ permissions:
 
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Verify signed release channel
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          import base64,hashlib,json
-          from pathlib import Path
-          m=json.loads(Path("channel/stable.json").read_text())
-          assert m["release_id"]=="v1.2.86-source-links-keyword-r4-20261005",m
-          assert m["base_artifact_id"]=="JUDUN-1.2.85-19A955700B55",m
-          assert m["target_artifact_id"]=="JUDUN-1.2.86-FA163925480E",m
-          raw=base64.b64decode("".join(Path(m["payload_path"]).read_text().split()))
-          got=hashlib.sha256(raw).hexdigest()
-          assert got==m["payload_sha256"],(got,m["payload_sha256"])
-          print("SIGNED_CHANNEL_PAYLOAD_SHA_PASS")
-          PY
-          base64 -d channel/stable.json.sig.b64 > /tmp/stable.sig
-          openssl pkeyutl -verify -pubin -inkey keys/release_signing_public.pem -rawin -in channel/stable.json -sigfile /tmp/stable.sig
-          echo "SIGNED_RELEASE_VERIFY_PASS"
-
-      - name: Wait for AutoDeploy and verify production
-        shell: bash
-        run: |
-          set -euo pipefail
-          BASE="https://judun.142-93-91-214.sslip.io"
-          for i in $(seq 1 48); do
-            echo "attempt=$i"
-            if BUILD="$(curl -4 --http1.1 -kfsS --connect-timeout 5 --max-time 15 -H 'Cache-Control: no-cache' "$BASE/health/build?probe=$(date +%s)")"; then
-              echo "$BUILD"
-              VERSION="$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("display_version",""))' <<<"$BUILD" 2>/dev/null || true)"
-              ARTIFACT="$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("artifact_id",""))' <<<"$BUILD" 2>/dev/null || true)"
-              if [[ "$VERSION" == "v1.2.86" && "$ARTIFACT" == "JUDUN-1.2.86-FA163925480E" ]]; then
-                echo "LIVE_V1286_PASS"
-                exit 0
-              fi
-            fi
-            sleep 10
-          done
-          echo "Production did not converge to v1.2.86 in time."
-          exit 1
+      - uses: actions/checkout@v5
+      - name: Verify signed release channel and payload
+        run: python3 .github/scripts/verify_release.py package
+      - name: Verify production identity and all managed files
+        run: python3 .github/scripts/verify_release.py live
