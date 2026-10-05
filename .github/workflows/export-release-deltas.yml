@@ -1,0 +1,20 @@
+name: Export JUDUN release deltas for offline diagnosis
+on:
+  push:
+    paths:
+      - ".github/workflows/export-release-deltas.yml"
+permissions:
+  contents: read
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: judun-release-deltas
+          path: |
+            releases/v1.2.83-unlock-cache-selfheal-r1-20261004.cms.b64
+            releases/v1.2.84-learning-enforcement-r2-20261004.cms.b64
+            releases/v1.2.85-report-links-r1-20261005.cms.b64
+          if-no-files-found: error
