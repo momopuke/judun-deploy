@@ -1,11 +1,11 @@
 {
   "schema": "judun-autodeploy-v1",
-  "release_id": "v1.2.93-vps-capacity-history-20261008",
-  "base_artifact_id": "JUDUN-1.2.92-75AB9046CF28",
-  "target_artifact_id": "JUDUN-1.2.93-4AF541CBA102",
-  "target_build_instance_id": "1.2.93-20261008-R1-4AF541CBA102",
-  "expected_display_version": "v1.2.93",
-  "payload_path": "releases/v1.2.93-vps-capacity-history-20261008.cms.b64",
-  "payload_sha256": "9329b1b93ac9de6df8f501845a131b42840f115d099eb2de0790832ca2c6e09a",
+  "release_id": "v1.2.94-expansion-efficiency-20261012",
+  "base_artifact_id": "JUDUN-1.2.93-4AF541CBA102",
+  "target_artifact_id": "JUDUN-1.2.94-3103A95052C6",
+  "target_build_instance_id": "1.2.94-20261012-R1-3103A95052C6",
+  "expected_display_version": "v1.2.94",
+  "payload_path": "releases/v1.2.94-expansion-efficiency-20261012.cms.b64",
+  "payload_sha256": "e766fef698d345db481a68678f78fc409e8e062685d54700aa1717296f85364b",
   "noop": false
 }
