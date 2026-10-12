@@ -1,11 +1,11 @@
 {
   "schema": "judun-autodeploy-v1",
-  "release_id": "v1.2.102-maturity-admission-fix-20261012",
-  "base_artifact_id": "JUDUN-1.2.101-4B69DF1A357B",
-  "target_artifact_id": "JUDUN-1.2.102-EC7A15F6B2AE",
-  "target_build_instance_id": "1.2.102-20261012-EC7A15F6B2AE",
-  "expected_display_version": "v1.2.102",
-  "payload_path": "releases/v1.2.102-maturity-admission-fix-20261012.cms.b64",
-  "payload_sha256": "85fd8ee6d2bce0f6764df5f84eca27ffb63b7fc03662dab024169db1ff6004dd",
+  "release_id": "v1.2.103-online-matching-20261012",
+  "base_artifact_id": "JUDUN-1.2.102-EC7A15F6B2AE",
+  "target_artifact_id": "JUDUN-1.2.103-8FB8C4504A1A",
+  "target_build_instance_id": "1.2.103-20261012-8FB8C4504A1A",
+  "expected_display_version": "v1.2.103",
+  "payload_path": "releases/v1.2.103-online-matching-20261012.cms.b64",
+  "payload_sha256": "7142e4d7cf3f43feceaf4879cb8a30e1fffe755ad50770fd158d3ee13f3cc505",
   "noop": false
 }
