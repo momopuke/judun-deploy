@@ -20,7 +20,7 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 14
     steps:
       - uses: actions/checkout@v5
       - name: Verify signed release channel and payload

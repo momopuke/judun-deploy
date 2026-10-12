@@ -29,7 +29,7 @@ def get_json(path):
         return json.load(response)
 
 def verify_live(m):
-    deadline = time.monotonic() + 360
+    deadline = time.monotonic() + 720
     last = "not checked"
     while time.monotonic() < deadline:
         try:

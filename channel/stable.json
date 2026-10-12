@@ -1,11 +1,11 @@
 {
   "schema": "judun-autodeploy-v1",
-  "release_id": "v1.2.106-baseline-start-timeout-20261013",
-  "base_artifact_id": "JUDUN-1.2.105-26D9130FFF7A",
-  "target_artifact_id": "JUDUN-1.2.106-533633BE72D7",
-  "target_build_instance_id": "1.2.106-20261013-533633BE72D7",
+  "release_id": "v1.2.106-baseline-start-timeout-r2-20261013",
+  "base_artifact_id": "JUDUN-1.2.106-533633BE72D7",
+  "target_artifact_id": "JUDUN-1.2.106-EFAFFF20D305",
+  "target_build_instance_id": "1.2.106-20261013-R2-EFAFFF20D305",
   "expected_display_version": "v1.2.106",
-  "payload_path": "releases/v1.2.106-baseline-start-timeout-20261013.cms.b64",
-  "payload_sha256": "be6b8a6b997b58971f077dcdb8e918818368609600e33f926a36b79aa4187f6b",
+  "payload_path": "releases/v1.2.106-baseline-start-timeout-r2-20261013.cms.b64",
+  "payload_sha256": "6137e4ab3dfa8d5e068b272e87529cc5f61c3450e98eb194423bb6d9266d3414",
   "noop": false
 }
