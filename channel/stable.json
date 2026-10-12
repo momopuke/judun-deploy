@@ -2,10 +2,10 @@
   "schema": "judun-autodeploy-v1",
   "release_id": "v1.2.103-online-matching-20261012",
   "base_artifact_id": "JUDUN-1.2.102-EC7A15F6B2AE",
-  "target_artifact_id": "JUDUN-1.2.103-8FB8C4504A1A",
-  "target_build_instance_id": "1.2.103-20261012-8FB8C4504A1A",
+  "target_artifact_id": "JUDUN-1.2.103-819D94F68869",
+  "target_build_instance_id": "1.2.103-20261012-819D94F68869",
   "expected_display_version": "v1.2.103",
   "payload_path": "releases/v1.2.103-online-matching-20261012.cms.b64",
-  "payload_sha256": "7142e4d7cf3f43feceaf4879cb8a30e1fffe755ad50770fd158d3ee13f3cc505",
+  "payload_sha256": "d8c0d28aaadc7ddbfb194faa2820ada6c45bdb84c3a838f886a5298121faee69",
   "noop": false
 }
