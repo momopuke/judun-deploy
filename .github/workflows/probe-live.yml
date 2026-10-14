@@ -10,23 +10,36 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Measure expansion status response without changing production
+      - name: Verify responsive status endpoint and preserved source exclusion
         shell: bash
         run: |
           python3 - <<'PY'
           import concurrent.futures,json,time,urllib.request
           base="https://judun.142-93-91-214.sslip.io"
-          paths=["/admin/data-expansion/api/status","/health/build","/health/source-exclusion"]
-          def check(path):
+          def request(path):
             started=time.monotonic()
-            try:
-              with urllib.request.urlopen(urllib.request.Request(base+path,headers={"Cache-Control":"no-cache"}),timeout=85) as response:
-                data=json.load(response)
-              if path.endswith("/api/status"):
-                data={"running":data.get("running"),"control":data.get("control"),"baseline":data.get("baseline"),"auto_goal":{key:(data.get("auto_goal") or {}).get(key) for key in ["status","task_id","rounds_completed","formal_added_total"]}}
-              if path=="/health/build":data={key:data.get(key) for key in ["version","artifact_id","manifest_status","concurrency"]}
-              return {"path":path,"seconds":round(time.monotonic()-started,3),"data":data}
-            except Exception as exc:return {"path":path,"seconds":round(time.monotonic()-started,3),"error":str(exc)}
-          with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
-            for result in pool.map(check,paths):print(json.dumps(result,ensure_ascii=False))
+            with urllib.request.urlopen(urllib.request.Request(base+path,headers={"Cache-Control":"no-cache"}),timeout=50) as response:
+              body=response.read()
+            return round(time.monotonic()-started,3),body
+          results=[]
+          for attempt in range(3):
+            elapsed,body=request("/admin/data-expansion/api/status")
+            data=json.loads(body)
+            result={"attempt":attempt+1,"seconds":elapsed,"loading":data.get("status_loading",False),"running":data.get("running"),"baseline":data.get("baseline"),"goal":{key:(data.get("auto_goal") or {}).get(key) for key in ["task_id","status","rounds_completed","formal_added_total"]}}
+            results.append(result);print(json.dumps(result,ensure_ascii=False))
+            assert elapsed<12,"Status still exceeds browser timeout"
+            assert not data.get("status_loading"),"Status did not finish warming"
+            assert (data.get("auto_goal") or {}).get("task_id")=="MANUAL-20261013-180926","Task checkpoint changed"
+          elapsed,body=request("/admin/data-expansion");html=body.decode()
+          assert "v1.2.108" in html and "保留前次資料並自動重試" in html
+          print("DASHBOARD_RESPONSE",elapsed)
+          elapsed,body=request("/health/source-exclusion");excluded=json.loads(body)
+          assert excluded.get("remaining_cases")==0 and excluded.get("remaining_records")==0,excluded
+          print("SOURCE_EXCLUSION",json.dumps(excluded,ensure_ascii=False))
+          elapsed,body=request("/health/build");build=json.loads(body)
+          assert build.get("artifact_id")=="JUDUN-1.2.108-5E63452E1B94",build
+          print("BUILD",json.dumps({key:build.get(key) for key in ["version","artifact_id","manifest_status"]}))
+          elapsed,body=request("/health/artifact?deep=true");deep=json.loads(body)
+          assert deep.get("status")=="ok" and deep.get("artifact_id")==build["artifact_id"] and deep.get("files_verified")==74,deep
+          print("LIVE_VERIFY_PASS",json.dumps({"version":build["version"],"files_verified":deep["files_verified"],"status_seconds":[result["seconds"] for result in results]}))
           PY
