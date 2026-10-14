@@ -21,7 +21,7 @@ jobs:
           endpoints=[
             "https://judun.142-93-91-214.sslip.io/health/build",
             "https://judun.142-93-91-214.sslip.io/health/data-expansion",
-            "https://judun.142-93-91-214.sslip.io/admin/data-expansion",
+            "https://judun.142-93-91-214.sslip.io/admin/data-expansion/api/status",
             "https://deploy-judun.142-93-91-214.sslip.io/health",
             "https://deploy-judun.142-93-91-214.sslip.io/version",
           ]
@@ -31,7 +31,16 @@ jobs:
               with urllib.request.urlopen(req,timeout=35) as response:
                 body=response.read(2000000).decode("utf-8","replace")
                 out={"url":url,"status":response.status}
-                if "/admin/" in url:
+                if url.endswith("/api/status"):
+                  data=json.loads(body)
+                  out["keys"]=list(data)
+                  out["capacity"]=data.get("capacity")
+                  out["capacity_history"]=data.get("capacity_history")
+                  out["baseline"]=data.get("baseline")
+                  out["auto_goal"]={k:data.get("auto_goal",{}).get(k) for k in ["status","rounds_completed","formal_added_total","formal_records_added_total"]}
+                  out["running"]=data.get("running")
+                  out["registry_keys"]=list(data.get("registry",{}))
+                elif "/admin/" in url:
                   text=re.sub("<[^>]+>"," ",body)
                   text=re.sub(r"\s+"," ",text)
                   out["page_title"]=re.findall(r"<title>(.*?)</title>",body,re.S)[:1]
