@@ -14,7 +14,10 @@
   "remaining_cases": 0,
   "remaining_records": 0,
   "predeploy_regression_tests": 87,
-  "status": "deployed_pending_independent_live_verification",
+  "status": "completed_and_live_verified",
   "completed_at": "2026-10-14T01:45:28.895124+00:00",
-  "note": "Encrypted source checkpoint; signed stable channel is unchanged. Live build is newer than channel."
+  "note": "Encrypted source checkpoint; signed stable channel is unchanged. Live build is newer than channel.",
+  "live_verified_at": "2026-10-14T01:46:12Z",
+  "managed_files_verified": 73,
+  "verification_run": "https://github.com/momopuke/judun-deploy/actions/runs/38497480748"
 }
