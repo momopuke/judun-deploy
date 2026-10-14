@@ -21,7 +21,7 @@ jobs:
           endpoints=[
             "https://judun.142-93-91-214.sslip.io/health/build",
             "https://judun.142-93-91-214.sslip.io/health/data-expansion",
-            "https://judun.142-93-91-214.sslip.io/admin/data-expansion/api/status",
+            "https://judun.142-93-91-214.sslip.io/admin/vps-capacity/api/history?days=2",
             "https://deploy-judun.142-93-91-214.sslip.io/health",
             "https://deploy-judun.142-93-91-214.sslip.io/version",
           ]
@@ -31,7 +31,10 @@ jobs:
               with urllib.request.urlopen(req,timeout=35) as response:
                 body=response.read(2000000).decode("utf-8","replace")
                 out={"url":url,"status":response.status}
-                if url.endswith("/api/status"):
+                if "/api/history" in url:
+                  data=json.loads(body)
+                  out["capacity_history"]=data
+                elif url.endswith("/api/status"):
                   data=json.loads(body)
                   out["keys"]=list(data)
                   out["capacity"]=data.get("capacity")
