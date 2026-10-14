@@ -1,60 +1,39 @@
 name: Probe live JUDUN
-
 on:
   push:
     paths:
       - ".github/workflows/probe-live.yml"
-
 permissions:
   contents: read
-
 jobs:
   probe:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Read production status for source cleanup and disk changes
+      - name: Verify excluded source removal and production integrity
         shell: bash
         run: |
           python3 - <<'PY'
-          import concurrent.futures, json, re, urllib.request, urllib.error
-          endpoints=[
-            "https://judun.142-93-91-214.sslip.io/health/build",
-            "https://judun.142-93-91-214.sslip.io/health/data-expansion",
-            "https://judun.142-93-91-214.sslip.io/admin/vps-capacity/api/history?days=2",
-            "https://deploy-judun.142-93-91-214.sslip.io/health",
-            "https://deploy-judun.142-93-91-214.sslip.io/version",
-          ]
-          def probe(url):
+          import json,urllib.request,concurrent.futures
+          base="https://judun.142-93-91-214.sslip.io"
+          paths=["/health/source-exclusion","/health/build","/health/artifact?deep=true"]
+          def check(path):
             try:
-              req=urllib.request.Request(url,headers={"Cache-Control":"no-cache","User-Agent":"JUDUN-production-diagnostics"})
-              with urllib.request.urlopen(req,timeout=35) as response:
-                body=response.read(2000000).decode("utf-8","replace")
-                out={"url":url,"status":response.status}
-                if "/api/history" in url:
-                  data=json.loads(body)
-                  out["capacity_history"]=data
-                elif url.endswith("/api/status"):
-                  data=json.loads(body)
-                  out["keys"]=list(data)
-                  out["capacity"]=data.get("capacity")
-                  out["capacity_history"]=data.get("capacity_history")
-                  out["baseline"]=data.get("baseline")
-                  out["auto_goal"]={k:data.get("auto_goal",{}).get(k) for k in ["status","rounds_completed","formal_added_total","formal_records_added_total"]}
-                  out["running"]=data.get("running")
-                  out["registry_keys"]=list(data.get("registry",{}))
-                elif "/admin/" in url:
-                  text=re.sub("<[^>]+>"," ",body)
-                  text=re.sub(r"\s+"," ",text)
-                  out["page_title"]=re.findall(r"<title>(.*?)</title>",body,re.S)[:1]
-                  out["twfuns_mentions"]=body.lower().count("twfuns.com")
-                  out["capacity_context"]=[text[max(0,m.start()-100):m.start()+800] for m in re.finditer("容量變化明細|容量變化|可用空間",text)][:2]
-                else:
-                  try: out["data"]=json.loads(body)
-                  except Exception: out["text"]=body[:200]
-                return out
-            except Exception as exc: return {"url":url,"error":str(exc)}
-          with concurrent.futures.ThreadPoolExecutor(max_workers=5) as pool:
-            for result in pool.map(probe,endpoints):
-              print(json.dumps(result,ensure_ascii=False))
+              request=urllib.request.Request(base+path,headers={"Cache-Control":"no-cache"})
+              with urllib.request.urlopen(request,timeout=80) as response:
+                data=json.load(response)
+                if path=="/health/build":
+                  data={key:data.get(key) for key in ["status","version","display_version","artifact_id","build_signature","manifest_status"]}
+                if path.startswith("/health/artifact"):
+                  data={key:data.get(key) for key in ["status","artifact_id","files_verified","mismatches","missing"]}
+                return {"path":path,"status":response.status,"data":data}
+            except Exception as error:return {"path":path,"error":str(error)}
+          with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
+            results=list(pool.map(check,paths))
+          for result in results:print(json.dumps(result,ensure_ascii=False))
+          source=next(result for result in results if result["path"]=="/health/source-exclusion")
+          data=source.get("data",{})
+          assert data.get("status")=="ok" and data.get("remaining_cases")==0 and data.get("remaining_records")==0,source
+          assert (data.get("cleanup") or {}).get("status")=="completed",source
+          print("TWFUNS_DELETION_AND_EXCLUSION_VERIFIED")
           PY
