@@ -37,3 +37,5 @@ jobs:
           assert (data.get("cleanup") or {}).get("status")=="completed",source
           print("TWFUNS_DELETION_AND_EXCLUSION_VERIFIED")
           PY
+
+# Post-cleanup verification: JUDUN-1.2.107-190650E1A759
