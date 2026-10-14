@@ -10,32 +10,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Verify excluded source removal and production integrity
+      - name: Measure expansion status response without changing production
         shell: bash
         run: |
           python3 - <<'PY'
-          import json,urllib.request,concurrent.futures
+          import concurrent.futures,json,time,urllib.request
           base="https://judun.142-93-91-214.sslip.io"
-          paths=["/health/source-exclusion","/health/build","/health/artifact?deep=true"]
+          paths=["/admin/data-expansion/api/status","/health/build","/health/source-exclusion"]
           def check(path):
+            started=time.monotonic()
             try:
-              request=urllib.request.Request(base+path,headers={"Cache-Control":"no-cache"})
-              with urllib.request.urlopen(request,timeout=80) as response:
+              with urllib.request.urlopen(urllib.request.Request(base+path,headers={"Cache-Control":"no-cache"}),timeout=85) as response:
                 data=json.load(response)
-                if path=="/health/build":
-                  data={key:data.get(key) for key in ["status","version","display_version","artifact_id","build_signature","manifest_status"]}
-                if path.startswith("/health/artifact"):
-                  data={key:data.get(key) for key in ["status","artifact_id","files_verified","mismatches","missing"]}
-                return {"path":path,"status":response.status,"data":data}
-            except Exception as error:return {"path":path,"error":str(error)}
+              if path.endswith("/api/status"):
+                data={"running":data.get("running"),"control":data.get("control"),"baseline":data.get("baseline"),"auto_goal":{key:(data.get("auto_goal") or {}).get(key) for key in ["status","task_id","rounds_completed","formal_added_total"]}}
+              if path=="/health/build":data={key:data.get(key) for key in ["version","artifact_id","manifest_status","concurrency"]}
+              return {"path":path,"seconds":round(time.monotonic()-started,3),"data":data}
+            except Exception as exc:return {"path":path,"seconds":round(time.monotonic()-started,3),"error":str(exc)}
           with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
-            results=list(pool.map(check,paths))
-          for result in results:print(json.dumps(result,ensure_ascii=False))
-          source=next(result for result in results if result["path"]=="/health/source-exclusion")
-          data=source.get("data",{})
-          assert data.get("status")=="ok" and data.get("remaining_cases")==0 and data.get("remaining_records")==0,source
-          assert (data.get("cleanup") or {}).get("status")=="completed",source
-          print("TWFUNS_DELETION_AND_EXCLUSION_VERIFIED")
+            for result in pool.map(check,paths):print(json.dumps(result,ensure_ascii=False))
           PY
-
-# Post-cleanup verification: JUDUN-1.2.107-190650E1A759
