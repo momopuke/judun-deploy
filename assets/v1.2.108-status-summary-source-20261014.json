@@ -1,0 +1,27 @@
+{
+  "version": "1.2.108",
+  "artifact_id": "JUDUN-1.2.108-5E63452E1B94",
+  "old_summary_seconds": 7.059,
+  "sql_summary_seconds": 1.248,
+  "source_cases": 6505,
+  "records": 75837,
+  "all_live_counters_match": true,
+  "twfuns_remaining_cases": 0,
+  "twfuns_remaining_records": 0,
+  "evidence_modified": false,
+  "checkpoint_preserved": true,
+  "managed_files": 74,
+  "status": "completed",
+  "source_path": "assets/v1.2.108-status-summary-source-20261014.cms.b64",
+  "encrypted_source_sha256": "8bccc9c287ad1d3f17cf8e8cf9e23d9295e6bfec18f813705c1c6eb0bada4683",
+  "python_tests": 106,
+  "frontend_behavior_tests": "passed",
+  "live_verification": "https://github.com/momopuke/judun-deploy/actions/runs/38522173571",
+  "browser_observation": {
+    "version": "v1.2.108",
+    "status": "正在執行",
+    "rounds": 208,
+    "source_cases": 6509,
+    "records": 75872
+  }
+}
