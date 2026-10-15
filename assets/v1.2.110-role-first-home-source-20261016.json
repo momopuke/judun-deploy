@@ -1,0 +1,30 @@
+{
+  "status": "completed",
+  "version": "1.2.110",
+  "artifact_id": "JUDUN-1.2.110-CEB447A30CD0",
+  "managed_files": 79,
+  "home_validation": {
+    "role_entrances": 4,
+    "preserved_dom_ids": 24,
+    "unique_dom_ids": 27
+  },
+  "unrelated_functions_unchanged": true,
+  "checkpoint_preserved": true,
+  "data_modified": false,
+  "source_path": "assets/v1.2.110-role-first-home-source-20261016.cms.b64",
+  "encrypted_source_sha256": "50d0a55fc8ccba8b1327a7bf2b988837fcc362893a8f19cf9fd1a12c9ee55b56",
+  "live_verification": "https://github.com/momopuke/judun-deploy/actions/runs/38782581366",
+  "browser_checks": {
+    "role_entrances": 4,
+    "upload_flow": "passed",
+    "retrieve_and_recheck": "passed",
+    "owner_intake": "passed",
+    "company_intake": "passed",
+    "responsive_widths": [
+      390,
+      320
+    ],
+    "horizontal_overflow": false
+  },
+  "screenshot": "judun-home-v12110-1792087852912.jpg"
+}
