@@ -31,7 +31,7 @@ jobs:
           seconds,body=request("/");home=body.decode();parser=Home();parser.feed(home)
           assert parser.cards==["#home-upload-panel","/matching/","#home-retrieve","/matching/?role=company"],parser.cards
           assert len(parser.ids)==len(set(parser.ids))
-          assert "v1.2.109" in home and "裝修這一步" in home and "用專業，" not in home
+          assert "v1.2.110" in home and "裝修這一步" in home and "用專業，" not in home
           assert 'id="fileInput"' in home and 'id="dataConsentInput"' in home and 'id="parentJobIdInput"' in home
           print("HOME",json.dumps({"seconds":seconds,"cards":parser.cards,"unique_ids":len(parser.ids)},ensure_ascii=False))
           for path in ["/matching/","/matching/?role=company","/cooperation/","/static/home-entry-responsive-check.html"]:
@@ -41,7 +41,7 @@ jobs:
           assert excluded.get("remaining_cases")==0 and excluded.get("remaining_records")==0
           print("EXCLUSION",json.dumps({key:excluded.get(key) for key in ["excluded_domains","remaining_cases","remaining_records"]},ensure_ascii=False))
           seconds,body=request("/health/build");build=json.loads(body)
-          assert build.get("version")=="1.2.109" and build.get("artifact_id","").startswith("JUDUN-1.2.109-")
+          assert build.get("version")=="1.2.110" and build.get("artifact_id","").startswith("JUDUN-1.2.110-")
           seconds,body=request("/health/artifact?deep=true");deep=json.loads(body)
           assert deep.get("status")=="ok" and deep.get("artifact_id")==build["artifact_id"] and deep.get("files_verified")==79,deep
           seconds,body=request("/admin/data-expansion/api/status");status=json.loads(body)
