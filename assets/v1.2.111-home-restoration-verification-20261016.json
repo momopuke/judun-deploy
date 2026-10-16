@@ -1,0 +1,20 @@
+{
+  "version": "1.2.111",
+  "artifact_id": "JUDUN-1.2.111-A0148AF99C63",
+  "files_verified": 79,
+  "twfuns_remaining_cases": 0,
+  "twfuns_remaining_records": 0,
+  "expansion": {
+    "running": true,
+    "auto_goal_status": "running",
+    "rounds": 740
+  },
+  "original_css_exact_match": true,
+  "original_header_exact_match": true,
+  "original_home_function_sha256": "4da50a558d4d5622e63eec251ef2c94f62e38d6f28e9fd7f2839732de98f4de3",
+  "all_other_source_preserved": true,
+  "browser_upload_button": "file chooser opened",
+  "browser_report_navigation": "target scrolled into viewport",
+  "screenshot": "judun-restored-home-1792153595511.jpg",
+  "encrypted_source_path": "assets/v1.2.111-restore-approved-home-source-20261016.cms.b64"
+}
