@@ -1,0 +1,38 @@
+{
+  "status": "completed",
+  "version": "1.2.112",
+  "artifact_id": "JUDUN-1.2.112-41940D882FBF",
+  "tests_passed": 124,
+  "managed_files_verified": 80,
+  "cleanup": {
+    "status": "completed",
+    "topic_policy_version": "2026.10.16-topic-v1",
+    "removed_cases": 4,
+    "removed_records": 47,
+    "candidate_entries_removed": 0,
+    "candidate_unique_urls_removed": 0,
+    "candidate_state_and_run_files_changed": 8,
+    "cache_entries_invalidated": 8,
+    "remaining_cases": 0,
+    "remaining_records": 0,
+    "remaining_candidate_entries": 0,
+    "other_formal_data_unchanged": true,
+    "recovery_saved": true,
+    "removal_reasons": {
+      "medical_procurement": 2,
+      "financial_information": 1,
+      "operator_excluded_medical_tender": 1
+    },
+    "version": "1.2.112",
+    "artifact_id": "JUDUN-1.2.112-41940D882FBF",
+    "completed_at": "2026-10-16T18:49:04.031967+00:00"
+  },
+  "expansion_running": true,
+  "expansion_rounds": 758,
+  "original_css_exact_match": true,
+  "original_home_hero_exact_match": true,
+  "twfuns_remaining_cases": 0,
+  "twfuns_remaining_records": 0,
+  "encrypted_source_path": "assets/v1.2.112-renovation-topic-filter-source-20261016.cms.b64",
+  "encrypted_source_sha256": "b87d5525c218d4399ce05c4134e645807daeddda6dd81875c73ab00a4585e3db"
+}
