@@ -1,0 +1,70 @@
+{
+  "schema": "judun.expansion-resilience-verification.v1",
+  "verified_at": "2026-10-17T14:37:32.431588+00:00",
+  "version": "1.2.114",
+  "artifact_id": "JUDUN-1.2.114-AA38F0567A4D",
+  "tests_passed": 137,
+  "managed_files_verified": 81,
+  "mismatch_count": 0,
+  "homepage_source_unchanged": true,
+  "topic_policy_unchanged": true,
+  "resilience_policy_version": "2026.10.17-resilience-v1",
+  "features": [
+    "Respect cgroup service memory limits and reclaimable file cache when choosing network/parse workers",
+    "Wait before starting a new round when service memory headroom is below 64 MiB",
+    "Report real snapshot copy, verification, hash, compression, commit and summary stages",
+    "Recover counts only from the exact committed audit and matching admission bundle",
+    "Persist task checkpoints and reject duplicate round accounting"
+  ],
+  "deployment_boundary": {
+    "rounds_completed": 9,
+    "validated_total": 29,
+    "formal_records_added_total": 410
+  },
+  "post_deployment_goal": {
+    "task_id": "MANUAL-20261017-093709",
+    "target_validated": 5000,
+    "rounds_completed": 10,
+    "validated_total": 33,
+    "formal_added_total": 33,
+    "formal_records_added_total": 490,
+    "resume_count": 17
+  },
+  "completed_rounds_after_update": 1,
+  "formal_pages_added_after_update": 4,
+  "formal_records_added_after_update": 80,
+  "resource_policy_observed": {
+    "enabled": true,
+    "engine": "Adaptive20",
+    "adaptive_network_budget": 8,
+    "available_memory_mb": 252,
+    "search_workers": 2,
+    "fetch_workers": 6,
+    "parse_workers": 1,
+    "logical_lanes": [
+      "fresh_item",
+      "regional:新北市",
+      "regional:台北市"
+    ],
+    "formal_writer_workers": 1,
+    "per_host_throttle_seconds": 1.4,
+    "resilience_policy_version": "2026.10.17-resilience-v1",
+    "service_memory_headroom_mb": 251
+  },
+  "local_health_seconds": [
+    0.0672,
+    0.0133,
+    0.0108
+  ],
+  "controller_swap_kb": "0 kB",
+  "observed_formal_steps": [
+    "backup_after_check",
+    "backup_after_compress",
+    "backup_after_copy",
+    "backup_before_check",
+    "formal_summary"
+  ],
+  "source_asset": "assets/v1.2.114-expansion-resilience-source-20261017.cms.b64",
+  "encrypted_source_sha256": "82bad0e7fce3dd6000f84d6ecaaf991f10d254fad9baaf2978fd39da7ccd2fd9",
+  "source_commit": "8e6a51cdb06c29ac829130e0dd61bf58fd34bb07"
+}
