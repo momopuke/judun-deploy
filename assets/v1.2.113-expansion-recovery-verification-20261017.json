@@ -1,0 +1,40 @@
+{
+  "schema": "judun.expansion-fix-verification.v1",
+  "verified_at": "2026-10-17T14:21:20.979758+00:00",
+  "version": "1.2.113",
+  "artifact_id": "JUDUN-1.2.113-B64EB3788457",
+  "cause": "Full-store expansion baseline and post-import summary exceeded the service memory budget, causing swap stalls and three consecutive local health timeouts followed by monitor restarts.",
+  "changed_runtime_files": [
+    "app.py (version constants only)",
+    "data_expansion_controller/controller.py",
+    "DEPLOY_MANIFEST.json"
+  ],
+  "homepage_source_unchanged": true,
+  "topic_policy_unchanged": true,
+  "managed_files_verified": 80,
+  "mismatch_count": 0,
+  "tests_passed": 126,
+  "production_baseline_check": {
+    "seconds": 9.546,
+    "process_peak_rss_kb": 48432,
+    "source_cases": 9155,
+    "records": 113935
+  },
+  "task_id_preserved": true,
+  "target_validated": 5000,
+  "rounds_completed": 1,
+  "validated_total": 2,
+  "formal_added_total": 2,
+  "formal_records_added_total": 36,
+  "following_round_started": true,
+  "local_health_seconds": [
+    0.1048,
+    0.0394,
+    0.0204
+  ],
+  "service_pid": 2467022,
+  "service_started_at_utc": "2026-10-17T14:17:59Z",
+  "source_asset": "assets/v1.2.113-streamed-expansion-source-20261017.cms.b64",
+  "encrypted_source_sha256": "f72f0eab10e2a0f68424cc556efd8536acb9a56c325fdfb3a7d7007c8c60a427",
+  "source_commit": "68f6d8da42741a339e649d9022a9611586e5cfc9"
+}
