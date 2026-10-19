@@ -19,6 +19,8 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Test temporary P0 entry layer against real public homepage
         run: node p0/preview-test.cjs
+        env:
+          JUDUN_VISUAL_REVIEW: '1'
       - name: Upload before/after desktop and mobile screenshots
         if: always()
         uses: actions/upload-artifact@v4
