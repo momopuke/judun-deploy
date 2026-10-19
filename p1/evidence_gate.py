@@ -44,7 +44,7 @@ AD_SIGNALS = ("點我頭像", "看我主頁", "加LINE詢價", "私訊報價", "
 
 @dataclass(frozen=True)
 class GateDecision:
-    status: str                     # REJECT, HOLD, REFERENCE_ONLY, COMPARABLE
+    status: str                     # REJECT, HOLD, REFERENCE_ONLY, READY_FOR_MATCHING, COMPARABLE
     reasons: tuple[str, ...]
     eligible_for_formal_import: bool
     usable_for_exact_price_comparison: bool
@@ -110,12 +110,13 @@ def evaluate(record: dict) -> GateDecision:
     REJECT = off-topic/explicitly prohibited/non-public URL.
     HOLD = potentially relevant but missing required verifiable fields.
     REFERENCE_ONLY = public Taiwanese price but not like-for-like evidence.
-    COMPARABLE = structural comparability only, NOT independent proof of payment.
+    READY_FOR_MATCHING = candidate fields present, NOT a pairwise match.
+    COMPARABLE can be returned ONLY by compare_with_target after strict matching.
     """
     def d(status, *reasons):
         return GateDecision(
             status, tuple(reasons),
-            eligible_for_formal_import=status in ("COMPARABLE", "REFERENCE_ONLY"),
+            eligible_for_formal_import=status in ("READY_FOR_MATCHING", "COMPARABLE", "REFERENCE_ONLY"),
             usable_for_exact_price_comparison=status == "COMPARABLE",
             transaction_confirmed=False,
         )
@@ -168,7 +169,7 @@ def evaluate(record: dict) -> GateDecision:
     spec = str(record.get("spec") or "").strip()
     if not item_name or raw_unit not in UNITS or len(spec) < 2:
         return d("REFERENCE_ONLY", "ITEM_UNIT_OR_SPEC_NOT_COMPARABLE")
-    return d("COMPARABLE", "EXACT_FIELDS_PRESENT_NOT_PAYMENT_PROOF")
+    return d("READY_FOR_MATCHING", "STRUCTURED_CANDIDATE_AWAITING_PAIR_MATCH")
 
 
 def html_source_link(url: str, label: str = "查看原始公開來源") -> str:
@@ -176,3 +177,37 @@ def html_source_link(url: str, label: str = "查看原始公開來源") -> str:
     if not public_source_url(url):
         raise ValueError("Source URL rejected")
     return '<a href="' + escape(url, quote=True) + '" target="_blank" rel="noopener noreferrer">' + escape(label) + '</a>'
+
+
+def _canonical(value: object) -> str:
+    """Strict comparison: normalize typographic width/space, not fuzzy synonyms."""
+    import unicodedata
+    if not isinstance(value, str):
+        return ""
+    return re.sub(r"\s+", "", unicodedata.normalize("NFKC", value)).casefold()
+
+
+def compare_with_target(source: dict, customer_quote: dict) -> GateDecision:
+    """Only return COMPARABLE for known-identical construction scope.
+
+    Ambiguous differences stay reference-only rather than being silently
+    transformed into an exact unit-price benchmark.
+    """
+    base = evaluate(source)
+    if base.status != "READY_FOR_MATCHING":
+        return base
+    if not isinstance(customer_quote, dict):
+        return GateDecision("HOLD", ("NO_CUSTOMER_QUOTE",), False, False)
+    required = ("category", "item_name", "unit", "spec", "locality")
+    for key in required:
+        if not _canonical(source.get(key)) or not _canonical(customer_quote.get(key)):
+            return GateDecision("REFERENCE_ONLY", ("PAIR_FIELD_MISSING:" + key,), True, False)
+        if _canonical(source[key]) != _canonical(customer_quote[key]):
+            return GateDecision("REFERENCE_ONLY", ("PAIR_SPEC_OR_REGION_MISMATCH:" + key,), True, False)
+    if (str(customer_quote.get("currency") or "").upper() not in
+            ("TWD", "NTD", "NT$", "新臺幣", "新台幣")):
+        return GateDecision("HOLD", ("CUSTOMER_CURRENCY_UNVERIFIED",), False, False)
+    if parse_twd_amount(customer_quote.get("amount")) is None:
+        return GateDecision("HOLD", ("CUSTOMER_PRICE_UNVERIFIED",), False, False)
+    return GateDecision("COMPARABLE", ("STRICT_PAIR_FIELDS_MATCH_PAYMENT_UNVERIFIED",),
+                        True, True, False)
