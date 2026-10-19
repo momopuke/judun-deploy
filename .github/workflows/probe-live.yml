@@ -1,50 +1,106 @@
-name: Verify live JUDUN home entrances
+name: Verify approved JUDUN homepage and site health
 on:
   push:
     paths:
       - ".github/workflows/probe-live.yml"
+  workflow_dispatch:
 permissions:
   contents: read
+
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 5
     steps:
-      - name: Verify role entrances, live routes, artifact and preserved exclusion
+      - name: Verify restored brand homepage, working entry points and production integrity
         shell: bash
         run: |
           python3 - <<'PY'
-          import json,time,urllib.request
+          import json, re, time, urllib.error, urllib.request
           from html.parser import HTMLParser
-          base="https://judun.142-93-91-214.sslip.io"
+
+          BASE = "https://judun.142-93-91-214.sslip.io"
+
           def request(path):
-              started=time.monotonic()
-              with urllib.request.urlopen(urllib.request.Request(base+path,headers={"Cache-Control":"no-cache"}),timeout=40) as response:
-                  body=response.read()
-              return round(time.monotonic()-started,3),body
+              error = None
+              for attempt in range(3):
+                  try:
+                      started = time.monotonic()
+                      req = urllib.request.Request(BASE + path, headers={"Cache-Control": "no-cache", "User-Agent": "JUDUN-home-regression/1"})
+                      with urllib.request.urlopen(req, timeout=30) as response:
+                          body = response.read()
+                      return round(time.monotonic() - started, 3), body
+                  except (urllib.error.URLError, TimeoutError) as exc:
+                      error = exc
+                      if attempt < 2:
+                          time.sleep(3)
+              raise RuntimeError(f"GET {path} failed: {error}")
+
+          def get_json(path):
+              sec, raw = request(path)
+              return sec, json.loads(raw.decode("utf-8"))
+
           class Home(HTMLParser):
-              def __init__(self):super().__init__();self.cards=[];self.ids=[]
-              def handle_starttag(self,tag,attrs):
-                  a=dict(attrs)
-                  if "id" in a:self.ids.append(a["id"])
-                  if "home109-card" in a.get("class","").split():self.cards.append(a.get("href"))
-          seconds,body=request("/");home=body.decode();parser=Home();parser.feed(home)
-          assert parser.cards==["#home-upload-panel","/matching/","#home-retrieve","/matching/?role=company"],parser.cards
-          assert len(parser.ids)==len(set(parser.ids))
-          assert "v1.2.110" in home and "裝修這一步" in home and "用專業，" not in home
-          assert 'id="fileInput"' in home and 'id="dataConsentInput"' in home and 'id="parentJobIdInput"' in home
-          print("HOME",json.dumps({"seconds":seconds,"cards":parser.cards,"unique_ids":len(parser.ids)},ensure_ascii=False))
-          for path in ["/matching/","/matching/?role=company","/cooperation/","/static/home-entry-responsive-check.html"]:
-              seconds,body=request(path);assert body
-              print("ROUTE",path,seconds)
-          seconds,body=request("/health/source-exclusion");excluded=json.loads(body)
-          assert excluded.get("remaining_cases")==0 and excluded.get("remaining_records")==0
-          print("EXCLUSION",json.dumps({key:excluded.get(key) for key in ["excluded_domains","remaining_cases","remaining_records"]},ensure_ascii=False))
-          seconds,body=request("/health/build");build=json.loads(body)
-          assert build.get("version")=="1.2.110" and build.get("artifact_id","").startswith("JUDUN-1.2.110-")
-          seconds,body=request("/health/artifact?deep=true");deep=json.loads(body)
-          assert deep.get("status")=="ok" and deep.get("artifact_id")==build["artifact_id"] and deep.get("files_verified")==79,deep
-          seconds,body=request("/admin/data-expansion/api/status");status=json.loads(body)
-          print("EXPANSION",json.dumps({"seconds":seconds,"running":status.get("running"),"task_id":(status.get("auto_goal") or {}).get("task_id"),"state":(status.get("auto_goal") or {}).get("status"),"rounds":(status.get("auto_goal") or {}).get("rounds_completed")},ensure_ascii=False))
-          print("HOME_LIVE_VERIFY_PASS",json.dumps({"version":build["version"],"artifact_id":build["artifact_id"],"files_verified":deep["files_verified"],"role_entrances":4},ensure_ascii=False))
+              def __init__(self):
+                  super().__init__()
+                  self.ids = []
+                  self.links = []
+              def handle_starttag(self, tag, attrs):
+                  data = dict(attrs)
+                  if "id" in data:
+                      self.ids.append(data["id"])
+                  if tag == "a":
+                      self.links.append(data.get("href", ""))
+
+          homepage_seconds, raw = request("/")
+          homepage = raw.decode("utf-8")
+          home = Home()
+          home.feed(homepage)
+          assert "居盾" in homepage, "Brand name is missing"
+          assert "用專業" in homepage, "Previously approved homepage hero text was replaced"
+          assert len(home.ids) == len(set(home.ids)), "Duplicate HTML IDs"
+          assert "fileInput" in home.ids, "Existing upload file input is missing"
+          assert "dataConsentInput" in home.ids, "Upload consent input is missing"
+          print("APPROVED_HOME", json.dumps({
+              "seconds": homepage_seconds,
+              "ids": len(home.ids),
+              "upload_file_input": "fileInput" in home.ids,
+              "consent_input": "dataConsentInput" in home.ids
+          }, ensure_ascii=False))
+
+          for path in ("/matching/", "/matching/?role=company", "/cooperation/"):
+              sec, body = request(path)
+              assert body, f"Empty route: {path}"
+              print("ROUTE_OK", path, sec)
+
+          _, build = get_json("/health/build")
+          version = str(build.get("version") or build.get("display_version") or "").lstrip("v")
+          match = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)", version)
+          assert match, f"Invalid version: {version}"
+          assert tuple(map(int, match.groups())) >= (1, 2, 111), f"Pre-restoration deployment detected: {version}"
+          artifact_id = build.get("artifact_id", "")
+          assert artifact_id.startswith("JUDUN-"), f"Missing artifact ID: {build}"
+
+          _, integrity = get_json("/health/artifact?deep=true")
+          assert integrity.get("status") == "ok", integrity
+          assert integrity.get("artifact_id") == artifact_id, "Live build and artifact differ"
+          assert integrity.get("mismatch_count", 0) == 0, integrity
+          verified = int(integrity.get("files_verified") or 0)
+          assert verified >= 79, f"Managed file count dropped: {verified}"
+          expected = integrity.get("manifest_file_count")
+          if expected is not None:
+              assert verified == int(expected), f"Partial verification: {verified}/{expected}"
+
+          _, excluded = get_json("/health/source-exclusion")
+          assert excluded.get("remaining_cases") == 0, excluded
+          assert excluded.get("remaining_records") == 0, excluded
+
+          print("APPROVED_HOME_LIVE_GUARD_PASS", json.dumps({
+              "version": version,
+              "artifact_id": artifact_id,
+              "files_verified": verified,
+              "source_exclusion_cases": excluded["remaining_cases"],
+              "source_exclusion_records": excluded["remaining_records"],
+              "status": "approved design and routing smoke check"
+          }, ensure_ascii=False))
           PY
