@@ -69,6 +69,7 @@ const BASE="https://judun.142-93-91-214.sslip.io/";
     assert(after.uploadInputPreserved && after.submitPreserved);
     assert(after.originalCtaRenamed);
     assert(after.overflow<=Math.max(2,before.overflow+2),'new horizontal overflow');
+    if (name==='mobile') console.log('MOBILE_HERO_AFTER_META',JSON.stringify(await page.evaluate(()=>{const h=document.querySelector('.v128-hero-copy h1'),c=document.querySelector('.v128-hero-copy'),sh=document.querySelector('.v128-hero-shell');return {title:h.getBoundingClientRect().toJSON(),copy:c.getBoundingClientRect().toJSON(),shell:sh.getBoundingClientRect().toJSON(),font:getComputedStyle(h).fontSize,display:getComputedStyle(c).display,transform:getComputedStyle(c).transform}})));
     assert(after.mobileHeroFits,'hero heading still clipped at mobile viewport');
     // Re-running initializer must not duplicate nav.
     await page.addScriptTag({path:path.resolve('p0/home-entry.js')});
