@@ -55,7 +55,7 @@
     if (window.matchMedia && window.matchMedia("(max-width: 520px)").matches) {
       const heading = header.querySelector(".v128-hero-copy h1");
       if (heading) {
-        heading.style.setProperty("font-size", "clamp(34px, 10vw, 41px)", "important");
+        heading.style.setProperty("font-size", "clamp(32px, 9vw, 38px)", "important");
         const emphasized = heading.querySelector("span");
         if (emphasized) emphasized.style.setProperty("font-size", "inherit", "important");
       }
