@@ -22,7 +22,8 @@ const BASE="https://judun.142-93-91-214.sslip.io/";
         fileNode:document.querySelector('#fileInput') !== null,
         consentNode:document.querySelector('#dataConsentInput') !== null,
         submitNode:document.querySelector('#submitBtn') !== null,
-        overflow:document.documentElement.scrollWidth-innerWidth
+        overflow:document.documentElement.scrollWidth-innerWidth,
+        mobileHeroFits:(()=>{const shell=document.querySelector('.v128-hero-shell').getBoundingClientRect();const copy=document.querySelector('.v128-hero-copy').getBoundingClientRect();const title=h1.getBoundingClientRect();return copy.width<=shell.width+2 && title.right<=innerWidth+2 && title.left>=-2})()
       };
     });
     if (name==='mobile') {
@@ -68,6 +69,7 @@ const BASE="https://judun.142-93-91-214.sslip.io/";
     assert(after.uploadInputPreserved && after.submitPreserved);
     assert(after.originalCtaRenamed);
     assert(after.overflow<=Math.max(2,before.overflow+2),'new horizontal overflow');
+    assert(after.mobileHeroFits,'hero heading still clipped at mobile viewport');
     // Re-running initializer must not duplicate nav.
     await page.addScriptTag({path:path.resolve('p0/home-entry.js')});
     assert.equal(await page.locator('nav[data-judun-p0-entry]').count(),1);
