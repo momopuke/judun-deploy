@@ -4,7 +4,7 @@ from pathlib import Path
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from evidence_gate import evaluate, parse_twd_amount, public_source_url, html_source_link
+from evidence_gate import evaluate, compare_with_target, parse_twd_amount, public_source_url, html_source_link
 
 def valid_case():
     return {
@@ -23,11 +23,33 @@ def valid_case():
     }
 
 class EvidenceGateTests(unittest.TestCase):
-    def test_real_renovation_quote_can_be_compared_but_not_paid(self):
+    def test_structured_case_not_comparable_until_pair_match(self):
         a = evaluate(valid_case())
-        self.assertEqual(a.status, "COMPARABLE")
-        self.assertTrue(a.usable_for_exact_price_comparison)
+        self.assertEqual(a.status, "READY_FOR_MATCHING")
+        self.assertFalse(a.usable_for_exact_price_comparison)
         self.assertFalse(a.transaction_confirmed)
+
+    def test_strict_matching_pair_is_structurally_comparable(self):
+        s=valid_case()
+        target={k:s[k] for k in ("category", "item_name", "unit", "spec", "locality", "currency")}
+        target["amount"]="NT$20,000"
+        r=compare_with_target(s,target)
+        self.assertEqual(r.status,"COMPARABLE")
+        self.assertTrue(r.usable_for_exact_price_comparison)
+        self.assertFalse(r.transaction_confirmed)
+
+    def test_different_specs_not_marked_comparable(self):
+        s=valid_case()
+        target={k:s[k] for k in ("category", "item_name", "unit", "spec", "locality", "currency")}
+        target["amount"]="20000"
+        for k,v in (("spec","乳膠漆一道"),("unit","式"),("locality","高雄市"),("item_name","牆面泥作"),("category","防水工程")):
+            with self.subTest(key=k):
+                self.assertEqual(compare_with_target(s,{**target,k:v}).status,"REFERENCE_ONLY")
+
+    def test_missing_customer_price_not_comparable(self):
+        s=valid_case()
+        target={k:s[k] for k in ("category", "item_name", "unit", "spec", "locality", "currency")}
+        self.assertEqual(compare_with_target(s,target).status,"HOLD")
 
     def test_unrelated_pharmaceutical_price_is_rejected(self):
         r = dict(valid_case(), title="醫療器材與藥品採購價格表", body="醫藥器材費用", category="", item_name="")
