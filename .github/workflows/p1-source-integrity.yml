@@ -1,4 +1,4 @@
-name: JUDUN P0 evidence integrity (read-only)
+name: JUDUN P0 evidence quality and optional live audit
 on:
   push:
     paths:
@@ -8,14 +8,22 @@ on:
 permissions:
   contents: read
 jobs:
-  quality:
+  regression:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 3
     steps:
       - uses: actions/checkout@v4
-      - name: Verify evidence quality policy regression
+      - name: Test relevance, source privacy, comparability and progress cache
         run: python3 -m unittest discover -s p1 -p 'test_*.py' -v
-      - name: Read-only public evidence health
+  live-audit:
+    # A failed production expansion status endpoint should NEVER be hammered on
+    # every source edit. Manual bounded read-only inspection only.
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read-only public evidence health (may report timeout as failure)
         run: python3 p1/check_public_health.py
       - name: Save sanitized health evidence
         if: always()
