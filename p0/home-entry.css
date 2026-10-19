@@ -90,3 +90,24 @@
   .judun-entry-select__item { transition: none; }
   .judun-entry-select__item:hover { transform: none; }
 }
+
+/* Original v1.2.114 mobile hero overflow: .v128-hero-copy had 439px intrinsic
+   width inside a 350px shell at 390px viewport. Fix wrapping, not brand styling. */
+@media (max-width: 520px) {
+  header.v128-brand-hero .v128-hero-copy {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+  header.v128-brand-hero .v128-hero-copy h1 {
+    max-width: 100%;
+    font-size: clamp(30px, 9.2vw, 40px);
+    overflow-wrap: normal;
+  }
+  header.v128-brand-hero .v128-hero-copy h1 span,
+  header.v128-brand-hero .v128-hero-copy p {
+    max-width: 100%;
+    white-space: normal;
+  }
+}
