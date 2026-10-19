@@ -1,0 +1,59 @@
+name: Audit public homepage structure (read-only)
+on:
+  push:
+    paths:
+      - ".github/workflows/audit-home-structure.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Inspect homepage layout landmarks without modifying production
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, re, urllib.request
+          from html.parser import HTMLParser
+          URL = "https://judun.142-93-91-214.sslip.io/"
+          req = urllib.request.Request(URL, headers={"Cache-Control":"no-cache", "User-Agent":"JUDUN-design-audit/1"})
+          with urllib.request.urlopen(req, timeout=35) as response:
+              assert response.status == 200, response.status
+              raw = response.read().decode("utf-8")
+          class Audit(HTMLParser):
+              def __init__(self):
+                  super().__init__(convert_charrefs=True)
+                  self.stack=[]; self.rows=[]; self.seq=0
+              def handle_starttag(self, tag, attrs):
+                  a = dict(attrs)
+                  self.seq+=1
+                  detail = {"tag":tag, "id":a.get("id",""), "class":a.get("class","")[:140],
+                            "href":a.get("href","")[:140], "role":a.get("role","")}
+                  node={"seq":self.seq,"detail":detail,"text":"","depth":len(self.stack)}
+                  if tag in ("h1","h2","h3","a","button","label","section","main","nav","form","input","footer","header"):
+                      self.rows.append(node)
+                  if tag not in ("input","img","br","hr","meta","link","source","area"):
+                      self.stack.append((tag,node))
+              def handle_endtag(self,tag):
+                  for i in range(len(self.stack)-1,-1,-1):
+                      if self.stack[i][0]==tag:
+                          self.stack=self.stack[:i]
+                          return
+              def handle_data(self,data):
+                  snippet=re.sub(r"\\s+"," ",data).strip()
+                  if not snippet: return
+                  for tag,node in self.stack:
+                      if tag in ("a","button","h1","h2","h3","label","section","nav"):
+                          node["text"]=(node["text"]+" "+snippet)[:120]
+          a=Audit(); a.feed(raw)
+          print("LIVE_PUBLIC_HTML_BYTES",len(raw.encode("utf-8")))
+          for row in a.rows:
+              d=row["detail"]
+              if d["tag"] in ("a","button","h1","h2","h3","label","main","nav","section","form","input","header"):
+                  # Public-facing tag summary only; no form values or visitor state
+                  print("TAG",json.dumps({"depth":row["depth"],**d,"text":row["text"][:95]},ensure_ascii=False))
+          print("AUDIT_FINISHED",len(a.rows))
+          PY
