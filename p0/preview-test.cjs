@@ -22,8 +22,7 @@ const BASE="https://judun.142-93-91-214.sslip.io/";
         fileNode:document.querySelector('#fileInput') !== null,
         consentNode:document.querySelector('#dataConsentInput') !== null,
         submitNode:document.querySelector('#submitBtn') !== null,
-        overflow:document.documentElement.scrollWidth-innerWidth,
-        mobileHeroFits:(()=>{const shell=document.querySelector('.v128-hero-shell').getBoundingClientRect();const copy=document.querySelector('.v128-hero-copy').getBoundingClientRect();const title=h1.getBoundingClientRect();return copy.width<=shell.width+2 && title.right<=innerWidth+2 && title.left>=-2})()
+        overflow:document.documentElement.scrollWidth-innerWidth
       };
     });
     if (name==='mobile') {
@@ -56,7 +55,8 @@ const BASE="https://judun.142-93-91-214.sslip.io/";
         uploadInputPreserved:input.type==='file' && !!document.querySelector('#dataConsentInput'),
         submitPreserved:!!document.querySelector('#submitBtn'),
         originalCtaRenamed:!!document.querySelector('button.v128-primary-cta')?.textContent.includes('上傳報價免費健檢'),
-        overflow:document.documentElement.scrollWidth-innerWidth
+        overflow:document.documentElement.scrollWidth-innerWidth,
+        mobileHeroFits:(()=>{const shell=document.querySelector('.v128-hero-shell').getBoundingClientRect();const copy=document.querySelector('.v128-hero-copy').getBoundingClientRect();const title=h1.getBoundingClientRect();return copy.width<=shell.width+2 && title.right<=innerWidth+2 && title.left>=-2})()
       };
     });
     assert.equal(after.heading,before.heading,'brand heading changed');
