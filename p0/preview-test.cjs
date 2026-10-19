@@ -28,6 +28,8 @@ const BASE="https://judun.142-93-91-214.sslip.io/";
     if (name==='mobile') {
       const d=await page.evaluate(()=>{const h=document.querySelector('header.hero-section.v128-brand-hero h1');return {html:h.outerHTML.slice(0,900),styles:[h,...h.querySelectorAll('*')].slice(0,6).map(x=>({tag:x.tagName,cls:x.className,font:getComputedStyle(x).fontSize,whiteSpace:getComputedStyle(x).whiteSpace,width:x.getBoundingClientRect().width,scrollWidth:x.scrollWidth}))}});
       console.log('MOBILE_H1_BEFORE_META',JSON.stringify(d));
+      const ancestors=await page.evaluate(()=>{let h=document.querySelector('header.hero-section.v128-brand-hero h1'),p=h;const result=[];while(p && result.length<6){const b=p.getBoundingClientRect();const s=getComputedStyle(p);result.push({tag:p.tagName,cls:p.className,rect:[b.left,b.right,b.width],width:s.width,maxWidth:s.maxWidth,overflow:s.overflow,textAlign:s.textAlign,fontSize:s.fontSize});p=p.parentElement;}return result});
+      console.log('MOBILE_HERO_ANCESTORS',JSON.stringify(ancestors));
     }
     assert.match(before.heading,/用專業/);
     assert(before.fileNode && before.consentNode && before.submitNode);
