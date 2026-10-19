@@ -102,9 +102,10 @@
   }
   header.v128-brand-hero .v128-hero-copy h1 {
     max-width: 100%;
-    font-size: clamp(30px, 9.2vw, 40px);
+    font-size: clamp(34px, 10vw, 41px) !important;
     overflow-wrap: normal;
   }
+  header.v128-brand-hero button.v128-primary-cta { min-height: 44px; padding-block: 10px; }
   header.v128-brand-hero .v128-hero-copy h1 span,
   header.v128-brand-hero .v128-hero-copy p {
     max-width: 100%;
