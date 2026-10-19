@@ -66,6 +66,10 @@ const BASE="https://judun.142-93-91-214.sslip.io/";
     await page.addScriptTag({path:path.resolve('p0/home-entry.js')});
     assert.equal(await page.locator('nav[data-judun-p0-entry]').count(),1);
     await page.screenshot({path:'p0/results/after-'+name+'.png',fullPage:false});
+    if (process.env.JUDUN_VISUAL_REVIEW==='1') {
+      const frame=await page.screenshot({type:'jpeg',quality:26,fullPage:false});
+      console.log('JUDUN_VISUAL_'+name.toUpperCase()+'_BASE64',frame.toString('base64'));
+    }
     // All in-page cards must work without entering customer data.
     await page.locator('nav[data-judun-p0-entry] a[href="#home-recheck"]').click();
     await page.waitForTimeout(400);
