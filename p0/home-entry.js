@@ -50,6 +50,13 @@
     changeButtonLabel(heroCta);
     changeButtonLabel(topCta);
 
+    // The original inline hero heading font sizing overrides stylesheet rules
+    // on narrow screens; reduce only its size to prevent a third broken line.
+    if (window.matchMedia && window.matchMedia("(max-width: 520px)").matches) {
+      const heading = header.querySelector(".v128-hero-copy h1");
+      if (heading) heading.style.setProperty("font-size", "clamp(34px, 10vw, 41px)", "important");
+    }
+
     // The partnership call-out remains accessible, but no longer interrupts uploading.
     if (matching.parentElement === main) {
       main.appendChild(matching);
