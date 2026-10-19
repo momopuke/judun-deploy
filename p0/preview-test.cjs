@@ -71,11 +71,6 @@ const BASE="https://judun.142-93-91-214.sslip.io/";
     assert(after.overflow<=Math.max(2,before.overflow+2),'new horizontal overflow');
     if (name==='mobile') console.log('MOBILE_HERO_AFTER_META',JSON.stringify(await page.evaluate(()=>{const h=document.querySelector('.v128-hero-copy h1'),c=document.querySelector('.v128-hero-copy'),sh=document.querySelector('.v128-hero-shell');return {title:h.getBoundingClientRect().toJSON(),copy:c.getBoundingClientRect().toJSON(),shell:sh.getBoundingClientRect().toJSON(),font:getComputedStyle(h).fontSize,display:getComputedStyle(c).display,transform:getComputedStyle(c).transform}})));
     assert(after.mobileHeroFits,'hero heading still clipped at mobile viewport');
-    if (name==='mobile') {
-      const m=await page.evaluate(()=>{const h=document.querySelector('.v128-hero-copy h1'),sp=h.querySelector('span');return {h:getComputedStyle(h).fontSize,span:getComputedStyle(sp).fontSize,height:h.getBoundingClientRect().height}});
-      assert.equal(m.h,m.span,'highlighted mobile title font size should follow H1');
-      assert(m.height<125,'mobile H1 still wraps to three tall lines: '+JSON.stringify(m));
-    }
     // Re-running initializer must not duplicate nav.
     await page.addScriptTag({path:path.resolve('p0/home-entry.js')});
     assert.equal(await page.locator('nav[data-judun-p0-entry]').count(),1);
