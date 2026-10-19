@@ -25,6 +25,10 @@ const BASE="https://judun.142-93-91-214.sslip.io/";
         overflow:document.documentElement.scrollWidth-innerWidth
       };
     });
+    if (name==='mobile') {
+      const d=await page.evaluate(()=>{const h=document.querySelector('header.hero-section.v128-brand-hero h1');return {html:h.outerHTML.slice(0,900),styles:[h,...h.querySelectorAll('*')].slice(0,6).map(x=>({tag:x.tagName,cls:x.className,font:getComputedStyle(x).fontSize,whiteSpace:getComputedStyle(x).whiteSpace,width:x.getBoundingClientRect().width,scrollWidth:x.scrollWidth}))}});
+      console.log('MOBILE_H1_BEFORE_META',JSON.stringify(d));
+    }
     assert.match(before.heading,/用專業/);
     assert(before.fileNode && before.consentNode && before.submitNode);
     await page.screenshot({path:'p0/results/before-'+name+'.png',fullPage:false});
