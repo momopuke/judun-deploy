@@ -92,6 +92,7 @@ async function continueToPriceAfterVerifiedUnlock(completion, adapter, timeoutMs
     (!opts || !opts.signal.aborted)
   );
   const io = {
+    isCurrent: stillCurrent,
     mount: (target,opts) => {
       if (!stillCurrent(opts)) throw Error("REPORT_CONTEXT_CHANGED");
       return adapter.renderAuthorizedReport(target, {
@@ -111,6 +112,10 @@ async function continueToPriceAfterVerifiedUnlock(completion, adapter, timeoutMs
     },
     scroll: (element,opts) => {
       if (!stillCurrent(opts)) throw Error("REPORT_CONTEXT_CHANGED");
+      // A hidden/detached section after focus must never be scrolled as if
+      // the user is viewing the latest authorized report.
+      if (priceSectionVisible(reportRoot, PRICE_SECTION) !== element)
+        throw Error("STALE_OR_HIDDEN_PRICE_SECTION");
       if (typeof element.scrollIntoView !== "function") throw Error("NOT_SCROLLABLE");
       element.scrollIntoView({behavior:"auto",block:"start"});
     }
