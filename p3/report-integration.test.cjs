@@ -172,6 +172,35 @@ test("section hidden during focus never receives a stale scroll or success",asyn
   assert.deepEqual(result,{ok:false,reason:"REPORT_UI_RENDER_FAILED"});
   assert.deepEqual(calls,[["focused-then-hidden"]]);
 });
+test("duplicate verified completion callbacks share one active render and focus",async()=>{
+  const {el,calls:uiCalls}=fakeSection();
+  let release;
+  const gate=new Promise(resolve=>{release=resolve;});
+  const {adapter,calls}=makeAdapter({section:el,mount:()=>gate});
+  const first=continueToPriceAfterVerifiedUnlock(serverReady(),adapter,1000);
+  const second=continueToPriceAfterVerifiedUnlock(serverReady(),adapter,1000);
+  await Promise.resolve();
+  assert.equal(calls.filter(x=>x[0]==="mount").length,1);
+  release();
+  const [one,two]=await Promise.all([first,second]);
+  assert.deepEqual(one,{ok:true,target:"report-price-items"});
+  assert.deepEqual(two,one);
+  assert.deepEqual(uiCalls, [["focus",true],["scroll","start"]]);
+});
+test("repeated notification cannot reuse active navigation for unverified entitlement",async()=>{
+  const {el}=fakeSection();
+  let release;
+  const gate=new Promise(resolve=>{release=resolve;});
+  const {adapter,calls}=makeAdapter({section:el,mount:()=>gate});
+  const verified=continueToPriceAfterVerifiedUnlock(serverReady(),adapter,1000);
+  const invalid=await continueToPriceAfterVerifiedUnlock({
+    ...serverReady(),entitlementVerified:false
+  },adapter,1000);
+  assert.deepEqual(invalid,{ok:false,reason:"NOT_VERIFIED_OR_NOT_READY"});
+  assert.equal(calls.filter(x=>x[0]==="mount").length,1);
+  release();
+  assert.deepEqual(await verified,{ok:true,target:"report-price-items"});
+});
 test("timeout never calls focus and must pass an abort signal to real report mount",async()=>{
   let signal;
   const {el,calls}=fakeSection();
