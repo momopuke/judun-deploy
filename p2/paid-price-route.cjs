@@ -14,8 +14,8 @@ function postUnlockTarget(input) {
   if (!PAID_TIERS.has(input.tier)) return null;
   if (input.paymentPending === true) return null;
   if (input.reportReady !== true) return null;
-  if (["failed", "partial", "interrupted", "running", "pending"]
-      .includes(input.unlockTaskState)) return null;
+  // Fail closed: an absent/unknown task state is not proof of completion.
+  if (input.unlockTaskState !== "completed") return null;
   return PRICE_SECTION;
 }
 
