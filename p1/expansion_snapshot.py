@@ -89,8 +89,8 @@ def _parse_time(value):
 
 def read_public_snapshot(path: str | Path, *, now_epoch: float | None = None, stale_after: int = 180):
     """O(1) bounded read and stale warning; never restarts workers or replays data."""
-    if not isinstance(stale_after, int) or stale_after < 1:
-        raise ValueError("stale_after must be positive")
+    if type(stale_after) is not int or stale_after < 1:
+        raise ValueError("stale_after must be a positive integer")
     try:
         with open(path, "rb") as fh:
             raw = fh.read(MAX_BYTES + 1)
@@ -114,10 +114,18 @@ def read_public_snapshot(path: str | Path, *, now_epoch: float | None = None, st
         if last is not None and last > now + 60:
             raise ValueError("future-dated progress")
         age = max(0, int(now - last)) if last is not None else None
-        if state == "running" and age is None:
+        if last is not None and last > snapshot_time + 60:
+            raise ValueError("progress timestamp later than snapshot")
+        # A stale state file is no longer proof that an old idle/completed
+        # controller is alive. Preserve what it *last said* separately.
+        if snapshot_age > stale_after:
+            observed = "progress_stale" if state == "running" and age is not None and age > stale_after else "snapshot_stale"
+        elif state == "running" and age is None:
             observed = "progress_unknown"
         elif state == "running" and age > stale_after:
             observed = "progress_stale"
+        elif state == "completed" and p.get("checkpoint_verified") is not True:
+            observed = "completion_unverified"
         else:
             observed = state
         for count in ALLOWED_COUNTS:
@@ -135,6 +143,11 @@ def read_public_snapshot(path: str | Path, *, now_epoch: float | None = None, st
             "updated_at": p["updated_at"],
             "snapshot_age_seconds": snapshot_age,
             "snapshot_stale": snapshot_age > stale_after,
+            "status_confident": (
+                snapshot_age <= stale_after and observed not in (
+                    "progress_unknown", "progress_stale", "completion_unverified"
+                )
+            ),
             "phase": phase,
             **{k: p[k] for k in ALLOWED_COUNTS},
             "checkpoint_verified": p.get("checkpoint_verified") is True,
