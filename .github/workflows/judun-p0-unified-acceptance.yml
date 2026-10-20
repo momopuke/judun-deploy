@@ -87,6 +87,16 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Check live-public-home in TEMPORARY browser only at five viewports
         run: node p0/preview-test.cjs
+      - name: Discover real live homepage/report integration points (read-only)
+        run: node p3/site-contract-inventory.cjs
+      - name: Save P3 safe public UI inventory
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: judun-p3-live-dom-integration-inventory
+          path: p3/results/site-contract-inventory.json
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Store desktop, tablet and mobile QA screenshots
         if: always()
         uses: actions/upload-artifact@v4
