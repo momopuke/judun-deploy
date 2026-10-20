@@ -101,11 +101,14 @@ class CompleteQuoteReportTests(unittest.TestCase):
             quotes, sources, offset=30)
         self.assertEqual(resumed["status"], "QUOTE_SNAPSHOT_CHANGED")
 
-    def test_misaligned_arrays_fail_closed(self):
-        for src in ([], [[],[]]):
-            out=render_authorized_quote_items([quote(0)],src)
-            self.assertEqual(out["status"],"INVALID_INPUT")
-            self.assertEqual(out["html"],"")
+    def test_misaligned_evidence_arrays_preserve_original_quote_without_matching(self):
+        for src in ([], [[], []]):
+            out = render_authorized_quote_items([quote(0)], src)
+            self.assertEqual(out["status"], "SOURCE_REVIEW_REQUIRED")
+            self.assertIn("第 1 項：牆面油漆", out["html"])
+            self.assertIn("公開來源資料未就緒", out["html"])
+            self.assertEqual(out["source_alerts"], [0])
+            self.assertNotIn("公開來源與價差依據", out["html"])
 
     def test_no_total_is_fabricated_from_unit_amounts(self):
         out=render_authorized_quote_items([quote(0),quote(1)],[[],[]])
