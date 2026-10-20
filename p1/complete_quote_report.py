@@ -9,6 +9,7 @@ the response status is COMPLETE. This avoids silently truncating line items.
 """
 from __future__ import annotations
 
+from dataclasses import dataclass
 from html import escape
 import hashlib
 import json
@@ -88,6 +89,18 @@ def source_association_digest(rows: list, expected_items: int) -> tuple[str, boo
     return digest.hexdigest(), True
 
 
+@dataclass(frozen=True)
+class _TrustedOrchestratorSnapshot:
+    # This internal optimization is never accepted from a public route.
+    # The top-level orchestrator verifies source and quote hashes again
+    # before releasing its output to catch concurrent in-place changes.
+    quote_rows: list
+    source_rows_by_item: list
+    quote_digest: str
+    source_digest: str
+    sources_safe: bool
+
+
 def render_authorized_quote_items(
     quote_rows: list,
     source_rows_by_item: list,
@@ -97,6 +110,7 @@ def render_authorized_quote_items(
     expected_quote_digest: str | None = None,
     expected_source_digest: str | None = None,
     prior_source_alerts: list[int] | None = None,
+    _trusted_orchestrator_snapshot: _TrustedOrchestratorSnapshot | None = None,
 ) -> dict:
     """Render all original quote lines across pages; no speculative totals."""
     empty = {
@@ -111,9 +125,18 @@ def render_authorized_quote_items(
             or type(offset) is not int or offset < 0 or offset > len(quote_rows)):
         return empty
 
-    digest = quote_snapshot_digest(quote_rows)
-    source_digest, sources_safe = source_association_digest(
-        source_rows_by_item, len(quote_rows))
+    prepared = _trusted_orchestrator_snapshot
+    if (type(prepared) is _TrustedOrchestratorSnapshot
+            and prepared.quote_rows is quote_rows
+            and prepared.source_rows_by_item is source_rows_by_item):
+        digest = prepared.quote_digest
+        source_digest = prepared.source_digest
+        sources_safe = prepared.sources_safe
+    else:
+        # Standalone continuation always hashes current source and quote data.
+        digest = quote_snapshot_digest(quote_rows)
+        source_digest, sources_safe = source_association_digest(
+            source_rows_by_item, len(quote_rows))
     if ((offset > 0 and expected_quote_digest != digest)
             or (expected_quote_digest is not None and expected_quote_digest != digest)):
         return {**empty, "status": "QUOTE_SNAPSHOT_CHANGED",
@@ -300,6 +323,12 @@ def render_complete_authorized_quote_report(
         coverage = "SOURCE_CANDIDATES_PRESENT"
     all_pages = []
     cumulative_alerts = []
+    checked_quote_digest = quote_snapshot_digest(quote_rows)
+    checked_source_digest, sources_safe = source_association_digest(
+        source_rows_by_item, len(quote_rows))
+    prepared = _TrustedOrchestratorSnapshot(
+        quote_rows, source_rows_by_item,
+        checked_quote_digest, checked_source_digest, sources_safe)
     digest = None
     sources_digest = None
     offset = 0
@@ -312,6 +341,7 @@ def render_complete_authorized_quote_report(
             expected_quote_digest=digest,
             expected_source_digest=sources_digest,
             prior_source_alerts=cumulative_alerts,
+            _trusted_orchestrator_snapshot=prepared,
         )
         if page["status"] not in ("COMPLETE", "MORE_ITEMS", "SOURCE_REVIEW_REQUIRED"):
             return {**invalid, "status": page["status"]}
@@ -320,6 +350,14 @@ def render_complete_authorized_quote_report(
         digest = page["quote_digest"]
         sources_digest = page["source_digest"]
         if page["next_offset"] is None:
+            # Detect concurrent in-place modifications before releasing any
+            # accumulated HTML. This avoids repeatedly hashing the same 20k
+            # sources for every 30 quote items on a small VPS.
+            current_source_digest, _ = source_association_digest(
+                source_rows_by_item, len(quote_rows))
+            if (quote_snapshot_digest(quote_rows) != checked_quote_digest
+                    or current_source_digest != checked_source_digest):
+                return {**invalid, "status": "SOURCE_SNAPSHOT_CHANGED"}
             complete = page["complete"]
             return {
                 "status": "COMPLETE" if complete else "SOURCE_REVIEW_REQUIRED",
