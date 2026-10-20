@@ -102,6 +102,40 @@ class EvidencePresentationTests(unittest.TestCase):
         self.assertIn("NT$20,000", html)
         self.assertIn("11.1%", html)
 
+    def test_negative_gap_is_labelled_lower_without_confusing_minus_currency(self):
+        source = valid_case()
+        quote = {**customer_quote(source), "amount": "NT$16,000"}
+        view = build_public_evidence_view(
+            source, quote, approved_record_lookup=approved_lookup(source))
+        self.assertEqual(view["difference_twd"], "-2000")
+        self.assertEqual(view["difference_percent"], "-11.1")
+        html = render_public_evidence_html(view)
+        self.assertIn("低於公開來源價格 NT$2,000", html)
+        self.assertIn("11.1%", html)
+        self.assertNotIn("NT$-2000", html)
+
+    def test_equal_price_has_explicit_equal_label(self):
+        source = valid_case()
+        quote = {**customer_quote(source), "amount": "NT$18,000"}
+        view = build_public_evidence_view(
+            source, quote, approved_record_lookup=approved_lookup(source))
+        self.assertEqual(view["difference_twd"], "0")
+        html = render_public_evidence_html(view)
+        self.assertIn("與公開來源價格相同", html)
+
+    def test_renderer_rejects_tampered_difference_claim(self):
+        source = valid_case()
+        view = build_public_evidence_view(
+            source, customer_quote(source),
+            approved_record_lookup=approved_lookup(source))
+        for modification in ({"difference_twd": "99000"},
+                             {"difference_percent": "991.2"},
+                             {"difference_twd": "NaN"},
+                             {"difference_percent": "Infinity"}):
+            with self.subTest(modification=modification):
+                self.assertEqual(
+                    render_public_evidence_html({**view, **modification}), "")
+
     def test_modified_source_cannot_reuse_approval(self):
         original = valid_case()
         approved = approved_lookup(original)
