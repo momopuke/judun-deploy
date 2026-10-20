@@ -83,8 +83,19 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install isolated browser
         run: |
-          npm install --no-save playwright@1.56.1
+          npm install --no-save playwright@1.56.1 esbuild@0.25.12
           npx playwright install --with-deps chromium
+      - name: Produce actual browser-loadable P3 navigation script (staging only)
+        run: npx esbuild p3/report-browser-entry.cjs --bundle --platform=browser --format=iife --target=es2020 --minify --outfile=p3/results/judun-p3-price-navigation.browser.js
+      - name: Exercise browser bundle on isolated authorized-report fixture
+        run: node p3/browser-bundle-smoke.cjs
+      - name: Save browser integration candidate (NOT deployed)
+        uses: actions/upload-artifact@v4
+        with:
+          name: judun-p3-browser-navigation-candidate-NOT-DEPLOYED
+          path: p3/results/judun-p3-price-navigation.browser.js
+          if-no-files-found: error
+          retention-days: 14
       - name: Check live-public-home in TEMPORARY browser only at five viewports
         run: node p0/preview-test.cjs
       - name: Discover real live homepage/report integration points (read-only)
