@@ -5,6 +5,7 @@ on:
       - "p0/**"
       - "p1/**"
       - "p2/**"
+      - "p3/**"
       - "P0_UNIFIED_README.md"
       - ".github/workflows/judun-p0-unified-acceptance.yml"
   pull_request:
@@ -12,6 +13,7 @@ on:
       - "p0/**"
       - "p1/**"
       - "p2/**"
+      - "p3/**"
       - "P0_UNIFIED_README.md"
       - ".github/workflows/judun-p0-unified-acceptance.yml"
   workflow_dispatch:
@@ -34,7 +36,7 @@ jobs:
               ["git", "diff", "--name-only", "origin/main...HEAD"], text=True
           ).splitlines()
           allowed = (
-              "p0/", "p1/", "p2/",
+              "p0/", "p1/", "p2/", "p3/",
           )
           exact = {
               "P0_UNIFIED_README.md",
@@ -61,12 +63,16 @@ jobs:
         run: node --test p2/paid-price-route.test.cjs
       - name: Observe published free entry WITHOUT any payment/upload
         run: python3 p2/audit_public_funnel.py
+      - name: P3 read-only live integration and release gate (never deploy)
+        run: python3 p3/production_readiness.py
       - name: Save non-sensitive audit
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: judun-unified-public-funnel-observation
-          path: p2/results/*.json
+          path: |
+            p2/results/*.json
+            p3/results/*.json
           if-no-files-found: ignore
           retention-days: 14
   homepage-preview:
