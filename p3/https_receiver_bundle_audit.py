@@ -163,6 +163,8 @@ def audit_embedded_runtime(z: ZipFile, lock: dict, runtime_identity: list) -> di
             if manifest.get("source_tree_sha256") != lock.get("runtime_tree_sha256"):
                 fail("EMBEDDED_TREE_LOCK_MISMATCH")
             inner_rows = validate_rows(manifest.get("files"))
+            if sorted(names) != sorted([*inner_rows, "DEPLOY_MANIFEST.json"]):
+                fail("EMBEDDED_FILE_INVENTORY_MISMATCH")
             if (len(inner_rows) != len(runtime_identity)
                     or computed_tree_sha(list(inner_rows.values())) != lock["runtime_tree_sha256"]):
                 fail("EMBEDDED_FILE_TABLE_MISMATCH")
