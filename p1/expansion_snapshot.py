@@ -76,8 +76,19 @@ def write_event_snapshot(path: str | Path, data: dict, *, updated_at: str | None
                     previous_time = _parse_time(previous.get("updated_at"))
                 except (TypeError, ValueError):
                     previous_time = None
-                if previous_time is not None and _parse_time(stamp) < previous_time:
-                    raise ValueError("snapshot timestamp regressed")
+                if previous_time is not None:
+                    if _parse_time(stamp) < previous_time:
+                        raise ValueError("snapshot timestamp regressed")
+                    # These counters are cumulative within one controller
+                    # lineage. An older round must never erase committed
+                    # totals, even if it carries a newer heartbeat timestamp.
+                    # A genuine epoch reset must use a new trusted snapshot
+                    # lineage rather than silently decreasing these totals.
+                    for count_key in ALLOWED_COUNTS:
+                        prior_count = previous.get(count_key)
+                        if (type(prior_count) is int and prior_count >= 0
+                                and payload[count_key] < prior_count):
+                            raise ValueError("cumulative count regressed: " + count_key)
     except FileNotFoundError:
         pass
     except (UnicodeError, json.JSONDecodeError, TypeError, KeyError):
