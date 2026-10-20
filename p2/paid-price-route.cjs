@@ -67,17 +67,21 @@ async function showVerifiedPriceSectionAsync(input, interfaces, timeoutMs = 3000
       timeoutMs <= 8000 ? timeoutMs : 3000;
   let timer;
   let expired = false;
+  // Participating UI adapters must respect signal and stop their own delayed
+  // side effects. A timeout cannot forcibly cancel arbitrary old Promises.
+  const controller = new AbortController();
+  const opts = Object.freeze({signal: controller.signal});
   try {
     const complete = async () => {
-      if (typeof interfaces.mount === "function") await interfaces.mount(target);
+      if (typeof interfaces.mount === "function") await interfaces.mount(target, opts);
       if (expired) return { ok: false, reason: "REPORT_UI_TIMEOUT" };
-      if (typeof interfaces.whenRendered === "function") await interfaces.whenRendered(target);
+      if (typeof interfaces.whenRendered === "function") await interfaces.whenRendered(target, opts);
       if (expired) return { ok: false, reason: "REPORT_UI_TIMEOUT" };
       const section = interfaces.findSection(target);
       if (!section) return { ok: false, reason: "PRICE_SECTION_NOT_RENDERED" };
-      if (typeof interfaces.focus === "function") await interfaces.focus(section);
+      if (typeof interfaces.focus === "function") await interfaces.focus(section, opts);
       if (expired) return { ok: false, reason: "REPORT_UI_TIMEOUT" };
-      if (typeof interfaces.scroll === "function") await interfaces.scroll(section);
+      if (typeof interfaces.scroll === "function") await interfaces.scroll(section, opts);
       return { ok: true, target };
     };
     return await Promise.race([
@@ -85,11 +89,13 @@ async function showVerifiedPriceSectionAsync(input, interfaces, timeoutMs = 3000
       new Promise((resolve) => {
         timer = setTimeout(() => {
           expired = true;
+          controller.abort();
           resolve({ ok: false, reason: "REPORT_UI_TIMEOUT" });
         }, wait);
       })
     ]);
   } catch (_error) {
+    controller.abort();
     return { ok: false, reason: "REPORT_UI_RENDER_FAILED" };
   } finally {
     if (timer !== undefined) clearTimeout(timer);
