@@ -248,6 +248,20 @@ class CompleteQuoteReportTests(unittest.TestCase):
         self.assertEqual(result["source_alerts"], [0])
         self.assertIn("幣別或金額待核對", result["html"])
 
+    def test_total_job_price_without_verified_quantity_remains_review_required(self):
+        for quantity in (None, 0, -1, "NaN", "Infinity", True, "25" * 80):
+            with self.subTest(quantity=quantity):
+                source = {**quote(0), "price_basis": "total_price",
+                          "quantity": quantity}
+                result = render_authorized_quote_items([source], [[]])
+                self.assertEqual(result["status"], "SOURCE_REVIEW_REQUIRED")
+                self.assertIn("第 1 項", result["html"])
+                self.assertEqual(result["source_alerts"], [0])
+        valid = {**quote(0), "price_basis": "total_price", "quantity": "25.0"}
+        good = render_authorized_quote_items([valid], [[]])
+        self.assertEqual(good["status"], "COMPLETE")
+        self.assertEqual(good["source_alerts"], [])
+
     def test_customer_precise_decimal_is_never_silently_rounded(self):
         row = {**quote(0), "amount": "NT$18000.125"}
         result = render_authorized_quote_items([row], [[]])
