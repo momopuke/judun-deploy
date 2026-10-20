@@ -73,13 +73,35 @@ def public_source_url(value: object, blocked_labels=BLOCKED_DOMAIN_LABELS) -> bo
         if p.scheme not in ("https", "http") or not p.hostname or p.username or p.password:
             return False
         host = p.hostname.rstrip(".").lower()
-        if host in ("localhost",) or not ("." in host):
+        # Reject malformed ports and local naming aliases without DNS queries.
+        try:
+            port = p.port
+        except ValueError:
+            return False
+        if port is not None and not 1 <= port <= 65535:
+            return False
+        if host == "localhost" or host.endswith((".localhost", ".local", ".internal")) or "." not in host:
             return False
         if any(label in blocked_labels for label in host.split(".")):
             return False
         try:
             ip = ip_address(host.strip("[]"))
         except ValueError:
+            # Alternate numeric IPv4 notation (127.1, 0177.0.0.1, 0x7f.1)
+            # can resolve to loopback despite ipaddress rejecting the syntax.
+            if re.fullmatch(r"(?:0x[0-9a-f]+|[0-9]+)(?:\\.(?:0x[0-9a-f]+|[0-9]+)){1,3}", host):
+                return False
+            # Well-known wildcard DNS hosts may encode a private IP in their
+            # labels. Literal rejection helps, but collector DNS checks are
+            # STILL mandatory for all actual fetches.
+            for suffix in (".nip.io", ".sslip.io"):
+                if host.endswith(suffix):
+                    literal = host[:-len(suffix)].replace("-", ".")
+                    try:
+                        decoded_ip = ip_address(literal)
+                    except ValueError:
+                        return False  # unknown wildcard encoding, fail closed
+                    return decoded_ip.is_global
             return True
         return ip.is_global
     except (ValueError, TypeError):
@@ -208,6 +230,19 @@ def html_source_link(url: str, label: str = "查看原始公開來源") -> str:
         raise ValueError("Source URL rejected")
     return '<a href="' + escape(url, quote=True) + '" target="_blank" rel="noopener noreferrer">' + escape(label) + '</a>'
 
+
+
+def html_evidence_source_link(record: dict, label: str = "查看原始公開來源") -> str:
+    """Only link to an approved public landing URL, not a redirect guess.
+
+    Uses the exact URL that passed the recorded redirect-chain checks.
+    Not a replacement for live DNS/HTTP verification by the crawler.
+    """
+    verdict = evaluate(record)
+    if verdict.status in ("REJECT", "HOLD"):
+        raise ValueError("Citation source not verified for display")
+    landing = record.get("resolved_url") or record.get("url")
+    return html_source_link(landing, label)
 
 def _canonical(value: object) -> str:
     """Strict comparison: normalize typographic width/space, not fuzzy synonyms."""
