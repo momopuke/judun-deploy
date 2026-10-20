@@ -45,9 +45,15 @@ def write_event_snapshot(path: str | Path, data: dict, *, updated_at: str | None
     # Neither a heartbeat NOR a non-running terminal-state event proves a
     # fresh completed-work checkpoint. Never synthesize progress timestamps.
     # The trusted controller must provide the last genuine progress event.
-    _parse_time(stamp)
+    stamp_epoch = _parse_time(stamp)
+    # Reject poisoned future events at WRITE time. Otherwise one bad event
+    # makes every subsequent honest event look like clock rollback.
+    if stamp_epoch > time.time() + 60:
+        raise ValueError("snapshot timestamp is in the future")
     if progress is not None:
-        _parse_time(progress)
+        progress_epoch = _parse_time(progress)
+        if progress_epoch > stamp_epoch + 60:
+            raise ValueError("progress timestamp newer than snapshot")
     payload = {"schema": SCHEMA, "status": status,
                "updated_at": stamp,
                "last_progress_at": progress}
@@ -89,6 +95,17 @@ def write_event_snapshot(path: str | Path, data: dict, *, updated_at: str | None
                         # totals, even if it carries a newer heartbeat timestamp.
                         # A genuine epoch reset must use a new trusted snapshot
                         # lineage rather than silently decreasing these totals.
+                        old_progress = previous.get("last_progress_at")
+                        if old_progress is not None and progress is not None:
+                            try:
+                                if _parse_time(progress) < _parse_time(old_progress):
+                                    raise ValueError("progress timestamp regressed")
+                            except (TypeError, ValueError) as exc:
+                                if str(exc) == "progress timestamp regressed":
+                                    raise
+                                # An invalid old clock must not be trusted to
+                                # block a fresh, validated controller record.
+                                pass
                         for count_key in ALLOWED_COUNTS:
                             prior_count = previous.get(count_key)
                             if (type(prior_count) is int and prior_count >= 0
