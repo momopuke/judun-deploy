@@ -34,4 +34,6 @@ function showVerifiedPriceSection(input, interfaces) {
   return { ok: true, target };
 }
 
-module.exports = { PRICE_SECTION, postUnlockTarget, showVerifiedPriceSection };
+const api = Object.freeze({ PRICE_SECTION, postUnlockTarget, showVerifiedPriceSection });
+if (typeof module !== "undefined" && module.exports) module.exports = api;
+if (typeof window !== "undefined") window.JudunPaidNavigation = api;
