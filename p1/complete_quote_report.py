@@ -58,12 +58,13 @@ def render_authorized_quote_items(
     offset: int = 0,
     approved_record_lookup=None,
     expected_quote_digest: str | None = None,
+    prior_source_alerts: list[int] | None = None,
 ) -> dict:
     """Render all original quote lines across pages; no speculative totals."""
     empty = {
         "status": "INVALID_INPUT", "html": "", "next_offset": None,
         "complete": False, "items_rendered": 0, "source_alerts": [],
-        "quote_digest": None,
+        "page_source_alerts": [], "quote_digest": None,
     }
     if (not isinstance(quote_rows, list)
             or not isinstance(source_rows_by_item, list)
@@ -72,6 +73,17 @@ def render_authorized_quote_items(
         return empty
 
     digest = quote_snapshot_digest(quote_rows)
+    # A later page must receive all earlier review flags. Without a verified
+    # cumulative state it may only be described as an incomplete continuation.
+    if offset > 0 and (not isinstance(prior_source_alerts, list)
+                       or any(type(i) is not int or i < 0 or i >= offset
+                              for i in prior_source_alerts)
+                       or len(prior_source_alerts) != len(set(prior_source_alerts))):
+        return {**empty, "status": "CONTINUATION_STATE_REQUIRED",
+                "quote_digest": digest}
+    if offset == 0 and prior_source_alerts not in (None, []):
+        return {**empty, "status": "INVALID_CONTINUATION_STATE",
+                "quote_digest": digest}
     if ((offset > 0 and expected_quote_digest != digest)
             or (expected_quote_digest is not None and expected_quote_digest != digest)):
         return {**empty, "status": "QUOTE_SNAPSHOT_CHANGED",
@@ -81,7 +93,7 @@ def render_authorized_quote_items(
     # Never associate sources with the wrong customer quote: if arrays are
     # misaligned, preserve every quote line but suppress ALL source matching.
     aligned = len(quote_rows) == len(source_rows_by_item)
-    source_alerts = []
+    page_alerts = []
     markup = [
         '<section class="judun-complete-quote-lines" aria-label="完整估價工項明細">',
         '<h2>完整估價工項明細</h2>',
@@ -97,7 +109,7 @@ def render_authorized_quote_items(
                 '<p>本工項資料不完整，請核對原始報價，不能據此計算價差。</p>'
                 '</article>'
             )
-            source_alerts.append(i)
+            page_alerts.append(i)
             continue
 
         name = _label(row.get("item_name"), "工項名稱未辨識")
@@ -125,7 +137,7 @@ def render_authorized_quote_items(
 
         # Missing source list must not erase a customer's own quoted item.
         if not isinstance(sources, list):
-            source_alerts.append(i)
+            page_alerts.append(i)
             markup.append('<p>公開來源資料未就緒；本工項仍保留於完整版。</p></article>')
             continue
         if not sources:
@@ -139,7 +151,7 @@ def render_authorized_quote_items(
             approved_record_lookup=approved_record_lookup,
         )
         if evidence["status"] not in ("COMPLETE",):
-            source_alerts.append(i)
+            page_alerts.append(i)
             markup.append(
                 '<p>本工項公開來源仍待分頁核對，不能將此報告視為證據已完整呈現。</p>'
             )
@@ -148,6 +160,7 @@ def render_authorized_quote_items(
 
     markup.append('</section>')
     next_offset = finish if finish < len(quote_rows) else None
+    source_alerts = list(prior_source_alerts or []) + page_alerts
     complete = next_offset is None and not source_alerts
     status = "COMPLETE" if complete else "MORE_ITEMS" if next_offset is not None else "SOURCE_REVIEW_REQUIRED"
     if next_offset is not None:
@@ -161,5 +174,6 @@ def render_authorized_quote_items(
         "complete": complete,
         "items_rendered": finish - offset,
         "source_alerts": source_alerts,
+        "page_source_alerts": page_alerts,
         "quote_digest": digest,
     }
