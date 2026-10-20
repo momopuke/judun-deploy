@@ -99,6 +99,8 @@ jobs:
         run: |
           npm install --no-save playwright@1.56.1 esbuild@0.25.12
           npx playwright install --with-deps chromium
+      - name: Review exact live completion callback body before E2E fixture
+        run: node p3/review-live-status-flow.cjs
       - name: Produce actual browser-loadable P3 navigation script (staging only)
         run: npx esbuild p3/report-browser-entry.cjs --bundle --platform=browser --format=iife --target=es2020 --minify --outfile=p3/results/judun-p3-price-navigation.browser.js
       - name: Exercise browser bundle on isolated authorized-report fixture
@@ -124,8 +126,6 @@ jobs:
           node p3/actual-homepage-staging-smoke.cjs \
             "$RUNNER_TEMP_DIR/judun-p3-v12114-original.html" \
             "$RUNNER_TEMP_DIR/judun-p3-v12114-patched.html"
-      - name: Review exact live completion callback body before E2E fixture
-        run: node p3/review-live-status-flow.cjs
       - name: Check live-public-home in TEMPORARY browser only at five viewports
         run: node p0/preview-test.cjs
       - name: Review published unlock success branch source (read-only)
