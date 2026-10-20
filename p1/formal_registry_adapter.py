@@ -10,6 +10,7 @@ from public HTTP parameters, reports, uploads, or browser JS.
 """
 from __future__ import annotations
 
+from contextlib import closing
 from datetime import datetime
 from pathlib import Path
 import re
@@ -55,7 +56,7 @@ class ReadOnlyFormalApprovalRegistry:
         try:
             # URI mode=ro enforces read-only even when the service normally has
             # filesystem write permission. SQLite will not create a missing DB.
-            with sqlite3.connect(self._path.as_uri() + "?mode=ro", uri=True, timeout=1.0) as db:
+            with closing(sqlite3.connect(self._path.as_uri() + "?mode=ro", uri=True, timeout=1.0)) as db:
                 db.execute("PRAGMA query_only = ON")
                 rows = db.execute(
                     "SELECT evidence_id, fingerprint, approval_state, "
