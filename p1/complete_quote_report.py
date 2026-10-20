@@ -114,6 +114,10 @@ def render_authorized_quote_items(
     digest = quote_snapshot_digest(quote_rows)
     source_digest, sources_safe = source_association_digest(
         source_rows_by_item, len(quote_rows))
+    if ((offset > 0 and expected_quote_digest != digest)
+            or (expected_quote_digest is not None and expected_quote_digest != digest)):
+        return {**empty, "status": "QUOTE_SNAPSHOT_CHANGED",
+                "quote_digest": digest}
     # A later page must receive all earlier review flags. Without a verified
     # cumulative state it may only be described as an incomplete continuation.
     if offset > 0 and (not isinstance(prior_source_alerts, list)
@@ -124,10 +128,6 @@ def render_authorized_quote_items(
                 "quote_digest": digest}
     if offset == 0 and prior_source_alerts not in (None, []):
         return {**empty, "status": "INVALID_CONTINUATION_STATE",
-                "quote_digest": digest}
-    if ((offset > 0 and expected_quote_digest != digest)
-            or (expected_quote_digest is not None and expected_quote_digest != digest)):
-        return {**empty, "status": "QUOTE_SNAPSHOT_CHANGED",
                 "quote_digest": digest}
 
     if ((offset > 0 and expected_source_digest != source_digest)
