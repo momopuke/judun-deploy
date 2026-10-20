@@ -10,7 +10,10 @@ the HTTPS v3 receiver, or treat HTTP 200 health as deployment authorization.
 """
 from __future__ import annotations
 
+import base64
+import binascii
 import hashlib
+from io import BytesIO
 import json
 from pathlib import Path, PurePosixPath
 import re
@@ -25,6 +28,16 @@ MAX_ARCHIVE = 512 * 1024 * 1024
 MAX_UNCOMPRESSED = 1024 * 1024 * 1024
 MAX_COUNT = 3000
 MAX_JSON = 1024 * 1024
+MAX_EMBEDDED_BUNDLE = 100 * 1024 * 1024
+MAX_EMBEDDED_SCRIPT = 180 * 1024 * 1024
+REQUIRED_EMBEDDED_FILES = frozenset((
+    "data_expansion_web.py", "deployment_integrity.py", "evidence_store.py",
+    "run_data_expansion.sh", "public_quote_evidence.json",
+    "data_expansion_controller/controller.py",
+    "data_expansion_controller/source_registry.json",
+    "data_expansion_controller/discovery_queries.json",
+    "data_expansion_controller/README.md",
+))
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
 ARTIFACT = re.compile(r"^JUDUN-[A-Za-z0-9._-]{1,120}$")
 
@@ -89,6 +102,78 @@ def validate_rows(rows: object) -> dict[str, dict]:
             fail("MALFORMED_MANIFEST_FILE_IDENTITY")
         index[name] = row
     return index
+
+
+
+def audit_embedded_runtime(z: ZipFile, lock: dict, runtime_identity: list) -> dict:
+    """Match R3.3 BUILD_PAYLOAD.ps1's embedded ZIP and manifest evidence."""
+    script_path = "system_files/deploy_paid_test.sh"
+    try:
+        entry = z.getinfo(script_path)
+    except KeyError:
+        fail("MISSING_EMBEDDED_DEPLOY_SCRIPT")
+    if entry.file_size > MAX_EMBEDDED_SCRIPT:
+        fail("EMBEDDED_SCRIPT_TOO_LARGE")
+    script = z.read(script_path)
+    if (b"__JUDUN_RUNTIME_ZIP_B64__" in script or
+            b"R3.3 embedded data-expansion runtime" not in script):
+        fail("MISSING_RUNTIME_EMBED_MARKER")
+    start_tag = b"<<'JUDUN_RUNTIME_B64'\\n"
+    end_tag = b"\\nJUDUN_RUNTIME_B64"
+    start = script.find(start_tag)
+    if start < 0:
+        fail("MISSING_RUNTIME_BASE64")
+    start += len(start_tag)
+    end = script.find(end_tag, start)
+    if end < 0 or script.find(start_tag, start) >= 0:
+        fail("AMBIGUOUS_RUNTIME_BASE64")
+    encoded = script[start:end].replace(b"\\r", b"").replace(b"\\n", b"")
+    if len(encoded) > (MAX_EMBEDDED_BUNDLE * 4 // 3 + 8):
+        fail("EMBEDDED_BUNDLE_TOO_LARGE")
+    try:
+        blob = base64.b64decode(encoded, validate=True)
+    except (ValueError, binascii.Error):
+        fail("INVALID_RUNTIME_BASE64")
+    if len(blob) > MAX_EMBEDDED_BUNDLE:
+        fail("EMBEDDED_BUNDLE_TOO_LARGE")
+    if (type(lock.get("runtime_bundle_bytes")) is not int
+            or len(blob) != lock["runtime_bundle_bytes"]
+            or digest(blob) != lock.get("runtime_bundle_sha256")):
+        fail("EMBEDDED_RUNTIME_LOCK_DIGEST_MISMATCH")
+    try:
+        with ZipFile(BytesIO(blob)) as inner:
+            metadata = inner.infolist()
+            if len(metadata) > MAX_COUNT or sum(e.file_size for e in metadata) > MAX_UNCOMPRESSED:
+                fail("EMBEDDED_ZIP_RESOURCE_LIMIT")
+            names = [safe_path(info.filename) for info in metadata]
+            if any(e.is_dir() or stat.S_IFMT(e.external_attr >> 16) == stat.S_IFLNK for e in metadata):
+                fail("UNSAFE_EMBEDDED_ENTRY")
+            if (len(names) != len(set(names))
+                    or not REQUIRED_EMBEDDED_FILES.issubset(names)
+                    or "DEPLOY_MANIFEST.json" not in names):
+                fail("INCOMPLETE_EMBEDDED_RUNTIME")
+            manifest = read_json(inner, "DEPLOY_MANIFEST.json")
+            for field in ("artifact_id", "version", "build_signature", "build_instance_id"):
+                if manifest.get(field) != lock.get(field):
+                    fail("EMBEDDED_RUNTIME_IDENTITY_MISMATCH")
+            if manifest.get("source_tree_sha256") != lock.get("runtime_tree_sha256"):
+                fail("EMBEDDED_TREE_LOCK_MISMATCH")
+            inner_rows = validate_rows(manifest.get("files"))
+            if (len(inner_rows) != len(runtime_identity)
+                    or computed_tree_sha(list(inner_rows.values())) != lock["runtime_tree_sha256"]):
+                fail("EMBEDDED_FILE_TABLE_MISMATCH")
+            for entry in runtime_identity:
+                target = inner_rows.get(entry["path"])
+                if target is None or target["size"] != entry["size"] or target["sha256"] != entry["sha256"]:
+                    fail("EMBEDDED_LOCK_FILE_IDENTITY_MISMATCH")
+                if entry["path"] in names:
+                    n, checksum = file_fingerprint(inner, entry["path"])
+                    if n != entry["size"] or checksum != entry["sha256"]:
+                        fail("EMBEDDED_FILE_BYTES_MISMATCH")
+            return {"embedded_runtime_files": len(inner_rows),
+                    "embedded_runtime_sha256_verified": True}
+    except (BadZipFile, OSError, EOFError, RuntimeError):
+        fail("UNREADABLE_EMBEDDED_ZIP")
 
 
 def inspect_bundle(path: Path, *, expected_base_artifact: str,
@@ -192,6 +277,7 @@ def inspect_bundle(path: Path, *, expected_base_artifact: str,
                 })
             if computed_tree_sha(runtime_identity) != lock.get("runtime_tree_sha256"):
                 fail("RUNTIME_TREE_DIGEST_MISMATCH")
+            embedded = audit_embedded_runtime(z, lock, runtime_identity)
             return {
                 "status": "BUNDLE_VALIDATED_OFFLINE_ONLY",
                 "package_artifact": manifest["artifact_id"],
@@ -199,6 +285,7 @@ def inspect_bundle(path: Path, *, expected_base_artifact: str,
                 "build_instance_id": manifest["build_instance_id"],
                 "managed_package_files": len(rows),
                 "locked_runtime_files": len(runtime_identity),
+                **embedded,
                 "preserved_formal_sha256_verified": True,
                 "receiver": "HTTPS_v3_application_zip",
                 "receiver_authentication_verified": False,
