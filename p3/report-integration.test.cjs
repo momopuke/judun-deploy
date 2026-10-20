@@ -102,6 +102,21 @@ test("missing or hidden price tab is never treated as a completed navigation",as
     assert.deepEqual(result,{ok:false,reason:"PRICE_SECTION_NOT_RENDERED"},mode);
   }
 });
+test("computed CSS visibility cannot masquerade as a visible price section",async()=>{
+  for(const hiddenStyle of [
+    {visibility:"hidden",display:"block"},
+    {visibility:"collapse",display:"block"},
+    {visibility:"visible",display:"none"}
+  ]){
+    const {el,calls}=fakeSection();
+    el.ownerDocument={defaultView:{getComputedStyle:()=>hiddenStyle}};
+    const {adapter}=makeAdapter({section:el});
+    const result=await continueToPriceAfterVerifiedUnlock(serverReady(),adapter);
+    assert.deepEqual(result,{ok:false,reason:"PRICE_SECTION_NOT_RENDERED"});
+    assert.deepEqual(calls,[]);
+  }
+});
+
 test("asynchronous report mount and ready callback complete before focusing section",async()=>{
   let visible=null,release;
   const pending=new Promise(resolve=>{release=resolve});
