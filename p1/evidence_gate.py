@@ -557,9 +557,9 @@ def source_total_quantity_supported(source: dict) -> bool:
     if not target_qty.is_finite() or target_qty <= 0:
         return False
     quantity_re = re.compile(
-        r"(?<![\\d.])(\\d{1,7}(?:\\.\\d{1,4})?)\\s*" + re.escape(unit)
+        r"(?<![\d.])(\d{1,7}(?:\.\d{1,4})?)\s*" + re.escape(unit)
     )
-    for clause in re.split(r"[。；;\\r\\n]+", body[:3500]):
+    for clause in re.split(r"[。；;\r\n]+", body[:3500]):
         matching_prices = []
         for found in _SOURCE_PRICE_PATTERN.finditer(clause):
             parsed = None
