@@ -12,7 +12,7 @@ from __future__ import annotations
 import hashlib
 import json
 
-from evidence_display import fingerprint_approval_source
+from evidence_display import fingerprint_approval_source, _APPROVED_SOURCE_KEYS
 from report_evidence_section import (
     MAX_SOURCE_ROWS,
     render_report_public_price_sources,
@@ -34,6 +34,17 @@ def source_row_snapshot_marker(source: object) -> str:
             return "QA:" + fingerprint_approval_source(source)
         except (TypeError, ValueError):
             pass
+        # Bound malformed fallback to fields the evidence gate and renderer
+        # actually consume. Do not serialize arbitrary crawler metadata,
+        # unexpected large attachments or unrelated PII as part of a digest.
+        source = {key: source.get(key) for key in _APPROVED_SOURCE_KEYS}
+        for value in source.values():
+            if isinstance(value, str) and len(value) > 65536:
+                raise ValueError("oversized public source field")
+            if isinstance(value, list) and len(value) > 12:
+                raise ValueError("oversized public source list")
+    elif not (source is None or type(source) in (str, int, float, bool, list)):
+        raise ValueError("unsupported public source row")
     try:
         raw = json.dumps(
             source, sort_keys=True, ensure_ascii=False,
