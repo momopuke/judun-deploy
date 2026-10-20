@@ -24,7 +24,8 @@ test("test-code or real checkout must be verified by server, never UI alone", ()
 test("incomplete and pending payment never auto-navigates", () => {
   assert.equal(postUnlockTarget({ ...unlocked("promax"), paymentPending: true }), null);
   assert.equal(postUnlockTarget({ ...unlocked("basic"), reportReady: false }), null);
-  for (const state of ["partial","failed","running","pending","interrupted"]) {
+  for (const state of ["partial","failed","running","pending","interrupted",null,
+                       undefined,"COMPLETE","finished",true,{}]) {
     assert.equal(postUnlockTarget({ ...unlocked("basic"), unlockTaskState:state }), null);
   }
 });
@@ -32,6 +33,13 @@ test("free and unknown tiers never get paid-navigation entitlements", () => {
   for (const tier of ["free","trial","invalid",""]) {
     assert.equal(postUnlockTarget({ ...unlocked("basic"), tier }), null);
   }
+});
+test("verified-looking response without a completed task is not a redirect", () => {
+  const fake = { entitlementVerified:true, reportReady:true, tier:"basic" };
+  assert.equal(postUnlockTarget(fake), null);
+  assert.equal(showVerifiedPriceSection(fake, {
+    findSection: () => { throw new Error("UI must not be touched"); }
+  }).ok, false);
 });
 test("unverified payload and missing UI are safe", () => {
   assert.equal(postUnlockTarget(null), null);
