@@ -20,7 +20,8 @@
 - `entitlementVerified === true`：由既有安全 API／後端權益狀態確實驗證；
 - `tier` 為 basic 或 promax；
 - `reportReady === true`；
-- `paymentPending !== true`，且解鎖任務不是 `failed/partial/interrupted/running/pending`。
+- `paymentPending !== true`，而且 `unlockTaskState === "completed"`（缺少欄位、未知狀態、執行中或失敗都不可當成成功）。
+- 先將已授權的價差章節掛載，再查找 DOM 元件；若章節未產生或畫面載入失敗，回傳可診斷的受控錯誤，不得假裝已進入報告。
 
 滿足以上條件才指定 `report-price-items`。缺少價格章節時顯示受控錯誤，**不隱瞞地跳去其他頁**。
 
@@ -40,6 +41,12 @@
 4. 針對免費→basic、免費→promax、同案件補差價、已有解鎖、付款失敗／查詢逾時、報告生成超時、手機與桌機執行 E2E。
 5. 保留正式視覺和完整下載能力，核對版號、報告 PDF 功能、回復點、既有簽章。
 6. **驗證前，不刪除首頁「付費測試模式」警告來假裝正式支付已開通。**
+
+## 第二輪修正與驗證（2026-10-20）
+- 修正不完整付款任務資料的誤判：`unlockTaskState` 缺少或為未知值時一律拒絕自動跳轉。
+- 修正單頁報告顯示時序：先執行 `mount`、再找 `#report-price-items`；若渲染發生例外，回傳 `REPORT_UI_RENDER_FAILED`。
+- 追加 3 項測試，現在 **12/12 項通過**：https://github.com/momopuke/judun-deploy/actions/runs/39353272850 。
+- 此導航契約仍由現有後端確認權益才能呼叫，並非前端解鎖方法。非同步渲染的實際整合方式仍待現版原始碼確認。
 
 ## 目前結果
 獨立導航契約的 JS 單元測試、免費首頁唯讀存在性檢查已有自動化流程。`production_payment_ready_verified=false`、`verified_post_payment_see_price=false` 均是忠實狀態，不是故障推測。
