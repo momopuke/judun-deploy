@@ -1,14 +1,14 @@
-# 居盾 P0 單一整合候選｜2026-10-20
+# 居盾 P0–P3 單一整合候選｜2026-10-20
 
 **狀態：可整合候選程式／待部署；不是正式 v1.2.115，不得視為已發行。**
 
-這個候選將原本分散在 PR #4（首頁）、PR #6（公開報價證據）、PR #7（付費導覽）的最新程式放入同一分支，且只新增 `p0/`、`p1/`、`p2/` 與一個不部署的 GitHub Actions。**禁止**在這個儲存庫重建、解密、替換 `channel/`、`assets/`、`releases/`、`keys/` 等帶簽章正式包；正式版仍依既有權威原始碼、Ed25519 私有簽章和安全發布通道。
+這個候選將原本分散在 PR #4（首頁）、PR #6（公開報價證據）、PR #7（付費導覽）的最新程式放入同一分支，且只新增 `p0/`、`p1/`、`p2/`、`p3/` 與一個不部署的 GitHub Actions。**禁止**在這個儲存庫重建、解密、替換 `channel/`、`assets/`、`releases/`、`keys/` 等帶簽章正式包；正式版仍依既有權威原始碼、Ed25519 私有簽章和安全發布通道。
 
 ## 單一驗收流程
 GitHub Actions: `.github/workflows/judun-p0-unified-acceptance.yml`
 - `release-boundary`：比對 main 與此候選所有更動檔案，禁止碰任何正式加密發布區、密鑰與原始品牌核准資產。
 - `quality`：以 Python 原生 unittest 測試真實歷史欄位轉接、來源分類/禁入、網址轉址鏈審查、價格單位/稅額/數量、擴充狀態原子快照；以 Node 測試付款後看價差的前端導覽契約、異步載入、逾時與案件綁定。唯讀觀測公開首頁，不觸發上傳、付款或私人資料處理。
-- `homepage-preview`：在 Playwright 暫時注入新入口的 JS/CSS，測 1440px 桌機、768px 平板、320/390/430px 手機，保留 95 分品牌視覺基準；**不修改正式站**。
+- `homepage-preview`：在 Playwright 暫時注入新入口的 JS/CSS，測 1440px 桌機、768px 平板、320/390/430px 手機，保留 95 分品牌視覺基準；另在未注入候選的獨立瀏覽器檢查正式站公開函式、章節、版本指紋；**不修改正式站**。
 
 ## 本輪新增的關鍵修正
 過去比價規則雖阻擋被禁來源和無關類別，但若網頁實際轉址，僅有 `redirect_chain_verified=True` 布林值不足以證明安全。因此現在對已知轉址強制要求**有界的所有跳轉網址**（2–10 個），核對第一個為原始網址、最後一個為實際最終網址，每一跳均過來源 URL 防護；缺少證據先 HOLD，任何一跳進入被禁網站／私網則 REJECT。實際 HTTP 抓取器仍須逐跳核對 DNS、公網 IP 和重綁攻擊，**純資料閘門不能替代網路連線層 SSRF 防護**。
@@ -155,3 +155,9 @@ GitHub Actions 加入 `pull_request` 觸發，讓同一候選 PR 的變更可以
 - 價差要同時滿足同工項、規格、計價單位與同一筆價格所述的**稅況**；如果來源原文未明確標示含稅／未稅，或者來源欄位與原文矛盾，均只能當參考。不可拿同頁另一工項的相同金額和稅況詞語拼湊可信報價。
 - 完整版報告新增 `source_coverage_status`、`quote_items_with_source_candidates`、`quote_items_without_sources` 和 `source_price_verification_claimed=False`；屋主工項完整呈現不等於全部公開行情已可比較，完整度提示文字會在報告開頭清楚說明。
 - 以上僅為同一 PR #9 的 Python/Node 合成驗收，**不變更現行已核准首頁美術資產、不碰正式 QA 資料、不執行正式付款／PDF、沒有實際簽章部署**。正式整合仍須有權威可編輯原始碼、實際 schema、授權部署環境和真實使用者流程 E2E。
+
+## 2026-10-20 P3 正式整合阻擋與最新工作
+
+P0 首頁、P1 公開證據、P2 解鎖導覽已完成候選；**當前按核准路線只推進 P3 正式整合**，不無意義重做已核准的首頁視覺。新增 `p3/production_readiness.py`、`site-contract-inventory.cjs` 和 `report-integration.cjs`，從 v1.2.114 真實公開站唯讀確認現有 `unlockTier`、`checkMicroStatus`、`openPreferredJudunReport` 與 `report-five-themes` / `report-price-items` 導覽分支，為必要的原版程式修改建立接線邊界及程式 SHA-256 指紋；不曾使用正式付費帳號或模擬已付款。
+
+依 [p3/README.md](p3/README.md)，日後在原受信任後端**確實驗證帳號、report ID、完成權益、報告已準備**後，Basic/ProMax 均直接掛載 **看價差**；原五大行動及精華版改由使用者主動選擇。P3 adapter 不會自行付款、解鎖、重新提交或建立任意報告。正式站仍顯示付款測試模式，**未部署**。權威 v1.2.114 可編輯原始碼及原有受控簽署部署權限仍是上線必要條件；不可繞過現有 Ed25519 簽名。
