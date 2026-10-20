@@ -117,9 +117,11 @@ npx esbuild p3/report-browser-entry.cjs --bundle --platform=browser --format=iif
 ```bash
 python3 p3/patch_authoritative_app.py \
   --input /trusted/authorized/current/app.py \
-  --expect-sha256 "$(sha256sum /trusted/authorized/current/app.py | cut -d' ' -f1)" \
+  --expect-sha256 "<SHA256_FROM_INDEPENDENT_TRUSTED_RELEASE_MANIFEST>" \
   --output /trusted/staging/judun_p3/app.py
 ```
+
+⚠️ **來源版號鎖定**：`--expect-sha256` 不可直接拿待修的同一個檔案即時計算後當作版本認證，必須先從**獨立且受信任的現行正式發行紀錄**取得預期 SHA-256，並確認該筆發行是線上現版（非倉庫過去的 stable 指標）。已知歷史 `v1.2.87` 後端 SHA `1c5c2c12...` 已納入硬性拒絕名單。新增 AST 檢驗要求兩個改動只存在於真正模組層級 `GLOBAL_JS` 字串常數內，不接受偽造／巢狀／運算結果文字；通過此關也**不等於**取得現版或權益驗證權限。
 
 上方命令是**在已授權的正式原始碼工作環境中**執行的流程範例，不應在不明機器、不明版本直接使用。產生候選仍需查現版 backend API 權益、真實 Basic/ProMax/付款失敗/重複回呼、報告與 PDF，通過後由原授權發行者以**既有簽章、同一正式版本發布**。新工具既不碰 VPS、不使用簽章私鑰、不變更 DB，也不自行宣布付款已開放。
 
