@@ -166,17 +166,18 @@ def recover(encoded: Path, verification: Path, historical_zip: Path,
         report["vps_modified"] = False
         report["deployed"] = False
         if out_private is not None:
-            path = out_private.resolve()
-            if path.is_symlink() or out_private.exists():
+            if out_private.is_symlink() or out_private.exists():
                 deny("REFUSE_OVERWRITE_PRIVATE_STAGING")
-            if ".git" in out_private.parts:
+            path = out_private.resolve()
+            repo_root = Path(__file__).resolve().parent.parent
+            if path.is_relative_to(repo_root) or ".git" in out_private.parts:
                 deny("REFUSE_GIT_WORKTREE_OUTPUT")
             # The caller must choose a pre-existing private directory,
             # outside any shared/Git-backed workspace.
             parent = path.parent
             if not parent.is_dir() or (parent.stat().st_mode & 0o077):
                 deny("PRIVATE_STAGING_DIR_PERMISSIONS")
-            fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0), 0o600)
             with os.fdopen(fd, "wb") as stream:
                 stream.write(app)
                 stream.flush()
