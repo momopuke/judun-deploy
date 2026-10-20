@@ -379,6 +379,49 @@ def source_price_basis_supported(source: dict) -> bool:
     return False
 
 
+# Conservative category keywords for common real Taiwanese renovation
+# items. Unknown labels require the exact category to appear by the price.
+_SOURCE_CATEGORY_TERMS = {
+    "油漆工程": ("油漆", "乳膠漆", "粉刷", "批土"),
+    "水電工程": ("水電", "配線", "電線", "配管", "電路"),
+    "防水工程": ("防水", "抓漏", "止漏"),
+    "泥作工程": ("泥作", "砌磚", "粉光"),
+    "木作工程": ("木作", "木工", "天花板"),
+    "磁磚工程": ("磁磚", "貼磚", "鋪磚"),
+    "系統櫃": ("系統櫃", "櫥櫃", "系統家具", "系統傢俱"),
+    "拆除工程": ("拆除", "打除", "清運"),
+}
+
+
+def source_price_work_item_supported(source: dict) -> bool:
+    """Require a work-type signal around the SAME quoted price occurrence.
+
+    Labels originating from the parser are not source evidence. Only a narrow
+    window around the matching amount can support an item-specific comparison.
+    This is intentionally stricter than merely retaining a public reference.
+    """
+    amount = parse_twd_amount(source.get("amount"))
+    category = source.get("category")
+    if amount is None or not isinstance(category, str) or not category.strip():
+        return False
+    terms = _SOURCE_CATEGORY_TERMS.get(category, (category,))
+    text = str(source.get("body") or "")[:3500]
+    for match in _SOURCE_PRICE_PATTERN.finditer(text):
+        numeric = None
+        for key, suffix in (("currency_amount", "currency_unit"),
+                            ("unit_amount", "unit_suffix"),
+                            ("label_amount", "label_suffix")):
+            if match.group(key) is not None:
+                numeric = parse_twd_amount(match.group(key) + (match.group(suffix) or ""))
+                break
+        if numeric != amount:
+            continue
+        around = text[max(0, match.start() - 100):match.end() + 45]
+        if any(term in around for term in terms):
+            return True
+    return False
+
+
 def compare_with_target(source: dict, customer_quote: dict) -> GateDecision:
     """Only return COMPARABLE for known-identical construction scope.
 
@@ -403,6 +446,8 @@ def compare_with_target(source: dict, customer_quote: dict) -> GateDecision:
         return GateDecision("REFERENCE_ONLY", ("PRICE_BASIS_MISSING_OR_MISMATCH",), False, False)
     if not source_price_basis_supported(source):
         return GateDecision("REFERENCE_ONLY", ("SOURCE_PRICE_UNIT_BASIS_NOT_PROVEN",), False, False)
+    if not source_price_work_item_supported(source):
+        return GateDecision("REFERENCE_ONLY", ("SOURCE_PRICE_WORK_ITEM_NOT_PROVEN",), False, False)
     src_tax, quote_tax = source.get("tax_included"), customer_quote.get("tax_included")
     if type(src_tax) is not bool or type(quote_tax) is not bool or src_tax != quote_tax:
         return GateDecision("REFERENCE_ONLY", ("TAX_TREATMENT_MISSING_OR_MISMATCH",), False, False)
