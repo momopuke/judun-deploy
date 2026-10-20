@@ -1,8 +1,8 @@
 """Conservative PUBLIC report presentation for vetted renovation price evidence.
 
 INTEGRATION CANDIDATE ONLY. The live report is not modified by this file.
-Production MUST resolve formal_qa_approved/formal_evidence_id from its trusted
-server-side accepted evidence registry; never from a browser request.
+Production MUST resolve exact source-fingerprint QA approval from a trusted
+server-side registry callback; never from a browser request or loose boolean.
 
 The strict pairing gate alone never confers formal evidence acceptance and
 neither this module nor its rendered HTML triggers data import, payment or
