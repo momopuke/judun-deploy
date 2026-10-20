@@ -49,6 +49,24 @@ def fixture(root):
     return script
 
 class DeltaReleaseTests(unittest.TestCase):
+    def test_windows_build_payload_source_tree_golden_vector(self):
+        # Independent reference computed from the archived original
+        # BUILD_PAYLOAD.ps1: path, NUL, byte count, NUL, SHA, terminal LF.
+        records = [
+            {"path": "data/seed.txt", "size": 17, "sha256": "b" * 64},
+            {"path": "app.py", "size": 321, "sha256": "a" * 64},
+        ]
+        self.assertEqual(
+            computed_tree_sha(records),
+            "38449d839681a109ba7aaed83385e58a1c878f4dc3395b53e0ab477ce674818e",
+        )
+        self.assertEqual(computed_tree_sha(records), computed_tree_sha(records[::-1]))
+        old_broken = "\\n".join(
+            f"{r['path']}\\0{r['sha256']}\\0{r['size']}"
+            for r in sorted(records, key=lambda r: r["path"])
+        )
+        self.assertNotEqual(computed_tree_sha(records), sha(old_broken.encode("utf-8")))
+
     def test_dry_run_is_byte_precise_and_preserves_formal_qa(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
