@@ -176,7 +176,7 @@ def source_price_precision(title: str, excerpt: str, amount: Decimal) -> str:
                 # Pricing ranges, starting prices, and approximations may be
                 # useful for market context but must not support an exact gap.
                 is_approximate = (
-                    bool(re.search(r"(?:約|大約|概估|起價|起跳|最低|從|至少|大概|約莫)\s*$", head))
+                    bool(re.search(r"(?:約|大約|概估|預估|粗估|概算|參考價?|建議價?|均價|起價|起跳|起步|最低|從|至少|大概|約莫)\s*$", head))
                     or "約" in found.group(0)
                     or bool(re.match(r"^\s*(?:[-~～〜－–—]|至|到|起|以上|以下|上下|左右|不等)", tail))
                     or bool(re.search(r"(?:[-~～〜－–—]|至|到)\s*$", head))
