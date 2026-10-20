@@ -97,14 +97,49 @@ class EvidenceGateTests(unittest.TestCase):
         x = dict(valid_case(), redirected=True,
                  resolved_url="https://public-renovation.example.org/taiwan/prices")
         self.assertEqual(evaluate(x).status, "HOLD")
-        y = dict(x, redirect_chain_verified=True)
+        y = dict(x, redirect_chain_verified=True,
+                 redirect_chain_urls=[x["url"], x["resolved_url"]])
         self.assertEqual(evaluate(y).status, "READY_FOR_MATCHING")
         self.assertFalse(evaluate(y).eligible_for_formal_import)
+
+    def test_redirect_intermediate_hop_to_private_ip_is_rejected(self):
+        origin=valid_case()
+        final="https://example.com.tw/renovation/final"
+        x=dict(origin, redirected=True, resolved_url=final,
+               redirect_chain_verified=True,
+               redirect_chain_urls=[origin["url"], "http://127.0.0.1:8000/admin", final])
+        self.assertEqual(evaluate(x).status, "REJECT")
+
+    def test_redirect_claimed_verified_without_chain_is_held(self):
+        x=dict(valid_case(), redirected=True,
+               resolved_url="https://example.com.tw/renovation/moved",
+               redirect_chain_verified=True)
+        self.assertEqual(evaluate(x).status, "HOLD")
+
+    def test_redirect_chain_endpoint_mismatch_held(self):
+        original=valid_case()
+        x=dict(original, redirected=True,
+               resolved_url="https://example.com.tw/renovation/moved",
+               redirect_chain_verified=True,
+               redirect_chain_urls=["https://other.example.org/start",
+                                    "https://example.com.tw/renovation/moved"])
+        self.assertEqual(evaluate(x).status, "HOLD")
+
+    def test_redirect_chain_unreasonably_long_held(self):
+        original=valid_case()
+        final="https://example.com.tw/renovation/complete"
+        chain=[original["url"]]+["https://example.com.tw/hop"+str(i) for i in range(12)]+[final]
+        x=dict(original, redirected=True, resolved_url=final,
+               redirect_chain_verified=True, redirect_chain_urls=chain)
+        self.assertEqual(evaluate(x).status, "HOLD")
 
     def test_same_domain_redirect_can_remain_eligible_for_qa(self):
         x = dict(valid_case(), redirected=True,
                  resolved_url="https://example.com.tw/renovation/new-url")
-        self.assertEqual(evaluate(x).status, "READY_FOR_MATCHING")
+        self.assertEqual(evaluate(x).status, "HOLD")
+        y = dict(x, redirect_chain_verified=True,
+                 redirect_chain_urls=[x["url"], x["resolved_url"]])
+        self.assertEqual(evaluate(y).status, "READY_FOR_MATCHING")
 
     def test_mixed_medical_and_renovation_requires_review(self):
         r = dict(valid_case(), title="裝修工程與醫療器材共同採購")
