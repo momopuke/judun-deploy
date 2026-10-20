@@ -162,7 +162,9 @@ def verify_live_app_tree(app: bytes, manifest: dict, live_source_tree_sha256: st
 
 
 def recover(encoded: Path, verification: Path, historical_zip: Path,
-            *, out_private: Path | None = None) -> dict:
+            *, out_private: Path | None = None,
+            trusted_manifest: Path | None = None,
+            public_tree_sha256: str | None = None) -> dict:
     record = json.loads(verification.read_text("utf-8"))
     if record.get("version") != "1.2.114" or record.get("artifact_id") != "JUDUN-1.2.114-AA38F0567A4D":
         deny("UNEXPECTED_SOURCE_ATTESTATION")
