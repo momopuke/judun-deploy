@@ -41,6 +41,12 @@
 ## 與居盾歷史真實程式格式核對（2026-10-20）
 已從使用者原始檔案庫讀取 `Judun_v1.2.82_PersistentLearning_AUTODEPLOY_20261004.zip`，實際核對歷史 `data_expansion_controller/controller.py` 的 `page_candidate()`、`formal_bundle()`、`evidence_store.validate_bundle()` 與 `data_expansion_web.snapshot()`。
 
-實際歷史候選使用 `canonical_url`、`region`、`price_stage`、`validation.pass`、`draft_records[].raw_price_text`、`amount_twd`、`unit`，且明示 `payment_verified=false` 與 `approved_comparable=false`。新增 `legacy_candidate_adapter.py` 將這些欄位**逐筆保守轉接**，其中舊版普遍欠缺明確 `spec`，絕不補猜，不以此允許正式自動匯入。已新增 9 項欄位與拒絕案例測試，合計 **40 項回歸測試通過**：https://github.com/momopuke/judun-deploy/actions/runs/39346080140 。
+實際歷史候選使用 `canonical_url`、`region`、`price_stage`、`validation.pass`、`draft_records[].raw_price_text`、`amount_twd`、`unit`，且明示 `payment_verified=false` 與 `approved_comparable=false`。新增 `legacy_candidate_adapter.py` 將這些欄位**逐筆保守轉接**，其中舊版普遍欠缺明確 `spec`，絕不補猜，不以此允許正式自動匯入。已新增 9 項欄位與拒絕案例測試，當時合計 **40 項回歸測試通過**：https://github.com/momopuke/judun-deploy/actions/runs/39346080140 。
 
 **重要：v1.2.82 是歷史結構，不是 v1.2.114 現行原始碼。** 整合前仍必須重新核對最新控制器／報價 QA 欄位及正式簽章，不能因歷史格式相符就宣稱線上已整合。
+
+## 2026-10-20 安全加固（第二輪）
+- **正式匯入不可由此閘門核准**：全部決策的 `eligible_for_formal_import=false`；`eligible_for_formal_qa` 僅表示可進入既有審核流程，不能繞過正式來源 QA / logical case 去重或付費驗證。
+- **相同工項不代表能直接比價**：必須雙方明確記錄一致的 `price_basis`（`unit_price` 每單位價／`total_price` 整項總價）、一致的 `tax_included`（含稅與否）；整項總價還要明確一致的 `quantity`。缺資料或不一致則僅供參考，絕不產生直接價差。
+- 舊版 `draft_records` 如果沒有明確計價基礎或規格，維持來源可追查、禁止自動正式匯入，不能拿測試裡的完整人造資料套用到真實施工價格。
+- 已完成 **44 項本地 CI 回歸測試**：https://github.com/momopuke/judun-deploy/actions/runs/39353004035 。此為程式測試，**不是**現行 v1.2.114 正式站已部署的證據。
