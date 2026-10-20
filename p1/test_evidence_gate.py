@@ -420,6 +420,28 @@ class EvidenceGateTests(unittest.TestCase):
         self.assertEqual(decision.status, "REFERENCE_ONLY")
         self.assertIn("SOURCE_PRICE_SPEC_NOT_PROVEN", decision.reasons)
 
+    def test_three_different_clauses_cannot_be_joined_into_one_quote(self):
+        src = {**valid_case(),
+               "body": (
+                   "台北油漆工程，批土兩道、乳膠漆三道，報價 NT$18,000 元；"
+                   "台北水電工程，每坪報價 NT$18,000。"
+               )}
+        quote = {k: src[k] for k in
+                 ("category", "item_name", "unit", "spec", "locality",
+                  "currency", "price_basis", "tax_included")}
+        quote["amount"] = "NT$20,000"
+        decision = compare_with_target(src, quote)
+        self.assertEqual(decision.status, "REFERENCE_ONLY")
+        self.assertIn("SOURCE_SCOPE_CROSSED_PRICE_CLAUSES", decision.reasons)
+
+    def test_all_scope_evidence_in_same_source_clause_can_be_compared(self):
+        src = valid_case()
+        quote = {k: src[k] for k in
+                 ("category", "item_name", "unit", "spec", "locality",
+                  "currency", "price_basis", "tax_included")}
+        quote["amount"] = "NT$20,000"
+        self.assertEqual(compare_with_target(src, quote).status, "COMPARABLE")
+
     def test_tax_inclusion_must_match_explicitly(self):
         source=valid_case()
         target={k:source[k] for k in ("category","item_name","unit","spec","locality",
