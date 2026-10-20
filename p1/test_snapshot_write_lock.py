@@ -45,6 +45,44 @@ class SnapshotInterprocessLockTests(unittest.TestCase):
             saved = json.loads(path.read_text())
             self.assertEqual(saved["rounds_completed"], 20)
 
+    def test_invalid_timeout_never_enters_unbounded_lock_polling(self):
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "expansion.json"
+            for bad in (0, -1, float("nan"), float("inf"), True, "forever", 9):
+                with self.subTest(value=repr(bad)):
+                    with self.assertRaises(ValueError):
+                        with exclusive_status_lock(path, timeout_seconds=bad):
+                            self.fail("invalid timeout must not lock")
+
+    def test_named_pipe_cannot_be_accepted_as_snapshot_lock(self):
+        with TemporaryDirectory() as tmp:
+            target = Path(tmp) / "status.json"
+            pipe = Path(str(target) + ".lock")
+            os.mkfifo(pipe)
+            with self.assertRaisesRegex(ValueError, "untrusted"):
+                with exclusive_status_lock(target):
+                    self.fail("FIFO is not a safe lock file")
+
+    def test_preexisting_world_readable_lock_is_secured(self):
+        with TemporaryDirectory() as tmp:
+            target = Path(tmp) / "status.json"
+            lock = Path(str(target) + ".lock")
+            lock.write_text("")
+            os.chmod(lock, 0o666)
+            with exclusive_status_lock(target):
+                self.assertEqual(stat.S_IMODE(lock.stat().st_mode), 0o600)
+
+    def test_lock_symlink_to_other_file_is_rejected(self):
+        with TemporaryDirectory() as tmp:
+            target = Path(tmp) / "status.json"
+            pointed = Path(tmp) / "other.txt"
+            pointed.write_text("must not touch")
+            Path(str(target) + ".lock").symlink_to(pointed)
+            with self.assertRaises(OSError):
+                with exclusive_status_lock(target):
+                    self.fail("symlink must not be accepted")
+            self.assertEqual(pointed.read_text(), "must not touch")
+
     def test_lock_file_stays_private_and_persistent(self):
         with TemporaryDirectory() as tmp:
             path = Path(tmp) / "expansion.json"
