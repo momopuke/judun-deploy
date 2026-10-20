@@ -4,6 +4,8 @@ Fixtures are tiny synthetic data, never live source or payment credentials.
 """
 from __future__ import annotations
 
+import base64
+from io import BytesIO
 import json
 from pathlib import Path
 import sys
@@ -12,7 +14,7 @@ import unittest
 from zipfile import ZipFile, ZIP_DEFLATED
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from https_receiver_bundle_audit import inspect_bundle, digest, MANIFEST_PATH
+from https_receiver_bundle_audit import inspect_bundle, digest, MANIFEST_PATH, REQUIRED_EMBEDDED_FILES
 from production_delta_patch import computed_tree_sha
 
 
@@ -29,8 +31,29 @@ def row(path: str, data: bytes) -> dict:
 
 
 def make_members() -> dict[str, bytes]:
-    app = b"# synthetic application fixture; never used on VPS\n"
-    runtime = [row("app.py", app)]
+    files = {"app.py": b"# synthetic application fixture; never used on VPS\\n"}
+    for path in sorted(REQUIRED_EMBEDDED_FILES):
+        files[path] = (b"synthetic-source:" + path.encode("ascii") + b"\\n")
+    runtime = [row(name, data) for name, data in files.items()]
+    manifest_inner = {
+        "version": VERSION,
+        "artifact_id": TARGET,
+        "build_signature": SIGNATURE,
+        "build_instance_id": INSTANCE,
+        "source_tree_sha256": computed_tree_sha(runtime),
+        "files": runtime,
+    }
+    memory = BytesIO()
+    with ZipFile(memory, "w", ZIP_DEFLATED) as embedded:
+        for name, data in files.items():
+            embedded.writestr(name, data)
+        embedded.writestr("DEPLOY_MANIFEST.json", json.dumps(manifest_inner).encode())
+    blob = memory.getvalue()
+    deploy_script = (
+        b"#!/bin/bash\\n# R3.3 embedded data-expansion runtime\\n"
+        + b"cat <<'JUDUN_RUNTIME_B64'\\n"
+        + base64.b64encode(blob) + b"\\nJUDUN_RUNTIME_B64\\n"
+    )
     runtime_lock = {
         "artifact_id": TARGET,
         "version": VERSION,
@@ -38,8 +61,11 @@ def make_members() -> dict[str, bytes]:
         "build_signature": SIGNATURE,
         "formal_evidence_sha256": FORMAL,
         "runtime_tree_sha256": computed_tree_sha(runtime),
+        "runtime_bundle_sha256": digest(blob),
+        "runtime_bundle_bytes": len(blob),
         "files": [
-            {**runtime[0], "source_path": "system_files/app.py"},
+            {**item, "source_path": "system_files/" + item["path"]}
+            for item in runtime
         ],
     }
     release = {
@@ -52,7 +78,8 @@ def make_members() -> dict[str, bytes]:
     members = {
         "RELEASE.json": json.dumps(release).encode(),
         "RUNTIME_RELEASE_LOCK.json": json.dumps(runtime_lock).encode(),
-        "system_files/app.py": app,
+        "system_files/deploy_paid_test.sh": deploy_script,
+        **{"system_files/" + name: data for name, data in files.items()},
     }
     outer_rows = [row(name, data) for name, data in members.items()]
     manifest = {
@@ -99,8 +126,9 @@ class OriginalHttpsReceiverPackageTests(unittest.TestCase):
             save(path, make_members())
             result = audit(path)
             self.assertEqual(result["status"], "BUNDLE_VALIDATED_OFFLINE_ONLY")
-            self.assertEqual(result["managed_package_files"], 3)
-            self.assertEqual(result["locked_runtime_files"], 1)
+            self.assertEqual(result["managed_package_files"], 13)
+            self.assertEqual(result["locked_runtime_files"], 10)
+            self.assertTrue(result["embedded_runtime_sha256_verified"])
             self.assertFalse(result["receiver_authentication_verified"])
             self.assertFalse(result["actual_vps_deployment"])
 
