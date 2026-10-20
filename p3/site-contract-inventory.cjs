@@ -48,6 +48,35 @@ async function inspect(page,viewport) {
         referencesPriceNavigationHelper:safe&&body.includes("JudunPaidNavigation")
       };
     }
+    // Reveal only public branch *structure* of current live functions.
+    // Extract identifier names next to a fixed keyword, not script text,
+    // parameter values, URL paths, request payloads, or customer data.
+    const branchTokens={};
+    const KEYWORDS=["report-price-items","report-five-themes","openPreferredJudunReport","highlight_url"];
+    const allowedIdentifiers=new Set([
+      "if","else","return","await","let","const","var","function","async",
+      "window","document","location","hash","href","open","replace",
+      "basic","promax","tier","unlockTier","checkMicroStatus",
+      "openPreferredJudunReport","highlight_url","report","section",
+      "active","preferred","highlight","target","price","ready",
+      "report-price-items","report-five-themes"
+    ]);
+    for(const name of checkedFunctions){
+      const fn=window[name];
+      const source=typeof fn==="function" ? Function.prototype.toString.call(fn) : "";
+      const signals={};
+      for(const word of KEYWORDS){
+        const at=source.length<=200000 ? source.indexOf(word) : -1;
+        if(at<0){signals[word]=null;continue;}
+        const windowText=source.slice(Math.max(0,at-150),Math.min(source.length,at+150));
+        const identifiers=(windowText.match(/[A-Za-z_$][A-Za-z0-9_$-]*/g)||[])
+          .filter(token=>allowedIdentifiers.has(token)).slice(0,30);
+        signals[word]={occurrences:source.split(word).length-1,
+          atRatio:Math.round(1000*at/Math.max(source.length,1)),
+          knownIdentifiersInContext:identifiers};
+      }
+      branchTokens[name]=signals;
+    }
     const destinations={};
     for(const [key,selector] of Object.entries({
       "primary-cta":"button.v128-primary-cta",
@@ -72,6 +101,7 @@ async function inspect(page,viewport) {
       controls,
       globalFunctions,
       staticNavigationHints,
+      branchTokens,
       destinations,
       brandHeroPresent:!!brand,
       hasOriginalHeading:!!brand?.querySelector("h1")?.textContent?.includes("用專業"),
