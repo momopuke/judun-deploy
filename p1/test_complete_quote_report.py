@@ -76,14 +76,24 @@ class CompleteQuoteReportTests(unittest.TestCase):
         self.assertIn('target="_blank"',out["html"])
         self.assertNotIn("11.1%",out["html"])
 
-    def test_too_many_sources_are_not_silently_claimed_complete(self):
+    def test_more_than_1000_sources_are_all_rendered_across_continuations(self):
         rows=[{**valid_case(), "url":"https://example.com.tw/quote/"+str(i)}
               for i in range(1100)]
         out=render_authorized_quote_items([quote(0)],[rows])
-        self.assertEqual(out["status"],"SOURCE_REVIEW_REQUIRED")
+        self.assertEqual(out["status"], "COMPLETE")
+        self.assertTrue(out["complete"])
+        self.assertEqual(out["source_alerts"], [])
+        self.assertIn("/quote/1099", out["html"])
+        self.assertEqual(out["html"].count('data-evidence-tier="REFERENCE_ONLY"'), 1100)
+        self.assertNotIn("不能將此報告視為證據已完整呈現", out["html"])
+
+    def test_more_than_supported_10000_sources_is_explicitly_incomplete(self):
+        rows = [valid_case()] * 10001
+        out = render_authorized_quote_items([quote(0)], [rows])
+        self.assertEqual(out["status"], "SOURCE_REVIEW_REQUIRED")
         self.assertFalse(out["complete"])
-        self.assertEqual(out["source_alerts"],[0])
-        self.assertIn("不能將此報告視為證據已完整呈現",out["html"])
+        self.assertEqual(out["source_alerts"], [0])
+        self.assertIn("不能將此報告視為證據已完整呈現", out["html"])
 
     def test_quote_items_changing_between_pages_are_not_combined(self):
         quotes = [quote(i) for i in range(31)]
