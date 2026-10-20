@@ -86,3 +86,19 @@ npx esbuild p3/report-browser-entry.cjs --bundle --platform=browser --format=iif
 - [GitHub Actions #39428564483](https://github.com/momopuke/judun-deploy/actions/runs/39428564483)：桌機及手機 `P3_ACTUAL_HOMEPAGE_SANDBOX_PASS`，quality、首頁五尺寸和正式發布區保護均成功。
 
 **這證明公開正式首頁的單行修補在隔離瀏覽器中有效；不代表真實付款 E2E、PDF 或正式部署完成。** 必須透過原權威 v1.2.114 可編輯來源與既有受控 Ed25519 簽署發布通道，完成同案件付款、報告/PDF 實測，才可正式發布唯一新版本。不可用 GitHub 候選源碼假冒正式網站。
+
+
+## 2026-10-20 P3 新發現：否定完成狀態被誤認為成功
+
+對 v1.2.114 公開前端 `checkMicroStatus` 的完整執行，揭露 `String(data.status || '').includes('完成')` 會把**未完成、付款尚未完成、完成失敗**等文字當作完成；若模擬後端同時返回 `unlock_task.state=completed` 和一段假的報告 HTML，原版會進入看價差。此外，若狀態文字為完成但 `unlock_task.state=pending`，原版也會掛載。**這是隔離測試中，刻意製造彼此矛盾的後端資料，不代表實際正式後端會回傳這些值、也不代表現網未付款可以取得報告。**
+
+因此現有 `p3/patch_paid_preference.py` 擴為**唯一兩敘述修補**，不建立第二個網站或新發行通道：
+
+1. `unlockTier`：ProMax 和 Basic 的預設章節均為 `report-price-items`。
+2. `checkMicroStatus`：原有完成分支增加常見否定詞（未完成／未能完成／完成失敗／失敗／取消／中止）排除條件；在 tierMonitor 下如果有 unlock_task，必須是 `completed` 才能進完成區塊。保持原有成功回呼的報告渲染與使用者主動選擇章節，**不更改實際後端權益與付款 API**。
+
+完整 v1.2.114 公開 HTML 原始 SHA-256：`092f952d45b44e1ca5f526d610864a34893f861cc4ee3f587f8fc808ffcbbad8`；本輪唯一兩敘述修正版 SHA-256：`de4115397ce7e1aa0267243dab75d4bd61dbe04f9bb8eef04a69971491605c1f`。與此 SHA 不符時禁止直接套用，必須回到正式原始碼再審。
+
+最新 [GitHub Actions #39442619160](https://github.com/momopuke/judun-deploy/actions/runs/39442619160)：Python 230/230、Node 40/40、P3 patch 3/3、**12/12 個真實前端回呼隔離狀態比較**、首頁五尺寸、正式站唯讀完整性、簽章邊界均 success。原版的否定完成狀態會錯誤掛載；修正版全阻擋；正向完成仍能掛載價差。網路、使用者資料、付款及正式站均未受到測試影響。
+
+**非正式付款安全保證**：正式付款/解鎖身分與所有權必須由受信任後端驗證，前端字串檢查不能代替授權；本修補只防錯誤的視覺完成分支。權威原始碼、既有受控 Ed25519 發布與真正支付/報告/PDF E2E 仍為正式上線必要條件。舊文件中「只需修一行」是上一輪歷史狀態，**已由本段最新兩敘述修補取代**。
