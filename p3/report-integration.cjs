@@ -138,7 +138,10 @@ async function continueToPriceAfterVerifiedUnlock(completion, adapter, timeoutMs
     return existing.promise;
   }
   const flight = {reportId:routeReportId, root:reportRoot, promise:null};
-  flight.promise = showVerifiedPriceSectionAsync(result, io, timeoutMs);
+  // Defer the renderer until this flight is registered. Otherwise a
+  // synchronous status callback triggered inside mount() can re-enter before
+  // the first navigation is visible in the WeakMap and mount twice.
+  flight.promise = Promise.resolve().then(() => showVerifiedPriceSectionAsync(result, io, timeoutMs));
   inFlightReportNavigation.set(adapter, flight);
   try {
     return await flight.promise;
