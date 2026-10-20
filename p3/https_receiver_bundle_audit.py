@@ -170,10 +170,9 @@ def audit_embedded_runtime(z: ZipFile, lock: dict, runtime_identity: list) -> di
                 target = inner_rows.get(entry["path"])
                 if target is None or target["size"] != entry["size"] or target["sha256"] != entry["sha256"]:
                     fail("EMBEDDED_LOCK_FILE_IDENTITY_MISMATCH")
-                if entry["path"] in names:
-                    n, checksum = file_fingerprint(inner, entry["path"])
-                    if n != entry["size"] or checksum != entry["sha256"]:
-                        fail("EMBEDDED_FILE_BYTES_MISMATCH")
+                n, checksum = file_fingerprint(inner, entry["path"])
+                if n != entry["size"] or checksum != entry["sha256"]:
+                    fail("EMBEDDED_FILE_BYTES_MISMATCH")
             return {"embedded_runtime_files": len(inner_rows),
                     "embedded_runtime_sha256_verified": True}
     except (BadZipFile, OSError, EOFError, RuntimeError):
