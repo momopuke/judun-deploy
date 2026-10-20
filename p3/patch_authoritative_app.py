@@ -102,6 +102,11 @@ def apply_app_patch(raw: bytes, expected_sha256: str) -> tuple[bytes, dict]:
             or "window.unlockTier" not in js
             or "function checkMicroStatus(" not in js):
         raise ValueError("PATCH_TARGET_OUTSIDE_AUTHORITATIVE_GLOBAL_JS")
+    # The full Python source must also have exactly one occurrence of each
+    # statement: str.replace(..., 1) edits the FIRST occurrence, so a decoy
+    # comment before GLOBAL_JS would otherwise be modified instead.
+    if original.count(OLD) != 1 or original.count(OLD_COMPLETION) != 1:
+        raise ValueError("PATCH_TARGET_DUPLICATED_OUTSIDE_GLOBAL_JS")
     _check_match_context(js, OLD, "window.unlockTier")
     _check_match_context(js, OLD_COMPLETION, "function checkMicroStatus(")
     after = original.replace(OLD, NEW, 1).replace(
