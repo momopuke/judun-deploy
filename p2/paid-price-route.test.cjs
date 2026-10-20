@@ -57,9 +57,24 @@ test("after verified completion only one target is mounted", () => {
   });
   assert.deepEqual(result, {ok:true,target:PRICE_SECTION});
   assert.deepEqual(calls,[
-    ["find",PRICE_SECTION],["mount",PRICE_SECTION],
+    ["mount",PRICE_SECTION],["find",PRICE_SECTION],
     ["focus",PRICE_SECTION],["scroll",PRICE_SECTION]
   ]);
+});
+test("price section created during mount is found after rendering", () => {
+  let section=null;
+  const result=showVerifiedPriceSection(unlocked("basic"), {
+    mount:() => { section={id:PRICE_SECTION}; },
+    findSection:() => section
+  });
+  assert.deepEqual(result,{ok:true,target:PRICE_SECTION});
+});
+test("rendering exception fails safely without claiming success", () => {
+  const result=showVerifiedPriceSection(unlocked("basic"), {
+    mount:() => { throw new Error("report template not loaded"); },
+    findSection:() => ({id:PRICE_SECTION})
+  });
+  assert.deepEqual(result,{ok:false,reason:"REPORT_UI_RENDER_FAILED"});
 });
 test("no fallback to highlight/full preview when price section missing", () => {
   let redirected = false;
