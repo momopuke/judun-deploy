@@ -102,6 +102,16 @@ class EvidenceGateTests(unittest.TestCase):
         self.assertEqual(evaluate(y).status, "READY_FOR_MATCHING")
         self.assertFalse(evaluate(y).eligible_for_formal_import)
 
+    def test_direct_source_resolved_equals_original_requires_no_redirect_chain(self):
+        original=valid_case()
+        self.assertEqual(evaluate(dict(original,
+            redirected=False, resolved_url=original["url"])).status, "READY_FOR_MATCHING")
+
+    def test_changed_final_url_even_if_redirect_flag_absent_requires_chain(self):
+        original=valid_case()
+        x=dict(original, redirected=False, resolved_url="https://other.example.org/price")
+        self.assertEqual(evaluate(x).status,"HOLD")
+
     def test_redirect_intermediate_hop_to_private_ip_is_rejected(self):
         origin=valid_case()
         final="https://example.com.tw/renovation/final"
