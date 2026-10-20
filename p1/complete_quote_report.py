@@ -102,8 +102,18 @@ def render_authorized_quote_items(
         category = _label(row.get("category"), "類別待確認")
         unit = _label(row.get("unit"), "單位待確認", 48)
         amount = parse_twd_amount(row.get("amount"))
-        price = ("NT$" + f"{amount:,.2f}".removesuffix(".00")
-                 if amount is not None else "報價金額待人工確認")
+        currency = str(row.get("currency") or "").upper()
+        twd = currency in ("TWD", "NTD", "NT$", "新臺幣", "新台幣")
+        if amount is not None and twd:
+            price = "NT$" + f"{amount:,.2f}".removesuffix(".00")
+        else:
+            raw = row.get("amount")
+            # Preserve an original short amount for manual review, but NEVER
+            # relabel a foreign/unknown currency as NT dollars.
+            if isinstance(raw, str) and 0 < len(raw.strip()) <= 80:
+                price = "原始金額：" + raw.strip() + "（幣別或金額待核對）"
+            else:
+                price = "報價金額待人工確認"
         markup.append(
             '<article class="judun-quote-line">'
             '<h3>第 ' + str(i + 1) + ' 項：' + name + '</h3>'
