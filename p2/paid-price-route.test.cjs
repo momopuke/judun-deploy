@@ -9,6 +9,8 @@ const unlocked = (tier) => ({
   tier,
   reportReady: true,
   unlockTaskState: "completed",
+  reportId: "report-verified-001",
+  entitlementReportId: "report-verified-001",
 });
 for (const tier of ["basic", "promax"]) {
   test("verified " + tier + " goes directly to 看價差", () => {
@@ -106,6 +108,27 @@ test("entitlement report binding prevents cross-case navigation", () => {
   ]) {
     assert.equal(postUnlockTarget({ ...unlocked("basic"), ...fields }), null);
   }
+});
+test("missing report identifiers never authorize navigation", () => {
+  for (const fields of [
+    { reportId: undefined, entitlementReportId: undefined },
+    { reportId: null, entitlementReportId: "report-verified-001" },
+    { reportId: "report-verified-001", entitlementReportId: null },
+    { reportId: "report-other", entitlementReportId: "report-verified-001" },
+    { reportId: " ", entitlementReportId: " " }
+  ]) {
+    assert.equal(postUnlockTarget({...unlocked("promax"), ...fields}), null);
+  }
+});
+test("synchronous navigation requires asynchronous helper if whenRendered exists", () => {
+  let mounted=false;
+  const result = showVerifiedPriceSection(unlocked("basic"),{
+    findSection:()=>({id:PRICE_SECTION}),
+    mount:()=>{mounted=true;},
+    whenRendered:()=>Promise.resolve()
+  });
+  assert.deepEqual(result,{ok:false,reason:"ASYNC_RENDER_REQUIRES_ASYNC_API"});
+  assert.equal(mounted,false);
 });
 test("async report section is navigated only after mount and render-ready promise", async () => {
   const calls = [];
