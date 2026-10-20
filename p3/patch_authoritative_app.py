@@ -65,6 +65,16 @@ def apply_app_patch(raw: bytes, expected_sha256: str) -> tuple[bytes, dict]:
         "function checkMicroStatus(" not in original or
         "window.unlockTier" not in original):
         raise ValueError("SOURCE_NOT_EXPECTED_JUDUN_FASTAPI_APP")
+    # The legacy authoritative app embeds the client script inside GLOBAL_JS.
+    # A random valid Python file mentioning these names is not enough.
+    js_decl = 'GLOBAL_JS = r"""'
+    js_start = original.find(js_decl)
+    if js_start < 0 or original.count(js_decl) != 1:
+        raise ValueError("EXPECTED_GLOBAL_JS_SOURCE_BLOCK_MISSING")
+    js_end = original.find('"""', js_start + len(js_decl))
+    if js_end < 0 or not (js_start < original.index(OLD) < js_end and
+                          js_start < original.index(OLD_COMPLETION) < js_end):
+        raise ValueError("PATCH_TARGET_OUTSIDE_GLOBAL_JS_SOURCE_BLOCK")
     try:
         compile(original, "<authoritative-app-before>", "exec")
     except SyntaxError as exc:
