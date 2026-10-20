@@ -203,18 +203,37 @@ def render_authorized_quote_items(
             markup.append('<p>尚無可用公開來源；不自行推估價差。</p></article>')
             continue
 
-        # Smaller report rows can inline all trusted citations; larger source
-        # collections are explicitly flagged as partial and require follow-up.
-        evidence = render_paged_public_price_sources(
-            sources, row, pages_per_call=5,
-            approved_record_lookup=approved_record_lookup,
-        )
-        if evidence["status"] not in ("COMPLETE",):
-            page_alerts.append(i)
+        # Drain the bounded source pagination inside this report item. A
+        # 1,100-source case must not stop after its first 1,000 source rows.
+        # The same source fingerprint is required for every continuation.
+        evidence_offset = 0
+        evidence_digest = None
+        result_status = "MORE"
+        evidence_pages = []
+        while result_status == "MORE":
+            evidence = render_paged_public_price_sources(
+                sources, row, offset=evidence_offset, pages_per_call=5,
+                approved_record_lookup=approved_record_lookup,
+                expected_snapshot_digest=evidence_digest,
+            )
+            result_status = evidence["status"]
+            evidence_pages.extend(evidence.get("pages", []))
+            evidence_digest = evidence.get("snapshot_digest")
+            next_offset = evidence.get("next_offset")
+            if result_status == "MORE":
+                if (type(next_offset) is not int
+                        or next_offset <= evidence_offset
+                        or next_offset > len(sources)):
+                    result_status = "SOURCE_PAGE_STALLED"
+                    break
+                evidence_offset = next_offset
+        if result_status != "COMPLETE":
+            if i not in page_alerts:
+                page_alerts.append(i)
             markup.append(
                 '<p>本工項公開來源仍待分頁核對，不能將此報告視為證據已完整呈現。</p>'
             )
-        markup.extend(evidence.get("pages", []))
+        markup.extend(evidence_pages)
         markup.append('</article>')
 
     markup.append('</section>')
