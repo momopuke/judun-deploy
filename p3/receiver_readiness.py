@@ -46,7 +46,8 @@ def classify(path: str, opener=None) -> dict:
                 return {"state": "HTTP_OTHER", "http_status": code}
             # Keep all response content private. A successful health endpoint
             # shows only endpoint liveness; not signed-agent health.
-            return {"state": "HTTP_200", "http_status": 200, "body_received": bool(raw)}
+            return {"state": "HTTP_200", "http_status": 200, "body_received": bool(raw),
+                    "receiver_v3_exact": (path == "/version" and raw.strip() == b"v3")}
     except HTTPError as error:
         code = error.code
         if code in (301, 302, 303, 307, 308):
@@ -65,8 +66,11 @@ def classify(path: str, opener=None) -> dict:
 
 
 def assess(results: dict[str, dict]) -> str:
+    if (results.get("/health", {}).get("state") == "HTTP_200"
+            and results.get("/version", {}).get("receiver_v3_exact") is True):
+        return "V3_RECEIVER_RESPONDS_AGENT_UNKNOWN"
     if all(results.get(path, {}).get("state") == "HTTP_200" for path in ENDPOINTS):
-        return "PUBLIC_RECEIVER_RESPONDS_AGENT_UNKNOWN"
+        return "PUBLIC_RECEIVER_RESPONDS_PROTOCOL_UNVERIFIED"
     if any(results.get(path, {}).get("state") == "HTTP_200" for path in ENDPOINTS):
         return "RECEIVER_PARTIALLY_REACHABLE"
     return "RECEIVER_NOT_PUBLICLY_VERIFIED"
