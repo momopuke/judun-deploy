@@ -96,3 +96,18 @@ if result["status"] == "OK":
 ```
 
 不得將以上 DB 路徑、callback、核准資料、case ID 的所有權結果交由 HTTP 請求內容指定。既有頁面品牌與上傳流程維持不變；下一步是**原始碼與真實 DB schema 映射＋隔離 E2E 驗證**，通過後才可由原單一來源部署流程發布。
+
+
+## 2026-10-20 持續修正：不得遺漏原始報價工項與完整來源
+
+本輪已新增四個整合候選檔案：`paged_evidence_report.py`、`test_paged_evidence_report.py`、`complete_quote_report.py`、`test_complete_quote_report.py`。
+
+- **來源分頁**：先前超過 200 筆證據直接回 `INVALID_INPUT`；現在可呼叫 `render_paged_public_price_sources` 每次 1～5 頁、每頁最多 200 筆，成功返回 `MORE`＋`next_offset`，繼續到 `COMPLETE`。單一來源快照最多 10000 筆，超過這個邊界不能當作處理完成。分頁會對跨頁完全相同來源快照去重，但同 URL 不同公開報價仍保留。
+- **分頁一致性**：來源續頁必須傳回第一頁的 `snapshot_digest`；沒有這項身分或資料內容／次序已更動，明確回覆 `SOURCE_SNAPSHOT_CHANGED`，不拼接不同批次。
+- **屋主估價工項完整列出**：`render_authorized_quote_items` 對每個原始工項建立 HTML 區塊，即使該工項沒有來源、OCR 欄位不完整、報價金額不可判定，也會保留並提示人工核對。一次最多 30 個工項、總計最多 5000 個工項；分頁未完成回覆 `MORE_ITEMS`，續頁必須傳 `quote_digest`，避免案件來源被改動後仍混接。
+- **報價貨幣不亂換算**：僅在明確 TWD/NTD 時顯示 NT$；非台幣／未確認金額以安全逸出的原始文字和警語保留，不會虛構新台幣價值，也不把每單位價的合計誤稱總價。
+- **原文計價基準確認**：`source_price_basis_supported` 對同一個來源價格數字附近的 `每坪`、`／坪` 或 `總價` 證據進行確認。只有 parser 自行填入 `price_basis=unit_price` 但原文其實是整項總價時，會降級參考，不出精確價差。
+- **衝突價格描述**：來源同金額有精確與約略／起價說法並存，從嚴只作參考；沒有已核對證據類型或價格階段的約略行情維持 HOLD。
+- **正式 QA 身分再保護**：受信任只讀 registry 不接受同一 evidence ID 對應多份來源快照，也不信任審核時間晚於目前時間太多的核准列；候選表的 evidence_id 另加 UNIQUE。既有正式 DB 不自動修改。
+
+所有新增功能**尚未接線到正式網站，也未執行真實客戶報價或付款、PDF 的完整 E2E**。此處的 synthetic SQLite 不等於目前真實正式證據庫 schema。商用部署前仍要取得可編輯權威原始碼與簽章權限；任何單元測試通過都不能當成已發布證據。
