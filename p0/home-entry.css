@@ -112,3 +112,59 @@
     white-space: normal;
   }
 }
+
+/* P0: preparation guide for visitors who do not yet have a quote.
+   Folded by default; keeps the approved hero image and typography intact. */
+.judun-quote-prep[hidden] { display: none !important; }
+.judun-quote-prep {
+  width: min(100%, 940px);
+  margin: 10px auto 20px;
+  padding: 16px 20px;
+  box-sizing: border-box;
+  border: 1px solid rgba(225,194,124,.52);
+  border-radius: 14px;
+  color: #f7f5ef;
+  background: rgba(12,38,41,.87);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  scroll-margin-top: 24px;
+}
+.judun-quote-prep h2 {
+  margin: 0 0 10px;
+  font-size: clamp(15px, 1.7vw, 19px);
+  line-height: 1.55;
+  color: #e8d398;
+}
+.judun-quote-prep ol {
+  margin: 0;
+  padding-inline-start: 22px;
+  font-size: 13px;
+  line-height: 1.85;
+}
+.judun-quote-prep__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin-top: 12px;
+}
+.judun-quote-prep__actions a,
+.judun-quote-prep__actions button {
+  font: inherit;
+  font-size: 12px;
+  color: #e8d398;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  padding: 6px 3px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.judun-quote-prep__actions :is(a,button):focus-visible {
+  outline: 3px solid #e8d398;
+  outline-offset: 2px;
+}
+@media (max-width: 520px) {
+  .judun-quote-prep { padding: 13px 15px; }
+}
