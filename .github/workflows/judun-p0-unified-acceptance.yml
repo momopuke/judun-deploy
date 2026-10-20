@@ -98,6 +98,8 @@ jobs:
           retention-days: 14
       - name: Check live-public-home in TEMPORARY browser only at five viewports
         run: node p0/preview-test.cjs
+      - name: Review published unlock success branch source (read-only)
+        run: node p3/review-live-unlock.cjs
       - name: Discover real live homepage/report integration points (read-only)
         run: node p3/site-contract-inventory.cjs
       - name: Save P3 safe public UI inventory
