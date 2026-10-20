@@ -5,7 +5,21 @@ const {chromium}=require("playwright");
  const browser=await chromium.launch({headless:true,args:["--no-sandbox"]});
  try{
   const page=await browser.newPage();
-  await page.goto("https://judun.142-93-91-214.sslip.io/",{waitUntil:"domcontentloaded",timeout:45000});
+  let loaded=false;
+  for(let attempt=0;attempt<3;attempt++){
+    try{
+      await page.goto("https://judun.142-93-91-214.sslip.io/",{
+        waitUntil:"domcontentloaded",timeout:25000
+      });
+      loaded=true;
+      break;
+    }catch(error){
+      if(attempt===2)throw Error("P3_READONLY_LIVE_SITE_UNAVAILABLE");
+      console.log("P3_READONLY_STATUS_SOURCE_RETRY",attempt+1);
+      await page.goto("about:blank").catch(()=>{});
+    }
+  }
+  if(!loaded)throw Error("P3_READONLY_LIVE_SITE_UNAVAILABLE");
   const code=await page.evaluate(()=>{
    const fn=window.checkMicroStatus;
    if(typeof fn!=="function")throw Error("MISSING_PUBLIC_COMPLETION_FN");
