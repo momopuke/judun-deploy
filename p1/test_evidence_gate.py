@@ -347,7 +347,7 @@ class EvidenceGateTests(unittest.TestCase):
 
     def test_total_amount_requires_identical_quantity(self):
         source = {**valid_case(), "price_basis":"total_price", "quantity":25,
-                  "body":"台北室內裝修油漆工程，批土兩道、乳膠漆三道，整項總價 NT$18,000 元（含稅）。"}
+                  "body":"台北室內裝修油漆工程，批土兩道、乳膠漆三道，25坪整項總價 NT$18,000 元（含稅）。"}
         target = {k:source[k] for k in ("category", "item_name", "unit", "spec", "locality",
                                       "currency", "price_basis", "tax_included")}
         target["amount"] = "20000"
@@ -357,6 +357,36 @@ class EvidenceGateTests(unittest.TestCase):
                 self.assertEqual(r.status,"REFERENCE_ONLY")
         self.assertEqual(compare_with_target(source,{**target, "quantity":"25.00"}).status,
                          "COMPARABLE")
+
+    def test_total_price_without_original_quantity_is_not_comparable(self):
+        src = {**valid_case(), "price_basis":"total_price", "quantity":25,
+               "body":"台北室內裝修油漆工程，批土兩道、乳膠漆三道，整項總價 NT$18,000 元（含稅）。"}
+        target={k:src[k] for k in ("category","item_name","unit","spec",
+                                  "locality","currency","price_basis","tax_included")}
+        target.update({"amount":"NT$20,000","quantity":25})
+        decision=compare_with_target(src,target)
+        self.assertEqual(decision.status,"REFERENCE_ONLY")
+        self.assertIn("SOURCE_TOTAL_QUANTITY_NOT_PROVEN",decision.reasons)
+
+    def test_parser_quantity_cannot_override_contradictory_public_quantity(self):
+        src = {**valid_case(), "price_basis":"total_price", "quantity":25,
+               "body":"台北室內裝修油漆工程，批土兩道、乳膠漆三道，20坪整項總價 NT$18,000 元（含稅）。"}
+        target={k:src[k] for k in ("category","item_name","unit","spec",
+                                  "locality","currency","price_basis","tax_included")}
+        target.update({"amount":"NT$20,000","quantity":25})
+        decision=compare_with_target(src,target)
+        self.assertEqual(decision.status,"REFERENCE_ONLY")
+        self.assertIn("SOURCE_TOTAL_QUANTITY_NOT_PROVEN",decision.reasons)
+
+    def test_mixed_source_quantities_same_total_quote_is_ambiguous(self):
+        src = {**valid_case(), "price_basis":"total_price", "quantity":25,
+               "body":"台北室內裝修油漆工程，批土兩道、乳膠漆三道，25坪及20坪整項總價 NT$18,000 元（含稅）。"}
+        target={k:src[k] for k in ("category","item_name","unit","spec",
+                                  "locality","currency","price_basis","tax_included")}
+        target.update({"amount":"NT$20,000","quantity":25})
+        decision=compare_with_target(src,target)
+        self.assertEqual(decision.status,"REFERENCE_ONLY")
+        self.assertIn("SOURCE_TOTAL_QUANTITY_NOT_PROVEN",decision.reasons)
 
     def test_total_price_falsely_labeled_unit_price_is_not_comparable(self):
         source = {**valid_case(),
