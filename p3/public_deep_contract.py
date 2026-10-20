@@ -9,6 +9,8 @@ FIELDS = (
     "manifest_file_count", "deep_verified", "formal_evidence_sha256",
     "formal_data_sha256", "formal_seed_sha256", "formal_snapshot_sha256",
     "source_tree_sha256", "build_signature", "version", "display_version",
+    "manifest_sha256", "manifest", "files", "managed_files", "critical_files",
+    "app_sha256", "app_py_sha256", "file_hashes", "file_integrity",
 )
 
 
