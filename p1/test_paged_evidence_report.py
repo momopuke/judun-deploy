@@ -157,5 +157,41 @@ class PagedReportTests(unittest.TestCase):
         self.assertEqual(result["comparable"], 0)
         self.assertEqual(result["excluded"], 1)
 
+    def test_distinct_malformed_candidate_snapshots_never_share_one_digest(self):
+        source = {**valid_case(), "title": "異常來源" * 600}
+        changed = {**source, "title": "另一來源" * 600}
+        # Formal fingerprints reject titles over 1,000 chars, but this
+        # bounded invalid data must still bind report page continuity.
+        self.assertNotEqual(
+            public_source_snapshot_digest([source]),
+            public_source_snapshot_digest([changed]),
+        )
+
+    def test_unserializable_source_fails_closed_without_partial_html(self):
+        record = {**valid_case(), "body": object()}
+        result = render_paged_public_price_sources([record], customer())
+        self.assertEqual(result["status"], "SOURCE_SNAPSHOT_UNVERIFIABLE")
+        self.assertFalse(result["complete"])
+        self.assertEqual(result["pages"], [])
+
+    def test_malformed_source_changed_mid_render_discards_all_pages(self):
+        from unittest.mock import patch
+        import paged_evidence_report as paged
+        source = {**valid_case(), "title": "異常來源" * 600}
+        sources = [source]
+        renderer = paged.render_report_public_price_sources
+
+        def change_after_render(*args, **kwargs):
+            result = renderer(*args, **kwargs)
+            source["title"] = "另一來源" * 600
+            return result
+
+        with patch.object(paged, "render_report_public_price_sources",
+                          side_effect=change_after_render):
+            result = render_paged_public_price_sources(sources, customer())
+        self.assertEqual(result["status"], "SOURCE_SNAPSHOT_CHANGED")
+        self.assertEqual(result["pages"], [])
+
+
 if __name__ == "__main__":
     unittest.main()
