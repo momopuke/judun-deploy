@@ -514,6 +514,13 @@ def source_price_tax_supported(source: dict) -> bool:
                     break
             if matching != amount:
                 continue
+            # Tax declaration must belong to the very same verified work item,
+            # not a different project with an identical numeric amount.
+            scoped = {**source, "title": "", "body": clause}
+            if not (source_price_basis_supported(scoped)
+                    and source_price_work_item_supported(scoped)
+                    and source_price_spec_supported(scoped)):
+                continue
             around = clause[max(0, found.start() - 90):found.end() + 60]
             excludes_tax = bool(re.search(r"(?:不含稅|未含稅|未稅|稅外加)", around))
             includes_tax = bool(re.search(r"(?<!不)(?<!未)含稅|稅已含", around))
