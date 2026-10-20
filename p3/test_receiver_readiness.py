@@ -91,7 +91,7 @@ class ReceiverProbeTests(unittest.TestCase):
             assess({"/health": {"state": "HTTP_200"}, "/version": {"state": "HTTP_200"}}),
             "PUBLIC_RECEIVER_RESPONDS_PROTOCOL_UNVERIFIED",
         )
-        probe = classify("/version", Opener(Response(data=b"v3\\n", url=RECEIVER + "/version")))
+        probe = classify("/version", Opener(Response(data=b"v3", url=RECEIVER + "/version")))
         self.assertTrue(probe["receiver_v3_exact"])
         self.assertEqual(
             assess({"/health": {"state": "HTTP_200"}, "/version": {"state": "NOT_FOUND"}}),
