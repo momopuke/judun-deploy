@@ -101,6 +101,9 @@ class ArchivedCandidateAdapterTests(unittest.TestCase):
         entry["final_url"]="https://other-public.example.org/renovation/price"
         self.assertEqual(audit_legacy_candidate(entry)["records"][0]["status"],"HOLD")
         entry["redirect_chain_verified"]=True
+        # A boolean assertion is NOT a documented chain of network hops.
+        self.assertEqual(audit_legacy_candidate(entry)["records"][0]["status"],"HOLD")
+        entry["redirect_chain_urls"]=[entry["canonical_url"],entry["final_url"]]
         self.assertEqual(audit_legacy_candidate(entry)["records"][0]["status"],"REFERENCE_ONLY")
 
     def test_legacy_adapter_requires_known_redirect_target(self):
