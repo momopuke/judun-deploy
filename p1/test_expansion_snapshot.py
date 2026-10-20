@@ -55,6 +55,48 @@ class SnapshotTests(unittest.TestCase):
             data={**SAMPLE,"phase":"A"*20000}
             write_event_snapshot(path,data,updated_at=NOW)
             self.assertLess(path.stat().st_size,1024)
+            self.assertNotIn("AAAAAAA", path.read_text())
+            self.assertEqual(read_public_snapshot(path,now_epoch=EPOCH)["phase"],"other")
+
+    def test_url_token_and_exception_never_appear_in_public_phase(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "status.json"
+            raw_phase = "https://private.internal/key?token=CONFIDENTIAL"
+            write_event_snapshot(path, {**SAMPLE, "phase":raw_phase},
+                                 updated_at=NOW)
+            content = path.read_text()
+            self.assertNotIn("CONFIDENTIAL", content)
+            self.assertNotIn("private.internal", content)
+            self.assertEqual(read_public_snapshot(path, now_epoch=EPOCH)["phase"], "other")
+
+    def test_corrupt_non_object_json_does_not_crash_status_handler(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "status.json"
+            for raw in ("[]", "null", "99", '"hello"'):
+                with self.subTest(raw=raw):
+                    path.write_text(raw, encoding="utf-8")
+                    status = read_public_snapshot(path, now_epoch=EPOCH)
+                    self.assertEqual(status["status"], "unknown")
+                    self.assertFalse(status["automatic_restart_permitted"])
+
+    def test_tampered_public_phase_rejected_on_read(self):
+        import json
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "status.json"
+            write_event_snapshot(path, SAMPLE, updated_at=NOW)
+            payload = json.loads(path.read_text())
+            payload["phase"] = "PASSWORD=1234"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            result = read_public_snapshot(path, now_epoch=EPOCH)
+            self.assertEqual(result["status"], "unknown")
+            self.assertNotIn("PASSWORD", str(result))
+
+    def test_unhashable_status_fails_with_controlled_validation_error(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaises(ValueError):
+                write_event_snapshot(Path(tmp)/"status.json",
+                                     {**SAMPLE, "status": {"running": True}},
+                                     updated_at=NOW)
 
     def test_negative_or_boolean_count_fails(self):
         with tempfile.TemporaryDirectory() as tmp:
