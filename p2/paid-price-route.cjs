@@ -44,10 +44,24 @@ function showVerifiedPriceSection(input, interfaces) {
       }
     }
     const section = interfaces.findSection(target);
+    if (section && typeof section.then === "function") {
+      return { ok: false, reason: "ASYNC_FIND_REQUIRES_ASYNC_API" };
+    }
     if (!section) return { ok: false, reason: "PRICE_SECTION_NOT_RENDERED" };
-    // Do not mark paid/available in browser storage. Entitlement is server-owned.
-    if (typeof interfaces.focus === "function") interfaces.focus(section);
-    if (typeof interfaces.scroll === "function") interfaces.scroll(section);
+    // Never claim successful navigation while a focus/scroll Promise is still
+    // pending. Integrations with any async UI work MUST use the async helper.
+    if (typeof interfaces.focus === "function") {
+      const focused = interfaces.focus(section);
+      if (focused && typeof focused.then === "function") {
+        return { ok: false, reason: "ASYNC_FOCUS_REQUIRES_ASYNC_API" };
+      }
+    }
+    if (typeof interfaces.scroll === "function") {
+      const scrolled = interfaces.scroll(section);
+      if (scrolled && typeof scrolled.then === "function") {
+        return { ok: false, reason: "ASYNC_SCROLL_REQUIRES_ASYNC_API" };
+      }
+    }
     return { ok: true, target };
   } catch (error) {
     return { ok: false, reason: "REPORT_UI_RENDER_FAILED" };
@@ -77,7 +91,8 @@ async function showVerifiedPriceSectionAsync(input, interfaces, timeoutMs = 3000
       if (expired) return { ok: false, reason: "REPORT_UI_TIMEOUT" };
       if (typeof interfaces.whenRendered === "function") await interfaces.whenRendered(target, opts);
       if (expired) return { ok: false, reason: "REPORT_UI_TIMEOUT" };
-      const section = interfaces.findSection(target);
+      const section = await interfaces.findSection(target, opts);
+      if (expired) return { ok: false, reason: "REPORT_UI_TIMEOUT" };
       if (!section) return { ok: false, reason: "PRICE_SECTION_NOT_RENDERED" };
       if (typeof interfaces.focus === "function") await interfaces.focus(section, opts);
       if (expired) return { ok: false, reason: "REPORT_UI_TIMEOUT" };
