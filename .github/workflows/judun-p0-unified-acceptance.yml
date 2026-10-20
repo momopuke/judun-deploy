@@ -61,6 +61,20 @@ jobs:
         run: python3 -m unittest discover -s p1 -p 'test_*.py' -v
       - name: Execute checkout-to-price navigation and asynchronous report tests
         run: node --test p2/paid-price-route.test.cjs p3/report-integration.test.cjs
+      - name: Verify surgical ProMax preferred-section source patch
+        run: python3 -m unittest discover -s p3 -p 'test_*.py' -v
+      - name: Prepare exact one-statement live-source patch (read-only)
+        run: python3 p3/patch_paid_preference.py --public-review
+      - name: Save reviewable live-source patch without deploying
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: judun-p3-promax-source-patch-NOT-DEPLOYED
+          path: |
+            p3/results/paid-preference-exact.patch
+            p3/results/paid-preference-review.json
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Observe published free entry WITHOUT any payment/upload
         run: python3 p2/audit_public_funnel.py
       - name: P3 read-only live integration and release gate (never deploy)
