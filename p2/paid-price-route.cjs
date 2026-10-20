@@ -87,18 +87,36 @@ async function showVerifiedPriceSectionAsync(input, interfaces, timeoutMs = 3000
   // side effects. A timeout cannot forcibly cancel arbitrary old Promises.
   const controller = new AbortController();
   const opts = Object.freeze({signal: controller.signal});
+  // Optional integrity check supplied by the *trusted* authorized-report
+  // adapter, never from URL, local storage, or the entitlement payload.
+  // Recheck after each async boundary: users can change cases mid-render.
+  const contextValid = () => typeof interfaces.isCurrent !== "function" ||
+    interfaces.isCurrent(opts) === true;
+  const ensureCurrent = () => {
+    if (expired || opts.signal.aborted) return {ok:false,reason:"REPORT_UI_TIMEOUT"};
+    if (!contextValid()) return {ok:false,reason:"REPORT_CONTEXT_CHANGED"};
+    return null;
+  };
   try {
     const complete = async () => {
+      let stopped = ensureCurrent();
+      if (stopped) return stopped;
       if (typeof interfaces.mount === "function") await interfaces.mount(target, opts);
-      if (expired) return { ok: false, reason: "REPORT_UI_TIMEOUT" };
+      stopped = ensureCurrent();
+      if (stopped) return stopped;
       if (typeof interfaces.whenRendered === "function") await interfaces.whenRendered(target, opts);
-      if (expired) return { ok: false, reason: "REPORT_UI_TIMEOUT" };
+      stopped = ensureCurrent();
+      if (stopped) return stopped;
       const section = await interfaces.findSection(target, opts);
-      if (expired) return { ok: false, reason: "REPORT_UI_TIMEOUT" };
+      stopped = ensureCurrent();
+      if (stopped) return stopped;
       if (!section) return { ok: false, reason: "PRICE_SECTION_NOT_RENDERED" };
       if (typeof interfaces.focus === "function") await interfaces.focus(section, opts);
-      if (expired) return { ok: false, reason: "REPORT_UI_TIMEOUT" };
+      stopped = ensureCurrent();
+      if (stopped) return stopped;
       if (typeof interfaces.scroll === "function") await interfaces.scroll(section, opts);
+      stopped = ensureCurrent();
+      if (stopped) return stopped;
       return { ok: true, target };
     };
     return await Promise.race([
