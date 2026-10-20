@@ -10,7 +10,7 @@ def valid_case():
     return {
         "url": "https://example.com.tw/renovation/quote-11",
         "title": "台北室內裝修油漆工程費用",
-        "body": "公開工項與報價，提供房屋裝修規格。",
+        "body": "台北室內裝修油漆工程，批土兩道、乳膠漆三道，公開報價 NT$18,000／坪。",
         "locality": "台北市",
         "currency": "TWD",
         "amount": "NT$18,000",
@@ -181,6 +181,40 @@ class EvidenceGateTests(unittest.TestCase):
 
     def test_foreign_currency_is_not_twd_price(self):
         self.assertEqual(evaluate(dict(valid_case(), currency="USD")).status, "HOLD")
+
+    def test_parser_amount_without_price_in_source_is_held(self):
+        source=dict(valid_case(), body="室內裝修工項說明、品牌與施工步驟。")
+        decision=evaluate(source)
+        self.assertEqual(decision.status, "HOLD")
+        self.assertIn("PRICE_NOT_IN_CAPTURED_PUBLIC_SOURCE", decision.reasons)
+        self.assertFalse(decision.eligible_for_formal_import)
+        self.assertFalse(decision.usable_for_exact_price_comparison)
+
+    def test_source_year_or_floor_area_not_counted_as_twd_price(self):
+        for sample in ("室內裝修：2026 年，施工 18,000 坪。",
+                       "室內裝修：2026 年度技術規範與產品型號 18000。",
+                       "台北室內裝修：戶號 18000，工程內容詳情請見說明。"):
+            with self.subTest(sample=sample):
+                self.assertEqual(evaluate(dict(valid_case(),body=sample)).status, "HOLD")
+
+    def test_source_amount_and_parser_amount_mismatch_is_held(self):
+        src=dict(valid_case(),body="室內裝修油漆報價 NT$8,000 元／坪。",
+                 amount="NT$18,000")
+        verdict=evaluate(src)
+        self.assertEqual(verdict.status,"HOLD")
+        self.assertIn("PRICE_NOT_IN_CAPTURED_PUBLIC_SOURCE",verdict.reasons)
+
+    def test_explicit_source_prices_with_wan_or_per_ping_accepted(self):
+        cases=[
+            ("室內裝修防水工程，報價1.5萬元。","15000"),
+            ("室內裝修油漆工程，每坪 1500。","1500"),
+            ("室內裝修油漆工程，單價：1,500 元。","1500"),
+            ("室內裝修油漆工程，TWD 1,500。","1500"),
+        ]
+        for excerpt,amount in cases:
+            with self.subTest(excerpt=excerpt):
+                case=dict(valid_case(),body=excerpt,amount=amount)
+                self.assertEqual(evaluate(case).status,"READY_FOR_MATCHING")
 
     def test_price_cannot_be_guessed_from_other_text(self):
         self.assertEqual(evaluate(dict(valid_case(), amount=None)).status, "HOLD")
