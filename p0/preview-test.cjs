@@ -85,6 +85,19 @@ const BASE="https://judun.142-93-91-214.sslip.io/";
       const frame=await page.screenshot({type:'jpeg',quality:26,fullPage:false});
       console.log('JUDUN_VISUAL_'+name.toUpperCase()+'_BASE64',frame.toString('base64'));
     }
+    // The visitor without a quote must NOT be sent to unfinished matching.
+    const prepTrigger=page.locator('nav[data-judun-p0-entry] a[href="#judun-quote-prep"]');
+    const prepPanel=page.locator('#judun-quote-prep');
+    assert.equal(await prepPanel.isVisible(),false,'preparation guide should start folded');
+    await prepTrigger.click();
+    assert.equal(await prepPanel.isVisible(),true,'preparation guide did not open');
+    assert.equal(await prepPanel.locator('li').count(),3,'missing preparation steps');
+    assert.equal(await prepTrigger.getAttribute('aria-expanded'),'true');
+    const sample=prepPanel.locator('a[href="#home-report-preview"]');
+    assert.equal(await sample.count(),1,'missing functional report sample link');
+    await prepPanel.getByRole('button',{name:'收起準備指引'}).click();
+    assert.equal(await prepPanel.isVisible(),false,'preparation guide did not fold');
+    assert.equal(await prepTrigger.getAttribute('aria-expanded'),'false');
     // All in-page cards must work without entering customer data.
     await page.locator('nav[data-judun-p0-entry] a[href="#home-recheck"]').click();
     await page.waitForTimeout(400);
