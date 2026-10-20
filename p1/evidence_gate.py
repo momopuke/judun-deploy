@@ -132,13 +132,13 @@ def parse_twd_amount(value: object) -> Decimal | None:
 # Only accept a price that appears near a currency marker or price descriptor
 # in the captured public title/quote excerpt. Bare years, floor areas and
 # arbitrary digits never count as price evidence.
-_PRICE_NUMBER = r"(?:\\d{1,3}(?:[,，]\\d{3})+|\\d+)(?:\\.\\d+)?"
+_PRICE_NUMBER = r"(?:\d{1,3}(?:[,，]\d{3})+|\d+)(?:\.\d+)?"
 _SOURCE_PRICE_PATTERN = re.compile(
     rf"(?:"
-    rf"(?:NT\\s*\\$|NTD|TWD|新[臺台]幣|[$＄])\\s*(?P<currency_amount>{_PRICE_NUMBER})\\s*(?P<currency_unit>萬元?|元)?"
-    rf"|(?P<unit_amount>{_PRICE_NUMBER})\\s*(?P<unit_suffix>萬元?|元)"
+    rf"(?:NT\s*\$|NTD|TWD|新[臺台]幣|[$＄])\s*(?P<currency_amount>{_PRICE_NUMBER})\s*(?P<currency_unit>萬元?|元)?"
+    rf"|(?P<unit_amount>{_PRICE_NUMBER})\s*(?P<unit_suffix>萬元?|元)"
     rf"|(?:報價|估價|價格|單價|總價|金額|費用|每坪|一坪|每平方公尺|單坪價)"
-    rf"\\s*(?:[:：]|約|為|是|從)?\\s*(?P<label_amount>{_PRICE_NUMBER})\\s*(?P<label_suffix>萬元?|元)?"
+    rf"\s*(?:[:：]|約|為|是|從)?\s*(?P<label_amount>{_PRICE_NUMBER})\s*(?P<label_suffix>萬元?|元)?"
     rf")",
     re.I,
 )
