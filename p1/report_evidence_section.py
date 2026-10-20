@@ -10,7 +10,7 @@ source dedupe, escaped HTML and no forced changes to approved CSS/branding.
 """
 from __future__ import annotations
 
-from html import escape
+import unicodedata
 
 from evidence_display import (
     build_public_evidence_view,
@@ -21,9 +21,19 @@ from evidence_display import (
 MAX_SOURCE_ROWS = 200
 MAX_VISIBLE_ITEMS = 20
 
+def _same_item(a: object, b: object) -> bool:
+    """Compare scope labels without inventing synonyms or guessing similarity."""
+    if not isinstance(a, str) or not isinstance(b, str):
+        return False
+    left = "".join(unicodedata.normalize("NFKC", a).split()).casefold()
+    right = "".join(unicodedata.normalize("NFKC", b).split()).casefold()
+    return bool(left and right and left == right)
+
+
 
 def render_report_public_price_sources(source_rows: list, customer_quote: dict,
-                                       *, approved_record_lookup=None) -> dict:
+                                       *, approved_record_lookup=None,
+                                       view_mode: str = "compact") -> dict:
     """Build strictly server-generated public price citations for ONE quote item.
 
     This routine may only be called inside an already-authorized report route.
@@ -36,7 +46,11 @@ def render_report_public_price_sources(source_rows: list, customer_quote: dict,
         "status": "INVALID_INPUT",
     }
     if (not isinstance(source_rows, list) or not isinstance(customer_quote, dict)
-            or len(source_rows) > MAX_SOURCE_ROWS):
+            or len(source_rows) > MAX_SOURCE_ROWS or view_mode not in ("compact", "full")
+            or not isinstance(customer_quote.get("category"), str)
+            or not isinstance(customer_quote.get("item_name"), str)
+            or not customer_quote["category"].strip()
+            or not customer_quote["item_name"].strip()):
         return empty
 
     candidate_views = []
@@ -44,6 +58,13 @@ def render_report_public_price_sources(source_rows: list, customer_quote: dict,
     excluded = 0
     for source in source_rows:
         if not isinstance(source, dict):
+            excluded += 1
+            continue
+        # This section describes ONE client work item; a different work item
+        # on an otherwise legitimate renovation page is NOT relevant here.
+        # Disclose unrelated records neither as references nor as price gaps.
+        if (not _same_item(source.get("category"), customer_quote.get("category"))
+                or not _same_item(source.get("item_name"), customer_quote.get("item_name"))):
             excluded += 1
             continue
         try:
@@ -63,27 +84,26 @@ def render_report_public_price_sources(source_rows: list, customer_quote: dict,
             continue
         candidate_views.append((view, str(source.get("item_name") or "公開報價依據")))
 
-    # Valid and QA-approved same-scope price first, context-only after.
+    # Valid, QA-approved same-scope sources first; preserve stable input order
+    # within the same tier. The source amount never determines priority.
     candidate_views.sort(key=lambda item: item[0]["tier"] != "COMPARABLE")
-    html_items = []
-    comparable_count = 0
-    reference_count = 0
-    for view, title in candidate_views:
-        if view["tier"] == "COMPARABLE":
-            comparable_count += 1
-        else:
-            reference_count += 1
-        if len(html_items) < MAX_VISIBLE_ITEMS:
-            html = render_public_evidence_html(view, title=title)
-            if html:
-                html_items.append(html)
+    comparable_count = sum(view["tier"] == "COMPARABLE" for view, _ in candidate_views)
+    reference_count = len(candidate_views) - comparable_count
+    limit = MAX_VISIBLE_ITEMS if view_mode == "compact" else MAX_SOURCE_ROWS
 
-    displayed = len(html_items)
+    # Keep all comparable sources before reference-only. A compact page does
+    # not let unrelated benchmarks push verified sources outside the cap.
+    rendered = []
+    for view, title in candidate_views[:limit]:
+        html = render_public_evidence_html(view, title=title)
+        if html:
+            rendered.append((view["tier"], html))
+
+    displayed = len(rendered)
     truncated = len(candidate_views) > displayed
     summary = (
-        '<section class="judun-public-price-sources" '
-        'aria-labelledby="judun-public-price-sources-heading">'
-        '<h2 id="judun-public-price-sources-heading">公開來源與價差依據</h2>'
+        '<section class="judun-public-price-sources" aria-label="公開來源與價差依據">'
+        '<h2>公開來源與價差依據</h2>'
         '<p>可比公開報價：' + str(comparable_count) +
         ' 筆；僅供參考：' + str(reference_count) + ' 筆。</p>'
     )
@@ -97,8 +117,18 @@ def render_report_public_price_sources(source_rows: list, customer_quote: dict,
             '<p>本區僅顯示前 ' + str(displayed) +
             ' 筆來源，其餘來源尚未在此展開；請勿把此清單當成完整來源總數。</p>'
         )
-    # No raw source HTML or clickable third-party script can reach the output.
-    summary += ''.join(html_items) + '</section>'
+    # Keep actionable comparable evidence readable. Move long reference lists
+    # into a native accessible disclosure. Each report item has no duplicate
+    # element IDs, even when many items are mounted on one page.
+    summary += ''.join(html for tier, html in rendered if tier == "COMPARABLE")
+    references = [html for tier, html in rendered if tier == "REFERENCE_ONLY"]
+    if references:
+        summary += (
+            '<details class="judun-related-price-sources">'
+            '<summary>展開相關公開參考來源（' + str(len(references)) + ' 筆）</summary>'
+            + ''.join(references) + '</details>'
+        )
+    summary += '</section>'
     return {
         "html": summary,
         "comparable": comparable_count,
