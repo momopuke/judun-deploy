@@ -31,6 +31,20 @@ test("incomplete and pending payment never auto-navigates", () => {
     assert.equal(postUnlockTarget({ ...unlocked("basic"), unlockTaskState:state }), null);
   }
 });
+test("missing, null or non-boolean paymentPending is never proof of a completed payment", () => {
+  for (const tier of ["basic","promax"]) {
+    for (const paymentPending of [undefined, null, "false", 0, {}, []]) {
+      const received = {...unlocked(tier), paymentPending};
+      assert.equal(postUnlockTarget(received), null);
+      const noUI={findSection:()=>{throw Error("unverified callback touched UI")}};
+      assert.deepEqual(showVerifiedPriceSection(received,noUI),
+        {ok:false,reason:"NOT_VERIFIED_OR_NOT_READY"});
+    }
+    const omitted={...unlocked(tier)};
+    delete omitted.paymentPending;
+    assert.equal(postUnlockTarget(omitted),null);
+  }
+});
 test("free and unknown tiers never get paid-navigation entitlements", () => {
   for (const tier of ["free","trial","invalid",""]) {
     assert.equal(postUnlockTarget({ ...unlocked("basic"), tier }), null);
