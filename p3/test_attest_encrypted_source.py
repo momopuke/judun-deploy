@@ -35,6 +35,11 @@ class CmsSourceProvenanceTests(unittest.TestCase):
             wrong.write_text("not a valid cert")
             with self.assertRaisesRegex(ValueError, "INVALID_PUBLIC_CERT"):
                 audit(enc, meta, wrong)
+            other = root / "other"
+            other.mkdir()
+            make_suite(other)
+            with self.assertRaisesRegex(ValueError, "CMS_RECIPIENT_CERT_DRIFT"):
+                audit(enc, meta, other / "cert.pem")
 
 
 if __name__ == "__main__":
