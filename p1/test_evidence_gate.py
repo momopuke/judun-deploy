@@ -476,6 +476,20 @@ class EvidenceGateTests(unittest.TestCase):
         self.assertEqual(result.status, "REFERENCE_ONLY")
         self.assertIn("SOURCE_TAX_TREATMENT_NOT_PROVEN", result.reasons)
 
+    def test_tax_from_unrelated_same_amount_work_item_does_not_count(self):
+        source = {**valid_case(),
+                  "body": (
+                      "台北油漆工程，批土兩道、乳膠漆三道，每坪報價 NT$18,000。"
+                      "水電工程，配線施工 NT$18,000／坪（含稅）。"
+                  )}
+        quote = {key: source[key] for key in
+                 ("category", "item_name", "unit", "spec", "locality",
+                  "currency", "price_basis", "tax_included")}
+        quote["amount"] = "NT$20,000"
+        decision = compare_with_target(source, quote)
+        self.assertEqual(decision.status, "REFERENCE_ONLY")
+        self.assertIn("SOURCE_TAX_TREATMENT_NOT_PROVEN", decision.reasons)
+
     def test_explicit_tax_excluded_quote_can_be_comparable(self):
         source = {**valid_case(), "tax_included": False,
                   "body": "台北裝修油漆工程，批土兩道、乳膠漆三道，每坪報價 NT$18,000（未稅）。"}
