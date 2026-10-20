@@ -2,7 +2,7 @@
 import unittest
 
 from complete_quote_report import (
-    ITEMS_PER_PAGE, render_authorized_quote_items,
+    ITEMS_PER_PAGE, render_authorized_quote_items, render_complete_authorized_quote_report,
 )
 from test_evidence_gate import valid_case
 
@@ -151,6 +151,29 @@ class CompleteQuoteReportTests(unittest.TestCase):
         out=render_authorized_quote_items([quote(0),quote(1)],[[],[]])
         self.assertNotIn("估價總金額",out["html"])
         self.assertNotIn("自動推估總價",out["html"])
+
+    def test_complete_report_orchestrator_preserves_all_lines_and_prior_review(self):
+        quotes = [quote(i) for i in range(67)]
+        rows = [[] for _ in quotes]
+        rows[3] = None
+        outcome = render_complete_authorized_quote_report(quotes, rows)
+        self.assertEqual(outcome["status"], "SOURCE_REVIEW_REQUIRED")
+        self.assertFalse(outcome["complete"])
+        self.assertEqual(outcome["pages"], 3)
+        self.assertEqual(outcome["quote_items"], 67)
+        self.assertEqual(outcome["source_alerts"], [3])
+        self.assertEqual(outcome["html"].count('class="judun-quote-line"'), 67)
+        self.assertIn("第 67 項", outcome["html"])
+
+    def test_complete_report_orchestrator_all_valid_pages(self):
+        quotes = [quote(i) for i in range(67)]
+        outcome = render_complete_authorized_quote_report(
+            quotes, [[] for _ in quotes])
+        self.assertEqual(outcome["status"], "COMPLETE")
+        self.assertTrue(outcome["complete"])
+        self.assertEqual(outcome["source_alerts"], [])
+        self.assertEqual(outcome["quote_items"], 67)
+        self.assertEqual(outcome["pages"], 3)
 
     def test_foreign_currency_is_preserved_not_relabelled_as_twd(self):
         foreign = {**quote(0), "amount": "25000", "currency": "USD"}
