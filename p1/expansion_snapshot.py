@@ -62,6 +62,25 @@ def write_event_snapshot(path: str | Path, data: dict, *, updated_at: str | None
     if len(raw) > MAX_BYTES:
         raise ValueError("oversized status snapshot")
     target = Path(path)
+    # Reject sequential clock rollback from an older controller event.
+    # Atomic replacement alone prevents partial bytes, not stale overwrites.
+    # The live controller still needs a single-writer/serialized-event policy
+    # for concurrent workers; this preflight is not a distributed lock.
+    try:
+        with target.open("rb") as previous_file:
+            previous_bytes = previous_file.read(MAX_BYTES + 1)
+        if len(previous_bytes) <= MAX_BYTES:
+            previous = json.loads(previous_bytes.decode("utf-8"))
+            if isinstance(previous, dict) and previous.get("schema") == SCHEMA:
+                previous_time = _parse_time(previous.get("updated_at"))
+                if _parse_time(stamp) < previous_time:
+                    raise ValueError("snapshot timestamp regressed")
+    except FileNotFoundError:
+        pass
+    except (UnicodeError, json.JSONDecodeError, TypeError, KeyError):
+        # The prior file is corrupt; permit replacing it with a validated
+        # small new snapshot. Other file read failures remain visible.
+        pass
     target.parent.mkdir(parents=True, exist_ok=True)
     temp_name = None
     try:
