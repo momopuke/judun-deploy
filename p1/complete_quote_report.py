@@ -165,6 +165,18 @@ def render_authorized_quote_items(
         amount = parse_twd_amount(row.get("amount"))
         currency = str(row.get("currency") or "").upper()
         twd = currency in ("TWD", "NTD", "NT$", "新臺幣", "新台幣")
+        # Keeping a malformed quote line is not the same as verifying it.
+        # Explicitly carry a review flag even when there are zero sources.
+        critical = ("category", "item_name", "unit", "spec", "locality")
+        fields_complete = all(
+            isinstance(row.get(key), str) and bool(row[key].strip())
+            and len(row[key]) <= 160 for key in critical
+        )
+        if (not fields_complete or amount is None or not twd
+                or row.get("price_basis") not in ("unit_price", "total_price")
+                or type(row.get("tax_included")) is not bool):
+            if i not in page_alerts:
+                page_alerts.append(i)
         if amount is not None and twd:
             price = "NT$" + f"{amount:,.2f}".removesuffix(".00")
         else:
