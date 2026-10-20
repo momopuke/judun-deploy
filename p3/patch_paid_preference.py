@@ -21,6 +21,8 @@ import hashlib
 import json
 from pathlib import Path
 from urllib.request import Request, urlopen
+from urllib.error import URLError, HTTPError
+import time
 
 PUBLIC_URL = "https://judun.142-93-91-214.sslip.io/"
 OLD = "const preferred = tier === 'promax' ? 'report-five-themes' : 'report-price-items';"
@@ -82,19 +84,38 @@ def apply_one_statement(data: bytes) -> tuple[bytes, dict, str]:
 
 
 def fetch_public() -> bytes:
+    """Read-only GET retries ONLY transient transport errors, max 3 attempts.
+
+    A successful response with mismatched SHA/version is NOT retried or silently
+    accepted; apply_one_statement() remains a fail-closed source patch.
+    """
     request = Request(PUBLIC_URL, headers={
         "User-Agent": "Judun-P3-ReadOnly-ExactSourceReview/1",
         "Accept": "text/html",
+        "Cache-Control": "no-cache",
     }, method="GET")
-    with urlopen(request, timeout=12) as response:
-        if response.status != 200 or response.geturl().rstrip("/") != PUBLIC_URL.rstrip("/"):
-            raise ValueError("UNEXPECTED_PUBLIC_SOURCE_RESPONSE")
-        if "text/html" not in response.headers.get("Content-Type", ""):
-            raise ValueError("PUBLIC_SOURCE_NOT_HTML")
-        data = response.read(BOUNDED_BYTES + 1)
-    if len(data) > BOUNDED_BYTES:
-        raise ValueError("SOURCE_TOO_LARGE")
-    return data
+    last_error = None
+    for attempt in range(3):
+        try:
+            with urlopen(request, timeout=22) as response:
+                if response.status != 200 or response.geturl().rstrip("/") != PUBLIC_URL.rstrip("/"):
+                    raise ValueError("UNEXPECTED_PUBLIC_SOURCE_RESPONSE")
+                if "text/html" not in response.headers.get("Content-Type", ""):
+                    raise ValueError("PUBLIC_SOURCE_NOT_HTML")
+                data = response.read(BOUNDED_BYTES + 1)
+            if len(data) > BOUNDED_BYTES:
+                raise ValueError("SOURCE_TOO_LARGE")
+            return data
+        except (TimeoutError, URLError, OSError) as error:
+            # No retries for unexpected HTTP status and other factual content
+            # mismatches; these must be diagnosed rather than hidden.
+            if isinstance(error, HTTPError):
+                raise ValueError("PUBLIC_SOURCE_HTTP_ERROR") from error
+            last_error = error
+            if attempt < 2:
+                print("P3_PUBLIC_SOURCE_TRANSIENT_READ_RETRY", attempt + 1, flush=True)
+                time.sleep(2 * (attempt + 1))
+    raise RuntimeError("PUBLIC_SOURCE_UNAVAILABLE_AFTER_3_READ_ATTEMPTS") from last_error
 
 
 def main() -> int:
