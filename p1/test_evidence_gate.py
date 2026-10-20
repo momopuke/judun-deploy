@@ -334,7 +334,8 @@ class EvidenceGateTests(unittest.TestCase):
                 self.assertFalse(result.eligible_for_formal_import)
 
     def test_total_amount_requires_identical_quantity(self):
-        source = {**valid_case(), "price_basis":"total_price", "quantity":25}
+        source = {**valid_case(), "price_basis":"total_price", "quantity":25,
+                  "body":"台北室內裝修油漆工程，整項總價 NT$18,000 元。"}
         target = {k:source[k] for k in ("category", "item_name", "unit", "spec", "locality",
                                       "currency", "price_basis", "tax_included")}
         target["amount"] = "20000"
@@ -344,6 +345,36 @@ class EvidenceGateTests(unittest.TestCase):
                 self.assertEqual(r.status,"REFERENCE_ONLY")
         self.assertEqual(compare_with_target(source,{**target, "quantity":"25.00"}).status,
                          "COMPARABLE")
+
+    def test_total_price_falsely_labeled_unit_price_is_not_comparable(self):
+        source = {**valid_case(),
+                  "body": "台北裝修油漆工程，整項總價 NT$18,000 元。",
+                  "price_basis": "unit_price"}
+        target = {key: source[key] for key in
+                  ("category", "item_name", "unit", "spec", "locality",
+                   "currency", "price_basis", "tax_included")}
+        target["amount"] = "NT$20,000"
+        decision = compare_with_target(source, target)
+        self.assertEqual(decision.status, "REFERENCE_ONLY")
+        self.assertIn("SOURCE_PRICE_UNIT_BASIS_NOT_PROVEN", decision.reasons)
+
+    def test_unit_price_without_price_linked_unit_is_reference_only(self):
+        source = {**valid_case(),
+                  "body": "台北裝修油漆工程，價格 NT$18,000 元；施工面積 20 坪。"}
+        target = {key: source[key] for key in
+                  ("category", "item_name", "unit", "spec", "locality",
+                   "currency", "price_basis", "tax_included")}
+        target["amount"] = "NT$20,000"
+        self.assertEqual(compare_with_target(source, target).status, "REFERENCE_ONLY")
+
+    def test_explicit_same_occurrence_per_unit_price_is_comparable(self):
+        source = {**valid_case(),
+                  "body": "台北裝修油漆工程，每坪報價 NT$18,000。"}
+        target = {key: source[key] for key in
+                  ("category", "item_name", "unit", "spec", "locality",
+                   "currency", "price_basis", "tax_included")}
+        target["amount"] = "NT$20,000"
+        self.assertEqual(compare_with_target(source, target).status, "COMPARABLE")
 
     def test_tax_inclusion_must_match_explicitly(self):
         source=valid_case()
