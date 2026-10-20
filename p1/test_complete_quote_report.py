@@ -31,12 +31,14 @@ class CompleteQuoteReportTests(unittest.TestCase):
         pages = []
         offset = 0
         snapshot = None
+        src_snapshot = None
         alerts = []
         while True:
             result = render_authorized_quote_items(
                 quotes, sources, offset=offset, expected_quote_digest=snapshot,
-                prior_source_alerts=alerts)
+                expected_source_digest=src_snapshot, prior_source_alerts=alerts)
             snapshot = result["quote_digest"]
+            src_snapshot = result["source_digest"]
             alerts = result["source_alerts"]
             pages.append(result)
             if result["next_offset"] is None:
@@ -92,7 +94,8 @@ class CompleteQuoteReportTests(unittest.TestCase):
         edited[2] = {**quotes[2], "amount": "30000"}
         mismatch = render_authorized_quote_items(
             edited, sources, offset=first["next_offset"],
-            expected_quote_digest=first["quote_digest"], prior_source_alerts=[])
+            expected_quote_digest=first["quote_digest"],
+            expected_source_digest=first["source_digest"], prior_source_alerts=[])
         self.assertEqual(mismatch["status"], "QUOTE_SNAPSHOT_CHANGED")
         self.assertEqual(mismatch["html"], "")
         self.assertFalse(mismatch["complete"])
@@ -107,6 +110,7 @@ class CompleteQuoteReportTests(unittest.TestCase):
         second = render_authorized_quote_items(
             quotes, sources, offset=first["next_offset"],
             expected_quote_digest=first["quote_digest"],
+            expected_source_digest=first["source_digest"],
             prior_source_alerts=first["source_alerts"])
         self.assertEqual(second["status"], "SOURCE_REVIEW_REQUIRED")
         self.assertFalse(second["complete"])
@@ -120,7 +124,8 @@ class CompleteQuoteReportTests(unittest.TestCase):
         first = render_authorized_quote_items(quotes, sources)
         without = render_authorized_quote_items(
             quotes, sources, offset=30,
-            expected_quote_digest=first["quote_digest"])
+            expected_quote_digest=first["quote_digest"],
+            expected_source_digest=first["source_digest"])
         self.assertEqual(without["status"], "CONTINUATION_STATE_REQUIRED")
         self.assertFalse(without["complete"])
         for alerts in ([30], [-1], [0, 0], [True], ["0"]):
@@ -128,6 +133,7 @@ class CompleteQuoteReportTests(unittest.TestCase):
                 out = render_authorized_quote_items(
                     quotes, sources, offset=30,
                     expected_quote_digest=first["quote_digest"],
+                    expected_source_digest=first["source_digest"],
                     prior_source_alerts=alerts)
                 self.assertEqual(out["status"], "CONTINUATION_STATE_REQUIRED")
 
@@ -137,6 +143,34 @@ class CompleteQuoteReportTests(unittest.TestCase):
         resumed = render_authorized_quote_items(
             quotes, sources, offset=30)
         self.assertEqual(resumed["status"], "QUOTE_SNAPSHOT_CHANGED")
+
+    def test_source_association_changed_between_pages_does_not_cross_pair(self):
+        quotes = [quote(i) for i in range(31)]
+        records = [[] for _ in quotes]
+        records[0] = [valid_case()]
+        first = render_authorized_quote_items(quotes, records)
+        changed = [list(items) for items in records]
+        changed[0], changed[30] = changed[30], changed[0]
+        second = render_authorized_quote_items(
+            quotes, changed, offset=first["next_offset"],
+            expected_quote_digest=first["quote_digest"],
+            expected_source_digest=first["source_digest"],
+            prior_source_alerts=first["source_alerts"])
+        self.assertEqual(second["status"], "SOURCE_SNAPSHOT_CHANGED")
+        self.assertFalse(second["complete"])
+        self.assertEqual(second["html"], "")
+
+    def test_extremely_large_source_map_keeps_original_quote_with_review(self):
+        quotes = [quote(i) for i in range(31)]
+        records = [[] for _ in quotes]
+        records[0] = [valid_case()] * 20001
+        result = render_complete_authorized_quote_report(quotes, records)
+        self.assertEqual(result["status"], "SOURCE_REVIEW_REQUIRED")
+        self.assertFalse(result["complete"])
+        self.assertEqual(result["quote_items"], 31)
+        self.assertEqual(result["html"].count('class="judun-quote-line"'), 31)
+        self.assertNotIn("公開來源與價差依據", result["html"])
+        self.assertEqual(result["source_alerts"], list(range(31)))
 
     def test_misaligned_evidence_arrays_preserve_original_quote_without_matching(self):
         for src in ([], [[], []]):
