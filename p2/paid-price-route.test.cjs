@@ -174,6 +174,40 @@ test("async navigation bounded timeout does not scroll late", async () => {
   assert.equal(focused,false);
   assert.equal(scrolled,false);
 });
+test("timeout passes an abort signal so participating UI work is cancelled", async () => {
+  let mountSignal=null, aborted=false, afterMount=false;
+  const task=showVerifiedPriceSectionAsync(unlocked("basic"), {
+    mount:(_, opts) => new Promise(resolve => {
+      mountSignal=opts.signal;
+      if(opts.signal.aborted) {aborted=true; return resolve();}
+      opts.signal.addEventListener("abort",()=>{
+        aborted=true;
+        resolve();
+      },{once:true});
+    }),
+    findSection:()=>{ afterMount=true; return {id:PRICE_SECTION}; },
+    focus:()=>{ throw new Error("no focus after abort"); },
+  },100);
+  assert.deepEqual(await task,{ok:false,reason:"REPORT_UI_TIMEOUT"});
+  assert.equal(aborted,true);
+  assert.equal(mountSignal.aborted,true);
+  assert.equal(afterMount,false);
+});
+
+test("successful async report keeps cancellation signal un-aborted", async () => {
+  const signals=[];
+  const result=await showVerifiedPriceSectionAsync(unlocked("basic"), {
+    mount:(_, opts)=>signals.push(opts.signal),
+    whenRendered:(_, opts)=>signals.push(opts.signal),
+    findSection:()=>({id:PRICE_SECTION}),
+    focus:(_, opts)=>signals.push(opts.signal),
+    scroll:(_, opts)=>signals.push(opts.signal),
+  },1000);
+  assert.deepEqual(result,{ok:true,target:PRICE_SECTION});
+  assert.equal(signals.length,4);
+  assert.ok(signals.every(signal=>signal===signals[0] && !signal.aborted));
+});
+
 test("async path never accesses UI before entitlement is validated", async () => {
   const invalid={...unlocked("promax"), entitlementVerified:false};
   assert.deepEqual(await showVerifiedPriceSectionAsync(invalid,{
