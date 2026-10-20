@@ -148,10 +148,29 @@ test("switching cases during async mount does not focus or scroll stale report",
     release();
     const outcome=await pending;
     assert.equal(outcome.ok,false,switchContext);
-    assert.equal(outcome.reason,"PRICE_SECTION_NOT_RENDERED",switchContext);
+    assert.equal(outcome.reason,"REPORT_CONTEXT_CHANGED",switchContext);
     assert.deepEqual(uiCalls,[],switchContext);
     assert.equal(calls.filter(call=>call[0]==="mount").length,1);
   }
+});
+test("post-unlock callback missing explicit paymentPending=false never invokes renderer",async()=>{
+  for(const tier of ["basic","promax"]){
+    for(const pending of [null,undefined,"false",0]){
+      const {adapter,calls}=makeAdapter({section:fakeSection().el});
+      const result=await continueToPriceAfterVerifiedUnlock(
+        {...serverReady(tier),paymentPending:pending},adapter);
+      assert.deepEqual(result,{ok:false,reason:"NOT_VERIFIED_OR_NOT_READY"});
+      assert.deepEqual(calls,[]);
+    }
+  }
+});
+test("section hidden during focus never receives a stale scroll or success",async()=>{
+  const {el,calls}=fakeSection();
+  el.focus=()=>{el.hidden=true;calls.push(["focused-then-hidden"]);};
+  const {adapter}=makeAdapter({section:el});
+  const result=await continueToPriceAfterVerifiedUnlock(serverReady(),adapter);
+  assert.deepEqual(result,{ok:false,reason:"REPORT_UI_RENDER_FAILED"});
+  assert.deepEqual(calls,[["focused-then-hidden"]]);
 });
 test("timeout never calls focus and must pass an abort signal to real report mount",async()=>{
   let signal;
