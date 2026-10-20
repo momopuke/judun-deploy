@@ -182,7 +182,8 @@ def build_public_evidence_view(
             raise InvalidOperation("non-finite price difference")
     except (InvalidOperation, OverflowError, ZeroDivisionError):
         view["label"] = "價格差異需人工確認"
-        view["explanation"] = "數值超出安全比較範圍；保留來源參考，不顯示可能失真的百分比或價差。"
+        view["explanation"] = "數值超出安全比較範圍；保留來源引用，不顯示可能失真的百分比、單價或價差。"
+        view["reference_amount_twd"] = None
         return view
     view.update({
         "tier": "COMPARABLE",
@@ -195,6 +196,12 @@ def build_public_evidence_view(
         "formal_evidence_id": approved_id,
     })
     return view
+
+
+def _display_decimal(value: Decimal) -> str:
+    """Keep every provided decimal place instead of silently rounding money."""
+    shown = format(value, ",f")
+    return shown.rstrip("0").rstrip(".") if "." in shown else shown
 
 
 def render_public_evidence_html(view: dict, title: str = "公開報價依據") -> str:
@@ -228,7 +235,7 @@ def render_public_evidence_html(view: dict, title: str = "公開報價依據") -
         escape(view["tier"], quote=True) + '">'
         '<h3>' + heading + '</h3>'
         '<p><strong>' + label + '</strong></p>'
-        + ('<p>公開來源價格：NT$' + escape(f"{amount:,.2f}".removesuffix(".00")) + '</p>'
+        + ('<p>公開來源價格：NT$' + escape(_display_decimal(amount)) + '</p>'
            if amount is not None else '')
         + '<p>' + explanation + '</p>'
     )
@@ -250,7 +257,7 @@ def render_public_evidence_html(view: dict, title: str = "公開報價依據") -
         except (ValueError, InvalidOperation, TypeError, ZeroDivisionError):
             return ""
         def money(value):
-            return escape(f"{value:,.2f}".removesuffix(".00"))
+            return escape(_display_decimal(value))
         direction = "高於" if delta > 0 else "低於"
         comparison = ("與公開來源價格相同" if delta == 0
                       else "屋主報價" + direction + "公開來源價格 NT$" + money(abs(delta)))
