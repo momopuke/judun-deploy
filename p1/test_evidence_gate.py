@@ -243,6 +243,24 @@ class EvidenceGateTests(unittest.TestCase):
         case=dict(valid_case(), body="台北室內裝修，價格 2026 年度行情說明。", amount="2026")
         self.assertEqual(evaluate(case).status,"HOLD")
 
+    def test_conflicting_exact_and_approximate_mentions_remain_reference(self):
+        examples = (
+            ("台北裝修油漆單價 NT$18,000／坪；另註明約 NT$18,000。", "台北裝修"),
+            ("台北裝修油漆單價約 NT$18,000；明細另列 NT$18,000／坪。", "台北裝修"),
+            ("台北裝修油漆單價起價 NT$18,000；報價 NT$18,000。", "台北裝修"),
+        )
+        for body, title in examples:
+            with self.subTest(body=body):
+                case = dict(valid_case(), title=title, body=body)
+                decision = evaluate(case)
+                self.assertEqual(decision.status, "REFERENCE_ONLY")
+                self.assertIn("SOURCE_PRICE_RANGE_OR_ESTIMATE_NOT_EXACT", decision.reasons)
+
+    def test_approximate_source_without_classification_is_not_publishable(self):
+        case = dict(valid_case(), body="台北裝修油漆單價約 NT$18,000／坪")
+        self.assertEqual(evaluate({**case, "evidence_type": ""}).status, "HOLD")
+        self.assertEqual(evaluate({**case, "price_phase": ""}).status, "HOLD")
+
     def test_exact_explicit_quote_still_comparable_candidate(self):
         for excerpt,amount in [
             ("台北裝修油漆工程，單價：1,500 元／坪。","1500"),
