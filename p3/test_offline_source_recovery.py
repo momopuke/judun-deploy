@@ -103,6 +103,34 @@ class OfflineSourceRestoreTests(unittest.TestCase):
                 inspect_plaintext(bad, "1.2.114")
 
 
+    def test_actual_synthetic_cms_recovery_requires_independent_tree(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            encrypted, verify_file, archive, app = make_suite(root)
+            rows = [{"path": "runtime/app.py", "size": len(app), "sha256": sha(app)}]
+            for index in range(80):
+                data = ("filler" + str(index)).encode()
+                rows.append({"path": "runtime/ref%03d" % index,
+                             "size": len(data), "sha256": sha(data)})
+            tree = computed_tree_sha(rows)
+            live_manifest = root / "live-manifest.json"
+            live_manifest.write_text(json.dumps({
+                "schema": "judun.deploy-manifest.v1",
+                "version": "1.2.114", "artifact_id": BUILD,
+                "source_tree_sha256": tree, "files": rows,
+            }))
+            result = recover(encrypted, verify_file, archive,
+                             trusted_manifest=live_manifest, public_tree_sha256=tree)
+            self.assertEqual(
+                result["recovered_app_matches_live_authoritative_sha"],
+                "VERIFIED_VIA_INDEPENDENT_LIVE_TREE",
+            )
+            with self.assertRaisesRegex(ValueError, "INDEPENDENT_SOURCE_TREE_DRIFT"):
+                recover(encrypted, verify_file, archive,
+                        trusted_manifest=live_manifest, public_tree_sha256="f" * 64)
+            with self.assertRaisesRegex(ValueError, "MANIFEST_AND_TREE_REQUIRED_TOGETHER"):
+                recover(encrypted, verify_file, archive, trusted_manifest=live_manifest)
+
     def test_full_app_must_match_independent_live_release_tree(self):
         app = b'APP_VERSION = "1.2.114"\n'
         records = [{"path": "system_files/app.py", "size": len(app), "sha256": sha(app)}]
