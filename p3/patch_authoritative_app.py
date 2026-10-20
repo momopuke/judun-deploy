@@ -27,6 +27,11 @@ from patch_paid_preference import OLD, NEW, OLD_COMPLETION, NEW_COMPLETION
 
 MAX_SOURCE_BYTES = 16_000_000
 CONTEXT_WINDOW = 16_000
+# Historical v1.2.87 archive (known to predate published v1.2.114).
+# Compatibility review is not release authority: never stage this as current.
+KNOWN_NONCURRENT_SOURCE_SHA256 = frozenset({
+    "1c5c2c12bcc956af98e9349fefc35c7d0fb6b47568be50921d4ef27ca335247d",
+})
 
 
 def sha256(data: bytes) -> str:
@@ -56,6 +61,8 @@ def apply_app_patch(raw: bytes, expected_sha256: str) -> tuple[bytes, dict]:
     before_hash = sha256(raw)
     if before_hash != expected_sha256.lower():
         raise ValueError("SOURCE_SHA256_MISMATCH_STOP")
+    if before_hash in KNOWN_NONCURRENT_SOURCE_SHA256:
+        raise ValueError("KNOWN_ARCHIVED_SOURCE_NOT_PRODUCTION_CURRENT")
     try:
         original = raw.decode("utf-8")
     except UnicodeDecodeError as exc:
