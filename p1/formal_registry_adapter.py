@@ -11,7 +11,7 @@ from public HTTP parameters, reports, uploads, or browser JS.
 from __future__ import annotations
 
 from contextlib import closing
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 import re
 import sqlite3
@@ -26,7 +26,7 @@ _EVIDENCE_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.:/-]{0,127}\Z")
 REQUIRED_SCHEMA = """
 CREATE TABLE judun_formal_evidence_approvals_v1 (
     fingerprint TEXT NOT NULL UNIQUE,
-    evidence_id TEXT NOT NULL,
+    evidence_id TEXT NOT NULL UNIQUE,
     approval_state TEXT NOT NULL CHECK(approval_state IN ('approved','pending','rejected','revoked')),
     reviewed_at_utc TEXT NOT NULL,
     revoked_at_utc TEXT
@@ -64,6 +64,17 @@ class ReadOnlyFormalApprovalRegistry:
                     "FROM " + APPROVAL_TABLE + " WHERE fingerprint = ? LIMIT 2",
                     (source_fingerprint,),
                 ).fetchall()
+                if len(rows) != 1:
+                    return None
+                # An approval ID must represent exactly one reviewed snapshot.
+                # Reject a legacy or malformed table reusing the same ID.
+                owner_rows = db.execute(
+                    "SELECT fingerprint FROM " + APPROVAL_TABLE +
+                    " WHERE evidence_id = ? LIMIT 2",
+                    (rows[0][0],),
+                ).fetchall()
+                if len(owner_rows) != 1 or owner_rows[0][0] != source_fingerprint:
+                    return None
         except (sqlite3.Error, OSError, ValueError):
             return None
         if len(rows) != 1:
@@ -78,6 +89,10 @@ class ReadOnlyFormalApprovalRegistry:
         try:
             when = datetime.fromisoformat(reviewed_at.replace("Z", "+00:00"))
             if when.tzinfo is None or when.utcoffset() is None:
+                return None
+            # A future-dated approval cannot yet be relied on. Allow only
+            # a small clock-skew tolerance for independently managed servers.
+            if when.astimezone(timezone.utc) > datetime.now(timezone.utc) + timedelta(minutes=5):
                 return None
         except ValueError:
             return None
