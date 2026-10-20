@@ -129,6 +129,15 @@ def render_paged_public_price_sources(
         for name in ("comparable", "reference_only", "excluded", "displayed"):
             totals[name] += result[name]
 
+    # Each independent paginated call must be internally consistent even
+    # when a background expansion writer mutates a shared list midway. Never
+    # return partial HTML compiled from two source versions.
+    if public_source_snapshot_digest(source_rows) != digest:
+        return {
+            **invalid, "status": "SOURCE_SNAPSHOT_CHANGED",
+            "snapshot_digest": None,
+        }
+
     complete = next_end == len(source_rows)
     return {
         "status": "COMPLETE" if complete else "MORE",
