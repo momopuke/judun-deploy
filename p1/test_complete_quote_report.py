@@ -31,10 +31,13 @@ class CompleteQuoteReportTests(unittest.TestCase):
         pages = []
         offset = 0
         snapshot = None
+        alerts = []
         while True:
             result = render_authorized_quote_items(
-                quotes, sources, offset=offset, expected_quote_digest=snapshot)
+                quotes, sources, offset=offset, expected_quote_digest=snapshot,
+                prior_source_alerts=alerts)
             snapshot = result["quote_digest"]
+            alerts = result["source_alerts"]
             pages.append(result)
             if result["next_offset"] is None:
                 break
@@ -89,10 +92,44 @@ class CompleteQuoteReportTests(unittest.TestCase):
         edited[2] = {**quotes[2], "amount": "30000"}
         mismatch = render_authorized_quote_items(
             edited, sources, offset=first["next_offset"],
-            expected_quote_digest=first["quote_digest"])
+            expected_quote_digest=first["quote_digest"], prior_source_alerts=[])
         self.assertEqual(mismatch["status"], "QUOTE_SNAPSHOT_CHANGED")
         self.assertEqual(mismatch["html"], "")
         self.assertFalse(mismatch["complete"])
+
+    def test_final_page_does_not_erase_prior_source_review_failure(self):
+        quotes = [quote(i) for i in range(31)]
+        sources = [[] for _ in quotes]
+        sources[0] = None
+        first = render_authorized_quote_items(quotes, sources)
+        self.assertEqual(first["status"], "MORE_ITEMS")
+        self.assertEqual(first["source_alerts"], [0])
+        second = render_authorized_quote_items(
+            quotes, sources, offset=first["next_offset"],
+            expected_quote_digest=first["quote_digest"],
+            prior_source_alerts=first["source_alerts"])
+        self.assertEqual(second["status"], "SOURCE_REVIEW_REQUIRED")
+        self.assertFalse(second["complete"])
+        self.assertEqual(second["source_alerts"], [0])
+        self.assertEqual(second["page_source_alerts"], [])
+        self.assertIn("部分工項需補充來源", second["html"])
+
+    def test_continuation_requires_verified_cumulative_review_state(self):
+        quotes = [quote(i) for i in range(31)]
+        sources = [[] for _ in quotes]
+        first = render_authorized_quote_items(quotes, sources)
+        without = render_authorized_quote_items(
+            quotes, sources, offset=30,
+            expected_quote_digest=first["quote_digest"])
+        self.assertEqual(without["status"], "CONTINUATION_STATE_REQUIRED")
+        self.assertFalse(without["complete"])
+        for alerts in ([30], [-1], [0, 0], [True], ["0"]):
+            with self.subTest(alerts=alerts):
+                out = render_authorized_quote_items(
+                    quotes, sources, offset=30,
+                    expected_quote_digest=first["quote_digest"],
+                    prior_source_alerts=alerts)
+                self.assertEqual(out["status"], "CONTINUATION_STATE_REQUIRED")
 
     def test_quote_continuation_requires_snapshot_identity(self):
         quotes = [quote(i) for i in range(31)]
