@@ -335,7 +335,7 @@ class EvidenceGateTests(unittest.TestCase):
 
     def test_total_amount_requires_identical_quantity(self):
         source = {**valid_case(), "price_basis":"total_price", "quantity":25,
-                  "body":"台北室內裝修油漆工程，整項總價 NT$18,000 元。"}
+                  "body":"台北室內裝修油漆工程，批土兩道、乳膠漆三道，整項總價 NT$18,000 元。"}
         target = {k:source[k] for k in ("category", "item_name", "unit", "spec", "locality",
                                       "currency", "price_basis", "tax_included")}
         target["amount"] = "20000"
@@ -390,12 +390,35 @@ class EvidenceGateTests(unittest.TestCase):
 
     def test_explicit_same_occurrence_per_unit_price_is_comparable(self):
         source = {**valid_case(),
-                  "body": "台北裝修油漆工程，每坪報價 NT$18,000。"}
+                  "body": "台北裝修油漆工程，批土兩道、乳膠漆三道，每坪報價 NT$18,000。"}
         target = {key: source[key] for key in
                   ("category", "item_name", "unit", "spec", "locality",
                    "currency", "price_basis", "tax_included")}
         target["amount"] = "NT$20,000"
         self.assertEqual(compare_with_target(source, target).status, "COMPARABLE")
+
+    def test_parser_declared_spec_missing_from_source_cannot_be_compared(self):
+        source = {**valid_case(),
+                  "body": "台北裝修油漆工程，每坪報價 NT$18,000。"}
+        target = {key: source[key] for key in
+                  ("category", "item_name", "unit", "spec", "locality",
+                   "currency", "price_basis", "tax_included")}
+        target["amount"] = "NT$20,000"
+        decision = compare_with_target(source, target)
+        self.assertEqual(decision.status, "REFERENCE_ONLY")
+        self.assertIn("SOURCE_PRICE_SPEC_NOT_PROVEN", decision.reasons)
+
+    def test_specification_listed_far_from_price_does_not_prove_same_item(self):
+        source = {**valid_case(),
+                  "body": "批土兩道、乳膠漆三道。" + "裝修工程介紹。" * 45 +
+                          "台北油漆工程每坪報價 NT$18,000。"}
+        target = {key: source[key] for key in
+                  ("category", "item_name", "unit", "spec", "locality",
+                   "currency", "price_basis", "tax_included")}
+        target["amount"] = "NT$20,000"
+        decision = compare_with_target(source, target)
+        self.assertEqual(decision.status, "REFERENCE_ONLY")
+        self.assertIn("SOURCE_PRICE_SPEC_NOT_PROVEN", decision.reasons)
 
     def test_tax_inclusion_must_match_explicitly(self):
         source=valid_case()
