@@ -57,3 +57,5 @@ GitHub Actions: `.github/workflows/judun-p0-unified-acceptance.yml`
 - QA 以 `python3 -m unittest discover -s p1 -p 'test_*.py' -v` 跑新增與既有測試，並保留原簽章發行區不動。
 
 **限制：** 這是報告顯示層的實作候選，**尚未串到當前正式 v1.2.114 的網站模板，也沒有使用 10–20 份屋主真實報價做配對驗證**；不能宣稱現站來源顯示已改善。
+
+**追加：區間／起價／約略估價來源仍可列為參考來源，但不能把 parser 抓到的其中一個端點印成精確的 NT$ 單價；顯示提醒文字及原始外部網址，不計算差額。**
