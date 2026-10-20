@@ -61,15 +61,15 @@ jobs:
         run: python3 -m unittest discover -s p1 -p 'test_*.py' -v
       - name: Execute checkout-to-price navigation and asynchronous report tests
         run: node --test p2/paid-price-route.test.cjs p3/report-integration.test.cjs
-      - name: Verify surgical ProMax preferred-section source patch
+      - name: Verify exact ProMax preference and completion-status source guards
         run: python3 -m unittest discover -s p3 -p 'test_*.py' -v
-      - name: Prepare exact one-statement live-source patch (read-only)
+      - name: Prepare exact two-statement live-source patch (read-only)
         run: python3 p3/patch_paid_preference.py --public-review
       - name: Save reviewable live-source patch without deploying
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: judun-p3-promax-source-patch-NOT-DEPLOYED
+          name: judun-p3-dual-safety-source-patch-NOT-DEPLOYED
           path: |
             p3/results/paid-preference-exact.patch
             p3/results/paid-preference-review.json
@@ -119,12 +119,13 @@ jobs:
           python3 p3/patch_paid_preference.py --public-stage \
             --original-out "$RUNNER_TEMP_DIR/judun-p3-v12114-original.html" \
             --output "$RUNNER_TEMP_DIR/judun-p3-v12114-patched.html"
-      - name: Diagnose negative completion status against real public callback (isolated)
+      - name: Verify negative-status false positives blocked by exact live-source patch
         env:
           RUNNER_TEMP_DIR: ${{ runner.temp }}
         run: |
           node p3/negative-status-diagnostic.cjs \
-            "$RUNNER_TEMP_DIR/judun-p3-v12114-original.html"
+            "$RUNNER_TEMP_DIR/judun-p3-v12114-original.html" \
+            "$RUNNER_TEMP_DIR/judun-p3-v12114-patched.html"
       - name: Compare real before/after ProMax behavior in fully network-isolated Chromium
         env:
           RUNNER_TEMP_DIR: ${{ runner.temp }}
