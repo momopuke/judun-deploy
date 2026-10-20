@@ -191,3 +191,14 @@ python3 p3/patch_authoritative_app.py \
 公開 `/health/artifact?deep=true` 有 **source_tree_sha256、formal_evidence_sha256、版本與 81 項檔案完整性**，但經 Runner 逐項型別核對，沒有單獨公開 `app.py` SHA。真正的授權還原必須取得 VPS 上與現網 source_tree_sha256 一致的 **完整 `DEPLOY_MANIFEST.json`**；由該清單指明 app.py 的 SHA/大小，再用完整樹雜湊與公開 live deep-health 交叉確認，否則應停在源碼未驗證狀態。不能以本機自算的 SHA 假冒獨立正式基準。
 
 已修正 HTTPS ZIP 雙層驗收缺口：內嵌 ZIP 不得缺少清單中任何一個檔案、不得增加未列項目；即使外層更新包及 runtime bundle 雜湊同步改寫也必須拒絕。新增缺檔、夾檔及竄改的負向回歸測試。現行正式 v1.2.114 與舊簽章 stable 通道繼續保持原狀。
+
+## 2026-10-21｜P3 付款完成事件與正式封裝防誤判補強
+
+**維持既定產品路線**：只修改目前 PR #9 的付費後看價差與正式發布前防護；不更換首頁、設計風格、正式資料或實際付款流程。
+
+1. **付款狀態必須明確**：原本只拒絕 `paymentPending === true`，若伺服器回傳缺欄位、`null`、字串 `"false"` 或數字 `0`，可能誤認已可導覽。已改成**只有布林 `false`**、權益核准、報告已完成、報告 ID 一致才可進入原有的 `report-price-items`。
+2. **跨案件與非同步導覽保護**：載入、ready、定位、捲動每個非同步邊界，都重新確認原授權案件與同一份 DOM；若切換案件即拒絕舊結果，焦點期間價格區段隱藏／卸載不再誤顯示成功。
+3. **重複完成通知合併**：同一個 adapter／report 仍在載入時，多次完成回呼只共用一次掛載 Promise；註冊於開始渲染前以阻止 render() 內同步再進入。權益驗證仍對**每次**回呼重新執行；已失效、未授權事件不得借用既有完成結果。載入結束後清除 WeakMap flight，不長期暫存付費權益。
+4. **正式 ZIP JSON 無歧義**：在 `RELEASE.json`、`RUNTIME_RELEASE_LOCK.json`、兩層 `DEPLOY_MANIFEST.json` 解析時拒絕重複鍵、NaN／Infinity，避免不同發布程式解讀出不同 artifact、版本、大小或核對紀錄。負向測試有刻意塞入重複 `version` 和非有限值。
+
+以上只完成**候選原始碼與自動化回歸測試**。正式站仍為 v1.2.114；現行權威原始碼和正式 HTTPS v3 部署授權尚未打通，不能以 PR 綠燈代替付款／PDF 實際 E2E 或正式發布。
