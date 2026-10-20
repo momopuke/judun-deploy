@@ -66,6 +66,11 @@ function priceSectionVisible(root, target) {
  * This adapter never calls unlockTier, openPreferredJudunReport, fetch payment,
  * changes URL/location, creates a report, or submits an upload.
  */
+// Webhook/polling status notifications can repeat the same verified event.
+// One active render per authorized adapter+report avoids duplicate mounts
+// while never storing entitlement or completed UI state across callbacks.
+const inFlightReportNavigation = new WeakMap();
+
 async function continueToPriceAfterVerifiedUnlock(completion, adapter, timeoutMs=3000) {
   const result = snapshotCompletedServerResult(completion);
   if (postUnlockTarget(result) !== PRICE_SECTION) {
@@ -128,7 +133,20 @@ async function continueToPriceAfterVerifiedUnlock(completion, adapter, timeoutMs
       });
     };
   }
-  return showVerifiedPriceSectionAsync(result, io, timeoutMs);
+  const existing = inFlightReportNavigation.get(adapter);
+  if (existing && existing.reportId === routeReportId && existing.root === reportRoot) {
+    return existing.promise;
+  }
+  const flight = {reportId:routeReportId, root:reportRoot, promise:null};
+  flight.promise = showVerifiedPriceSectionAsync(result, io, timeoutMs);
+  inFlightReportNavigation.set(adapter, flight);
+  try {
+    return await flight.promise;
+  } finally {
+    if (inFlightReportNavigation.get(adapter) === flight) {
+      inFlightReportNavigation.delete(adapter);
+    }
+  }
 }
 
 const api=Object.freeze({
