@@ -82,12 +82,12 @@ def apply_app_patch(raw: bytes, expected_sha256: str) -> tuple[bytes, dict]:
         raise ValueError("AUTHORITATIVE_PYTHON_INVALID_BEFORE_PATCH") from exc
     assignments = [
         stmt for stmt in module.body
-        if (isinstance(stmt, ast.Assign)
-            and any(isinstance(t, ast.Name) and t.id == "GLOBAL_JS"
-                    for t in stmt.targets))
-        or (isinstance(stmt, ast.AnnAssign)
-            and isinstance(stmt.target, ast.Name)
-            and stmt.target.id == "GLOBAL_JS")
+        if ((isinstance(stmt, ast.Assign)
+             and any(isinstance(t, ast.Name) and t.id == "GLOBAL_JS"
+                     for t in stmt.targets))
+            or (isinstance(stmt, ast.AnnAssign)
+                and isinstance(stmt.target, ast.Name)
+                and stmt.target.id == "GLOBAL_JS"))
     ]
     if len(assignments) != 1:
         raise ValueError("EXPECTED_SINGLE_MODULE_GLOBAL_JS_ASSIGNMENT")
