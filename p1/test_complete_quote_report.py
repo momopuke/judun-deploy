@@ -290,6 +290,42 @@ class CompleteQuoteReportTests(unittest.TestCase):
         self.assertFalse(report["complete"])
         self.assertIn("全部來源配對暫停", report["html"])
 
+    def test_whole_report_hashes_large_inputs_twice_not_once_per_page(self):
+        from unittest.mock import patch
+        import complete_quote_report as reports
+        quotes = [quote(i) for i in range(95)]
+        records = [[] for _ in quotes]
+        orig_quotes = reports.quote_snapshot_digest
+        orig_sources = reports.source_association_digest
+        with (patch.object(reports, "quote_snapshot_digest",
+                           wraps=orig_quotes) as quote_hash,
+              patch.object(reports, "source_association_digest",
+                           wraps=orig_sources) as source_hash):
+            result = render_complete_authorized_quote_report(quotes, records)
+        self.assertTrue(result["complete"])
+        self.assertEqual(result["pages"], 4)
+        self.assertEqual(quote_hash.call_count, 2)
+        self.assertEqual(source_hash.call_count, 2)
+
+    def test_report_discards_all_html_if_source_changes_during_render(self):
+        from unittest.mock import patch
+        import complete_quote_report as reports
+        quotes = [quote(0)]
+        sources = [[valid_case()]]
+        original_render = reports.render_paged_public_price_sources
+
+        def mutate_after_one_source_page(*args, **kwargs):
+            result = original_render(*args, **kwargs)
+            sources[0][0]["amount"] = "NT$19,000"
+            return result
+
+        with patch.object(reports, "render_paged_public_price_sources",
+                          side_effect=mutate_after_one_source_page):
+            report = render_complete_authorized_quote_report(quotes, sources)
+        self.assertEqual(report["status"], "SOURCE_SNAPSHOT_CHANGED")
+        self.assertFalse(report["complete"])
+        self.assertEqual(report["html"], "")
+
     def test_empty_report_is_complete_but_contains_no_invented_items(self):
         out=render_authorized_quote_items([],[])
         self.assertEqual(out["status"],"COMPLETE")
