@@ -7,6 +7,7 @@ production files or signed releases.
 Usage:
   python3 p3/patch_paid_preference.py --public-review
   python3 p3/patch_paid_preference.py --input existing_authoritative_index.html --output staging/index.html
+  python3 p3/patch_paid_preference.py --public-stage --original-out /tmp/live.html --output /tmp/patched.html
 
 The first command retrieves publicly served HTML solely to generate a small
 reviewable patch + metadata; the second requires a locally available authorized
@@ -25,6 +26,8 @@ PUBLIC_URL = "https://judun.142-93-91-214.sslip.io/"
 OLD = "const preferred = tier === 'promax' ? 'report-five-themes' : 'report-price-items';"
 NEW = "const preferred = 'report-price-items';"
 BOUNDED_BYTES = 3_000_000
+# v1.2.114 exact public HTML verified on 2026-10-20; fail closed on drift.
+OBSERVED_PUBLIC_HTML_SHA256 = "092f952d45b44e1ca5f526d610864a34893f861cc4ee3f587f8fc808ffcbbad8"
 
 
 def sha(data: bytes) -> str:
@@ -98,14 +101,20 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--public-review", action="store_true")
+    mode.add_argument("--public-stage", action="store_true")
     mode.add_argument("--input", type=Path)
+    parser.add_argument("--original-out", type=Path)
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
-    if args.public_review and args.output:
+    if args.public_review and (args.output or args.original_out):
         parser.error("--public-review never writes a complete public homepage")
-    if args.input and not args.output:
-        parser.error("--input requires a separate staging --output path")
-    original = fetch_public() if args.public_review else args.input.read_bytes()
+    if args.public_stage and (not args.output or not args.original_out):
+        parser.error("--public-stage requires distinct original-out and output")
+    if args.input and (not args.output or args.original_out):
+        parser.error("--input requires --output and forbids --original-out")
+    original = fetch_public() if (args.public_review or args.public_stage) else args.input.read_bytes()
+    if (args.public_review or args.public_stage) and sha(original) != OBSERVED_PUBLIC_HTML_SHA256:
+        raise ValueError("PUBLIC_VERSION_SHA_MISMATCH_STOP_AND_REVIEW")
     changed, report, patch = apply_one_statement(original)
     review_dir = Path("p3/results")
     review_dir.mkdir(parents=True, exist_ok=True)
@@ -114,10 +123,20 @@ def main() -> int:
         json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
     if args.output:
-        # Never replace live source or overwrite original input.
-        if args.output.resolve() == args.input.resolve():
+        # Never replace original, other existing artifacts, or production file.
+        paths = [args.output]
+        if args.original_out:
+            paths.append(args.original_out)
+        if len({p.resolve() for p in paths}) != len(paths):
+            raise ValueError("STAGING_SOURCE_OUTPUT_PATH_COLLISION")
+        if args.input and any(p.resolve() == args.input.resolve() for p in paths):
             raise ValueError("OVERWRITING_SOURCE_FORBIDDEN")
-        args.output.parent.mkdir(parents=True, exist_ok=True)
+        if any(p.exists() for p in paths):
+            raise ValueError("STAGING_PATH_ALREADY_EXISTS")
+        for p in paths:
+            p.parent.mkdir(parents=True, exist_ok=True)
+        if args.original_out:
+            args.original_out.write_bytes(original)
         args.output.write_bytes(changed)
     print("P3_EXACT_SOURCE_PATCH_READY", json.dumps(report, ensure_ascii=False))
     print("NO_PRODUCTION_DEPLOYMENT_OR_PAYMENT")
