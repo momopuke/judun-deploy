@@ -175,8 +175,15 @@ def build_public_evidence_view(
     customer_amount = parse_twd_amount(customer_quote.get("amount"))
     if customer_amount is None:
         return view
-    delta = customer_amount - source_amount
-    percent = (delta / source_amount * Decimal("100")).quantize(Decimal("0.1"))
+    try:
+        delta = customer_amount - source_amount
+        percent = (delta / source_amount * Decimal("100")).quantize(Decimal("0.1"))
+        if not delta.is_finite() or not percent.is_finite():
+            raise InvalidOperation("non-finite price difference")
+    except (InvalidOperation, OverflowError, ZeroDivisionError):
+        view["label"] = "價格差異需人工確認"
+        view["explanation"] = "數值超出安全比較範圍；保留來源參考，不顯示可能失真的百分比或價差。"
+        return view
     view.update({
         "tier": "COMPARABLE",
         "label": "同規格公開報價比較",
