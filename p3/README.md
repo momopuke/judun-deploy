@@ -74,3 +74,15 @@ npx esbuild p3/report-browser-entry.cjs --bundle --platform=browser --format=iif
 
 為避免使用者於載入期間切換報告導致焦點落在過期案件，報告接線器在 mount、ready、find、focus、scroll **每階段**都核對當前已授權 `reportId` 與原報告容器仍然相同；切換後拒絕完成，不能跨案件導覽。正式版仍必須使用獨立後端授權校驗，不得把此 UI 比對當成權限控制。
 
+
+
+## 2026-10-20 真正 v1.2.114 完整首頁副本前後對照
+
+已把公開正式 v1.2.114 原始 HTML（323,152 bytes）與完全可逆的單行修正版分別在網路隔離的 Chromium 瀏覽器載入，並以沙盒 job ID 呼叫 `unlockTier`。兩份完整首頁只存於 GitHub Runner 臨時目錄、不發行副本，不接觸付款、上傳或正式 API。
+
+- 桌機 1440px 與手機 390px：原版 ProMax 儲存 `report-five-themes`，修正版寫入 **`report-price-items`**；Basic 前後均是 **`report-price-items`**。
+- 原品牌標語、`fileInput`、`dataConsentInput`、`submitBtn` 保留；`checkMicroStatus` 與 `openPreferredJudunReport` 函式原文完全一致。
+- 原版 HTML SHA-256：`092f952d45b44e1ca5f526d610864a34893f861cc4ee3f587f8fc808ffcbbad8`；修正版 SHA-256：`2fbf3e3fd69d1bd20e56eed88678e4ed9a3542126c8307aba79ae302f5b6604d`。若公開來源 SHA 變動即停止，且不允許兩個 staging 輸出路徑相同或覆寫既有檔案。
+- [GitHub Actions #39428564483](https://github.com/momopuke/judun-deploy/actions/runs/39428564483)：桌機及手機 `P3_ACTUAL_HOMEPAGE_SANDBOX_PASS`，quality、首頁五尺寸和正式發布區保護均成功。
+
+**這證明公開正式首頁的單行修補在隔離瀏覽器中有效；不代表真實付款 E2E、PDF 或正式部署完成。** 必須透過原權威 v1.2.114 可編輯來源與既有受控 Ed25519 簽署發布通道，完成同案件付款、報告/PDF 實測，才可正式發布唯一新版本。不可用 GitHub 候選源碼假冒正式網站。
