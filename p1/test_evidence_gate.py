@@ -256,6 +256,18 @@ class EvidenceGateTests(unittest.TestCase):
                 self.assertEqual(decision.status, "REFERENCE_ONLY")
                 self.assertIn("SOURCE_PRICE_RANGE_OR_ESTIMATE_NOT_EXACT", decision.reasons)
 
+    def test_reference_averages_and_suggested_prices_never_become_exact_gaps(self):
+        for label in ("預估", "粗估", "概算", "參考價", "建議價", "均價", "起步"):
+            with self.subTest(label=label):
+                source = {**valid_case(),
+                          "title": "台北油漆工程公開行情",
+                          "body": (
+                              "台北裝修油漆工程，批土兩道、乳膠漆三道，"
+                              + label + " NT$18,000／坪。")}
+                result = evaluate(source)
+                self.assertEqual(result.status, "REFERENCE_ONLY")
+                self.assertIn("SOURCE_PRICE_RANGE_OR_ESTIMATE_NOT_EXACT",result.reasons)
+
     def test_approximate_source_without_classification_is_not_publishable(self):
         case = dict(valid_case(), body="台北裝修油漆單價約 NT$18,000／坪")
         self.assertEqual(evaluate({**case, "evidence_type": ""}).status, "HOLD")
