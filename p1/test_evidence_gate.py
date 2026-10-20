@@ -174,6 +174,13 @@ class EvidenceGateTests(unittest.TestCase):
             with self.subTest(url=url):
                 self.assertFalse(public_source_url(url))
 
+    def test_oversized_price_string_fails_before_matching(self):
+        self.assertIsNone(parse_twd_amount("1" * 100000))
+        x = dict(valid_case(), amount="1" * 100000)
+        decision = evaluate(x)
+        self.assertEqual(decision.status, "HOLD")
+        self.assertIn("NO_VALID_EXPLICIT_PRICE", decision.reasons)
+
     def test_empty_and_malformed_url_rejected(self):
         for url in ("", None, "#evidence", "http://", "https://localhost", "ftp://example.org/quote"):
             with self.subTest(url=url):
