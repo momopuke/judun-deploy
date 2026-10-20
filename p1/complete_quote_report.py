@@ -178,7 +178,7 @@ def render_authorized_quote_items(
             if i not in page_alerts:
                 page_alerts.append(i)
         if amount is not None and twd:
-            price = "NT$" + f"{amount:,.2f}".removesuffix(".00")
+            price = "NT$" + format(amount, ",f").rstrip("0").rstrip(".") if amount.as_tuple().exponent < 0 else "NT$" + format(amount, ",f")
         else:
             raw = row.get("amount")
             # Preserve an original short amount for manual review, but NEVER
