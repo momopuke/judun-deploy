@@ -101,6 +101,22 @@ test("rendering exception fails safely without claiming success", () => {
   });
   assert.deepEqual(result,{ok:false,reason:"REPORT_UI_RENDER_FAILED"});
 });
+test("a renderer returning another report section cannot masquerade as 看價差", async () => {
+  const fake={id:"report-five-themes"};
+  let syncFocused=false, asyncFocused=false;
+  const sync=showVerifiedPriceSection(unlocked("promax"),{
+    findSection:()=>fake,
+    focus:()=>{syncFocused=true;},
+  });
+  assert.deepEqual(sync,{ok:false,reason:"PRICE_SECTION_NOT_RENDERED"});
+  assert.equal(syncFocused,false);
+  const asyncResult=await showVerifiedPriceSectionAsync(unlocked("basic"),{
+    findSection:()=>fake,
+    focus:()=>{asyncFocused=true;},
+  });
+  assert.deepEqual(asyncResult,{ok:false,reason:"PRICE_SECTION_NOT_RENDERED"});
+  assert.equal(asyncFocused,false);
+});
 test("no fallback to highlight/full preview when price section missing", () => {
   let redirected = false;
   const result=showVerifiedPriceSection(unlocked("basic"), {
