@@ -91,6 +91,13 @@ const BASE="https://judun.142-93-91-214.sslip.io/";
     assert.equal(await prepPanel.isVisible(),false,'preparation guide should start folded');
     await prepTrigger.click();
     assert.equal(await prepPanel.isVisible(),true,'preparation guide did not open');
+    assert.equal(await prepPanel.evaluate(el => document.activeElement === el),true,
+      'opening guide should focus its content for keyboard/screen reader users');
+    await page.keyboard.press('Escape');
+    assert.equal(await prepPanel.isVisible(),false,'Escape must close preparation guide');
+    assert.equal(await prepTrigger.evaluate(el=>document.activeElement===el),true,
+      'Escape must restore focus to original entry');
+    await prepTrigger.click();
     assert.equal(await prepPanel.locator('li').count(),3,'missing preparation steps');
     assert.equal(await prepTrigger.getAttribute('aria-expanded'),'true');
     const sample=prepPanel.locator('a[href="#home-report-preview"]');
@@ -98,6 +105,8 @@ const BASE="https://judun.142-93-91-214.sslip.io/";
     await prepPanel.getByRole('button',{name:'收起準備指引'}).click();
     assert.equal(await prepPanel.isVisible(),false,'preparation guide did not fold');
     assert.equal(await prepTrigger.getAttribute('aria-expanded'),'false');
+    assert.equal(await prepTrigger.evaluate(el => document.activeElement === el), true,
+      'close button must return keyboard focus to original trigger');
     // All in-page cards must work without entering customer data.
     await page.locator('nav[data-judun-p0-entry] a[href="#home-recheck"]').click();
     await page.waitForTimeout(400);
