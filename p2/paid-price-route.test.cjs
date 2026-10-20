@@ -220,3 +220,57 @@ test("no re-unlock or price mutation methods exist in navigation helper", () => 
   assert.deepEqual(Object.keys(exported).sort(),
     ["PRICE_SECTION","postUnlockTarget","showVerifiedPriceSection","showVerifiedPriceSectionAsync"].sort());
 });
+
+test("sync helper does not claim async section lookup is already navigated", () => {
+  let focused = false;
+  const result = showVerifiedPriceSection(unlocked("basic"), {
+    findSection: () => Promise.resolve({id: PRICE_SECTION}),
+    focus: () => { focused = true; }
+  });
+  assert.deepEqual(result, {ok:false, reason:"ASYNC_FIND_REQUIRES_ASYNC_API"});
+  assert.equal(focused,false);
+});
+test("sync helper rejects pending focus instead of scrolling prematurely", () => {
+  let scrolled = false;
+  const result = showVerifiedPriceSection(unlocked("promax"), {
+    findSection: () => ({id: PRICE_SECTION}),
+    focus: () => Promise.resolve(),
+    scroll: () => {scrolled=true;}
+  });
+  assert.deepEqual(result, {ok:false, reason:"ASYNC_FOCUS_REQUIRES_ASYNC_API"});
+  assert.equal(scrolled,false);
+});
+test("sync helper does not call unfinished async scroll successful", () => {
+  const result = showVerifiedPriceSection(unlocked("basic"), {
+    findSection: () => ({id: PRICE_SECTION}),
+    scroll: () => Promise.resolve()
+  });
+  assert.deepEqual(result, {ok:false, reason:"ASYNC_SCROLL_REQUIRES_ASYNC_API"});
+});
+test("async section lookup must complete before focus and scroll", async () => {
+  const calls = [];
+  let reveal;
+  const pending = new Promise(resolve => { reveal=resolve; });
+  const nav = showVerifiedPriceSectionAsync(unlocked("basic"), {
+    findSection: () => pending,
+    focus: (x) => {calls.push(["focus",x.id]);},
+    scroll: (x) => {calls.push(["scroll",x.id]);}
+  },1000);
+  await Promise.resolve(); await Promise.resolve();
+  assert.deepEqual(calls, []);
+  reveal({id:PRICE_SECTION});
+  assert.deepEqual(await nav,{ok:true,target:PRICE_SECTION});
+  assert.deepEqual(calls,[["focus",PRICE_SECTION],["scroll",PRICE_SECTION]]);
+});
+test("timeout during async section lookup must never focus late", async () => {
+  let reveal, focused=false;
+  const pending = new Promise(resolve => {reveal=resolve;});
+  const nav = showVerifiedPriceSectionAsync(unlocked("promax"), {
+    findSection: () => pending,
+    focus: () => {focused=true;}
+  },100);
+  assert.deepEqual(await nav,{ok:false,reason:"REPORT_UI_TIMEOUT"});
+  reveal({id:PRICE_SECTION});
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(focused,false);
+});
