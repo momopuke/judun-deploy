@@ -533,6 +533,58 @@ def source_price_tax_supported(source: dict) -> bool:
     return False
 
 
+def source_total_quantity_supported(source: dict) -> bool:
+    """For a whole-job quotation, prove quoted quantity in that price clause.
+
+    A crawler-populated quantity=25 does not establish that a price concerns
+    25 ping rather than 20 ping. Any conflicting quantities in the same
+    quoted context deny exact total comparison.
+    """
+    if source.get("price_basis") != "total_price":
+        return False
+    unit = source.get("unit")
+    body = source.get("body")
+    raw_qty = str(source.get("quantity", ""))
+    amount = parse_twd_amount(source.get("amount"))
+    if (not isinstance(unit, str) or unit not in UNITS
+            or not isinstance(body, str) or len(raw_qty) > 32
+            or amount is None):
+        return False
+    try:
+        target_qty = Decimal(raw_qty)
+    except (InvalidOperation, ValueError):
+        return False
+    if not target_qty.is_finite() or target_qty <= 0:
+        return False
+    quantity_re = re.compile(
+        r"(?<![\\d.])(\\d{1,7}(?:\\.\\d{1,4})?)\\s*" + re.escape(unit)
+    )
+    for clause in re.split(r"[。；;\\r\\n]+", body[:3500]):
+        matching_prices = []
+        for found in _SOURCE_PRICE_PATTERN.finditer(clause):
+            parsed = None
+            for key, suffix in (("currency_amount", "currency_unit"),
+                                ("unit_amount", "unit_suffix"),
+                                ("label_amount", "label_suffix")):
+                val = found.group(key)
+                if val is not None:
+                    parsed = parse_twd_amount(val + (found.group(suffix) or ""))
+                    break
+            if parsed == amount:
+                matching_prices.append(found)
+        if len(matching_prices) != 1:
+            continue
+        found = matching_prices[0]
+        nearby = clause[max(0, found.start() - 130):found.end() + 110]
+        quantities = []
+        for match in quantity_re.finditer(nearby):
+            qty = Decimal(match.group(1))
+            quantities.append(qty)
+        if quantities and all(qty == target_qty for qty in quantities):
+            return True
+    return False
+
+
 def compare_with_target(source: dict, customer_quote: dict) -> GateDecision:
     """Only return COMPARABLE for known-identical construction scope.
 
@@ -576,6 +628,8 @@ def compare_with_target(source: dict, customer_quote: dict) -> GateDecision:
             return GateDecision("REFERENCE_ONLY", ("QUANTITY_UNVERIFIED",), False, False)
         if not src_qty.is_finite() or not dst_qty.is_finite() or src_qty <= 0 or dst_qty <= 0 or src_qty != dst_qty:
             return GateDecision("REFERENCE_ONLY", ("TOTAL_PRICE_QUANTITY_MISMATCH",), False, False)
+        if not source_total_quantity_supported(source):
+            return GateDecision("REFERENCE_ONLY", ("SOURCE_TOTAL_QUANTITY_NOT_PROVEN",), False, False)
 
     if (str(customer_quote.get("currency") or "").upper() not in
             ("TWD", "NTD", "NT$", "新臺幣", "新台幣")):
