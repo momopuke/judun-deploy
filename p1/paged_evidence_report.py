@@ -10,6 +10,7 @@ approval. A caller must keep the SAME immutable snapshot across paginated calls.
 from __future__ import annotations
 
 import hashlib
+import json
 
 from evidence_display import fingerprint_approval_source
 from report_evidence_section import (
@@ -21,20 +22,38 @@ MAX_PAGES_PER_CALL = 5
 MAX_ITEMS_IN_COLLECTION = 10000
 
 
+def source_row_snapshot_marker(source: object) -> str:
+    """Fingerprint every bounded source row, including malformed candidates.
+
+    The formal QA fingerprint is used when available; a malformed-but-JSON
+    row is NOT approved evidence, but its bytes still bind pagination. Never
+    collapse distinct malformed rows into the same static marker.
+    """
+    if isinstance(source, dict):
+        try:
+            return "QA:" + fingerprint_approval_source(source)
+        except (TypeError, ValueError):
+            pass
+    try:
+        raw = json.dumps(
+            source, sort_keys=True, ensure_ascii=False,
+            separators=(",", ":"), allow_nan=False,
+        ).encode("utf-8")
+    except (TypeError, ValueError, OverflowError, RecursionError) as exc:
+        raise ValueError("unverifiable public source snapshot") from exc
+    if len(raw) > 65536:
+        raise ValueError("unverifiable oversized public source snapshot")
+    return "UNVERIFIED:" + hashlib.sha256(raw).hexdigest()
+
+
 def public_source_snapshot_digest(source_rows: list) -> str:
-    """Stable ordered checksum of the public source snapshot being paged."""
+    """Checksum the *entire ordered* candidate list, including invalid rows."""
     if not isinstance(source_rows, list) or len(source_rows) > MAX_ITEMS_IN_COLLECTION:
         raise ValueError("invalid source snapshot")
     h = hashlib.sha256()
-    h.update(b"judun.full-public-sources.v1\\n")
+    h.update(b"judun.full-public-sources.v2\\n")
     for source in source_rows:
-        if isinstance(source, dict):
-            try:
-                marker = fingerprint_approval_source(source)
-            except (ValueError, TypeError):
-                marker = "INVALID_EVIDENCE"
-        else:
-            marker = "INVALID_ROW"
+        marker = source_row_snapshot_marker(source)
         h.update(marker.encode("ascii") + b"\\n")
     return h.hexdigest()
 
@@ -67,7 +86,10 @@ def render_paged_public_price_sources(
             or not 1 <= pages_per_call <= MAX_PAGES_PER_CALL):
         return invalid
 
-    digest = public_source_snapshot_digest(source_rows)
+    try:
+        digest = public_source_snapshot_digest(source_rows)
+    except ValueError:
+        return {**invalid, "status": "SOURCE_SNAPSHOT_UNVERIFIABLE"}
     if offset != 0 and (not isinstance(expected_snapshot_digest, str)
                         or expected_snapshot_digest != digest):
         return {
@@ -132,7 +154,11 @@ def render_paged_public_price_sources(
     # Each independent paginated call must be internally consistent even
     # when a background expansion writer mutates a shared list midway. Never
     # return partial HTML compiled from two source versions.
-    if public_source_snapshot_digest(source_rows) != digest:
+    try:
+        unchanged = public_source_snapshot_digest(source_rows) == digest
+    except ValueError:
+        unchanged = False
+    if not unchanged:
         return {
             **invalid, "status": "SOURCE_SNAPSHOT_CHANGED",
             "snapshot_digest": None,
