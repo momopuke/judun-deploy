@@ -100,6 +100,20 @@ class SourcePatchTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 write_staging(source, root/"candidate.bin", patched)
 
+    def test_decoy_patch_target_outside_js_never_changes_python_comment(self):
+        raw = sample_app()
+        # Both snippets in the actual JS remain valid, but a decoy placed
+        # earlier in a Python comment could steal the first .replace().
+        for duplicate in (OLD, OLD_COMPLETION):
+            source = ("# " + duplicate + "\n").encode() + raw
+            with self.subTest(duplicate=duplicate[:30]):
+                compile(source, "<source>", "exec")
+                with self.assertRaisesRegex(
+                        ValueError, "PATCH_TARGET_DUPLICATED_OUTSIDE_GLOBAL_JS"):
+                    apply_app_patch(
+                        source, hashlib.sha256(source).hexdigest()
+                    )
+
     def test_known_archived_app_can_never_be_staged_as_current(self):
         historical = "1c5c2c12bcc956af98e9349fefc35c7d0fb6b47568be50921d4ef27ca335247d"
         self.assertIn(historical, KNOWN_NONCURRENT_SOURCE_SHA256)
