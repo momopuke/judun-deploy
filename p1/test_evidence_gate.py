@@ -10,7 +10,7 @@ def valid_case():
     return {
         "url": "https://example.com.tw/renovation/quote-11",
         "title": "台北室內裝修油漆工程費用",
-        "body": "台北室內裝修油漆工程，批土兩道、乳膠漆三道，公開報價 NT$18,000／坪。",
+        "body": "台北室內裝修油漆工程，批土兩道、乳膠漆三道，公開報價 NT$18,000／坪（含稅）。",
         "locality": "台北市",
         "currency": "TWD",
         "amount": "NT$18,000",
@@ -453,6 +453,38 @@ class EvidenceGateTests(unittest.TestCase):
                   "currency", "price_basis", "tax_included")}
         quote["amount"] = "NT$20,000"
         self.assertEqual(compare_with_target(src, quote).status, "COMPARABLE")
+
+    def test_parser_included_tax_flag_without_source_tax_text_is_reference(self):
+        source = {**valid_case(),
+                  "body": "台北裝修油漆工程，批土兩道、乳膠漆三道，每坪報價 NT$18,000。"}
+        quote = {key: source[key] for key in
+                 ("category", "item_name", "unit", "spec", "locality",
+                  "currency", "price_basis", "tax_included")}
+        quote["amount"] = "NT$20,000"
+        decision = compare_with_target(source, quote)
+        self.assertEqual(decision.status, "REFERENCE_ONLY")
+        self.assertIn("SOURCE_TAX_TREATMENT_NOT_PROVEN", decision.reasons)
+
+    def test_tax_text_contradicts_parser_inclusion_flag(self):
+        source = {**valid_case(),
+                  "body": "台北裝修油漆工程，批土兩道、乳膠漆三道，每坪報價 NT$18,000（未稅）。"}
+        quote = {key: source[key] for key in
+                 ("category", "item_name", "unit", "spec", "locality",
+                  "currency", "price_basis", "tax_included")}
+        quote["amount"] = "NT$20,000"
+        result = compare_with_target(source, quote)
+        self.assertEqual(result.status, "REFERENCE_ONLY")
+        self.assertIn("SOURCE_TAX_TREATMENT_NOT_PROVEN", result.reasons)
+
+    def test_explicit_tax_excluded_quote_can_be_comparable(self):
+        source = {**valid_case(), "tax_included": False,
+                  "body": "台北裝修油漆工程，批土兩道、乳膠漆三道，每坪報價 NT$18,000（未稅）。"}
+        quote = {key: source[key] for key in
+                 ("category", "item_name", "unit", "spec", "locality",
+                  "currency", "price_basis", "tax_included")}
+        quote["amount"] = "NT$20,000"
+        result = compare_with_target(source, quote)
+        self.assertEqual(result.status, "COMPARABLE")
 
     def test_tax_inclusion_must_match_explicitly(self):
         source=valid_case()
