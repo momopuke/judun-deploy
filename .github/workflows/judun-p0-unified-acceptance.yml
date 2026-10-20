@@ -119,6 +119,12 @@ jobs:
           python3 p3/patch_paid_preference.py --public-stage \
             --original-out "$RUNNER_TEMP_DIR/judun-p3-v12114-original.html" \
             --output "$RUNNER_TEMP_DIR/judun-p3-v12114-patched.html"
+      - name: Diagnose negative completion status against real public callback (isolated)
+        env:
+          RUNNER_TEMP_DIR: ${{ runner.temp }}
+        run: |
+          node p3/negative-status-diagnostic.cjs \
+            "$RUNNER_TEMP_DIR/judun-p3-v12114-original.html"
       - name: Compare real before/after ProMax behavior in fully network-isolated Chromium
         env:
           RUNNER_TEMP_DIR: ${{ runner.temp }}
