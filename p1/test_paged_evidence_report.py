@@ -6,6 +6,7 @@ import unittest
 from paged_evidence_report import (
     MAX_ITEMS_IN_COLLECTION,
     render_paged_public_price_sources,
+    public_source_snapshot_digest,
 )
 from test_evidence_gate import valid_case
 
@@ -35,7 +36,8 @@ class PagedReportTests(unittest.TestCase):
         self.assertEqual(one["reference_only"], 200)
         self.assertEqual(one["displayed"], 200)
         two = render_paged_public_price_sources(
-            sources, customer(), offset=one["next_offset"], pages_per_call=1)
+            sources, customer(), offset=one["next_offset"], pages_per_call=1,
+            expected_snapshot_digest=one["snapshot_digest"])
         self.assertEqual(two["status"], "COMPLETE")
         self.assertTrue(two["complete"])
         self.assertEqual(two["processed"], 1)
@@ -68,11 +70,31 @@ class PagedReportTests(unittest.TestCase):
         first = distinct(200)
         last = [dict(first[0]), {**valid_case(), "url": "https://example.com.tw/new"}]
         result = render_paged_public_price_sources(
-            first + last, customer(), offset=200, pages_per_call=1)
+            first + last, customer(), offset=200, pages_per_call=1,
+            expected_snapshot_digest=public_source_snapshot_digest(first + last))
         self.assertEqual(result["status"], "COMPLETE")
         self.assertEqual(result["duplicates_skipped"], 1)
         self.assertEqual(result["reference_only"], 1)
         self.assertEqual(result["displayed"], 1)
+
+    def test_mutated_source_snapshot_refuses_cross_page_continuation(self):
+        source_rows = distinct(201)
+        first = render_paged_public_price_sources(
+            source_rows, customer(), pages_per_call=1)
+        edited = list(source_rows)
+        edited[0] = {**source_rows[0], "amount": "NT$20,000"}
+        result = render_paged_public_price_sources(
+            edited, customer(), offset=first["next_offset"],
+            pages_per_call=1, expected_snapshot_digest=first["snapshot_digest"])
+        self.assertEqual(result["status"], "SOURCE_SNAPSHOT_CHANGED")
+        self.assertFalse(result["complete"])
+        self.assertEqual(result["pages"], [])
+
+    def test_continuation_without_initial_snapshot_digest_is_denied(self):
+        result = render_paged_public_price_sources(
+            distinct(201), customer(), offset=200, pages_per_call=1)
+        self.assertEqual(result["status"], "SOURCE_SNAPSHOT_CHANGED")
+        self.assertEqual(result["pages"], [])
 
     def test_multiple_valid_cases_share_url_but_keep_different_prices(self):
         source = valid_case()
