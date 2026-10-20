@@ -206,6 +206,17 @@ class SnapshotTests(unittest.TestCase):
             outcome = read_public_snapshot(path, now_epoch=EPOCH+220)
             self.assertEqual(outcome["status"],"unknown")
 
+    def test_invalid_observation_clock_never_crashes_health_reader(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "status.json"
+            write_event_snapshot(path, SAMPLE, updated_at=NOW)
+            for invalid in (float("nan"), float("inf"), -float("inf"),
+                            True, "2026-10-20", {}, []):
+                with self.subTest(invalid=repr(invalid)):
+                    result = read_public_snapshot(path, now_epoch=invalid)
+                    self.assertEqual(result["status"], "unknown")
+                    self.assertFalse(result["automatic_restart_permitted"])
+
     def test_bool_stale_threshold_is_invalid(self):
         with self.assertRaises(ValueError):
             read_public_snapshot("/tmp/nonexistent.json", stale_after=True)
