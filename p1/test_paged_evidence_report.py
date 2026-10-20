@@ -193,5 +193,22 @@ class PagedReportTests(unittest.TestCase):
         self.assertEqual(result["pages"], [])
 
 
+    def test_irrelevant_crawler_payload_does_not_amplify_digest_work(self):
+        base = valid_case()
+        with_large_unknown_metadata = {**base, "crawler_debug_bytes": "X" * 900000}
+        self.assertEqual(
+            public_source_snapshot_digest([base]),
+            public_source_snapshot_digest([with_large_unknown_metadata]),
+        )
+        result = render_paged_public_price_sources([with_large_unknown_metadata], customer())
+        self.assertEqual(result["status"], "COMPLETE")
+
+    def test_oversized_evidence_field_fails_without_rendering(self):
+        source = {**valid_case(), "body": "X" * 80000}
+        out = render_paged_public_price_sources([source], customer())
+        self.assertEqual(out["status"], "SOURCE_SNAPSHOT_UNVERIFIABLE")
+        self.assertEqual(out["pages"], [])
+
+
 if __name__ == "__main__":
     unittest.main()
