@@ -60,7 +60,7 @@ class CompleteQuoteReportTests(unittest.TestCase):
         self.assertNotIn("<img",out["html"])
         self.assertIn("原始金額：no price（幣別或金額待核對）",out["html"])
         self.assertFalse(out["complete"])
-        self.assertEqual(out["source_alerts"],[1])
+        self.assertEqual(out["source_alerts"],[1,2])
 
     def test_missing_source_list_does_not_erase_quote_line(self):
         out = render_authorized_quote_items([quote(0)], [None])
@@ -222,6 +222,27 @@ class CompleteQuoteReportTests(unittest.TestCase):
         self.assertIn("&lt;img", result["html"])
         self.assertNotIn("<img", result["html"])
         self.assertIn("幣別或金額待核對", result["html"])
+
+    def test_partially_recognized_quote_line_must_never_be_marked_complete(self):
+        row = {"category": "油漆工程", "item_name": "牆面油漆",
+               "amount": "NT$15000", "currency": "TWD"}
+        result = render_authorized_quote_items([row], [[]])
+        self.assertEqual(result["status"], "SOURCE_REVIEW_REQUIRED")
+        self.assertEqual(result["source_alerts"], [0])
+        self.assertIn("第 1 項：牆面油漆", result["html"])
+
+    def test_foreign_currency_requires_review_even_if_no_sources(self):
+        row = {**quote(0), "currency": "USD"}
+        result = render_authorized_quote_items([row], [[]])
+        self.assertEqual(result["status"], "SOURCE_REVIEW_REQUIRED")
+        self.assertEqual(result["source_alerts"], [0])
+        self.assertIn("幣別或金額待核對", result["html"])
+
+    def test_customer_precise_decimal_is_never_silently_rounded(self):
+        row = {**quote(0), "amount": "NT$18000.125"}
+        result = render_authorized_quote_items([row], [[]])
+        self.assertEqual(result["status"], "COMPLETE")
+        self.assertIn("NT$18,000.125", result["html"])
 
     def test_empty_report_is_complete_but_contains_no_invented_items(self):
         out=render_authorized_quote_items([],[])
