@@ -183,3 +183,11 @@ python3 p3/patch_authoritative_app.py \
 預計的下一必要執行是將**既存密文從受權 GitHub 來源以受控檔案交接方式**送入真正持有歷史私鑰的離線環境，使用 `p3/offline_source_recovery.py` 解密，從容器外獨立的正式 source manifest 對出 app SHA / 實際 runtime 版本，再進行 HTTPS v3 完整新包。**本對話目前的 GitHub 連接雖可讀取文字形式的密文，卻沒有將檔案原始位元組直接寫入隔離工作容器的授權傳輸操作**，因此不把無法驗證的源碼或舊版 ZIP 當作正式來源。
 
 保護狀態不變：正式唯一站 v1.2.114 未修改、GitHub `main` stable manifest / Ed25519 簽章仍是原本內容、無任何實際付款或用戶資料操作。
+
+### 2026-10-21｜現行原始碼的權威證據不能省略
+
+最新實查：v1.2.114 在 GitHub 的資產是 `expansion-resilience-source` 加密封存，而不是已核准的完整網站工作樹。先前 v1.2.113 發行紀錄只列控制器程式與 app.py 版號更新，顯示不同版本的「source asset」可能只保存當次修改。故即使日後成功解密 v1.2.114 密文，也須先清點內容是否包含完整權威 `app.py`；不能從資產名稱推論完整性。
+
+公開 `/health/artifact?deep=true` 有 **source_tree_sha256、formal_evidence_sha256、版本與 81 項檔案完整性**，但經 Runner 逐項型別核對，沒有單獨公開 `app.py` SHA。真正的授權還原必須取得 VPS 上與現網 source_tree_sha256 一致的 **完整 `DEPLOY_MANIFEST.json`**；由該清單指明 app.py 的 SHA/大小，再用完整樹雜湊與公開 live deep-health 交叉確認，否則應停在源碼未驗證狀態。不能以本機自算的 SHA 假冒獨立正式基準。
+
+已修正 HTTPS ZIP 雙層驗收缺口：內嵌 ZIP 不得缺少清單中任何一個檔案、不得增加未列項目；即使外層更新包及 runtime bundle 雜湊同步改寫也必須拒絕。新增缺檔、夾檔及竄改的負向回歸測試。現行正式 v1.2.114 與舊簽章 stable 通道繼續保持原狀。
