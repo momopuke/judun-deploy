@@ -123,6 +123,25 @@ class ReadOnlyRegistryTests(unittest.TestCase):
                 self.insert(reviewed_at=reviewed)
                 self.assertIsNone(self.registry(self.fingerprint))
 
+    def test_approval_id_reuse_in_legacy_table_denied(self):
+        with sqlite3.connect(self.db_path) as db:
+            db.execute("DROP TABLE judun_formal_evidence_approvals_v1")
+            db.execute(
+                "CREATE TABLE judun_formal_evidence_approvals_v1 "
+                "(fingerprint TEXT UNIQUE, evidence_id TEXT, approval_state TEXT, "
+                "reviewed_at_utc TEXT, revoked_at_utc TEXT)"
+            )
+            for sha in (self.fingerprint, "a" * 64):
+                db.execute(
+                    "INSERT INTO judun_formal_evidence_approvals_v1 VALUES (?,?,?,?,?)",
+                    (sha, "shared-id", "approved", "2026-10-20T00:00:00+00:00", None)
+                )
+        self.assertIsNone(self.registry(self.fingerprint))
+
+    def test_future_dated_approval_is_not_yet_eligible(self):
+        self.insert(reviewed_at="2099-01-01T00:00:00+00:00")
+        self.assertIsNone(self.registry(self.fingerprint))
+
     def test_no_automatic_schema_migration(self):
         with sqlite3.connect(self.db_path) as db:
             db.execute("DROP TABLE judun_formal_evidence_approvals_v1")
