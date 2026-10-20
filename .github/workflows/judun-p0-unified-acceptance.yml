@@ -110,6 +110,20 @@ jobs:
           path: p3/results/judun-p3-price-navigation.browser.js
           if-no-files-found: error
           retention-days: 14
+      - name: Stage exact original + one-line patched production homepage (ephemeral runner only)
+        env:
+          RUNNER_TEMP_DIR: ${{ runner.temp }}
+        run: |
+          python3 p3/patch_paid_preference.py --public-stage \
+            --original-out "$RUNNER_TEMP_DIR/judun-p3-v12114-original.html" \
+            --output "$RUNNER_TEMP_DIR/judun-p3-v12114-patched.html"
+      - name: Compare real before/after ProMax behavior in fully network-isolated Chromium
+        env:
+          RUNNER_TEMP_DIR: ${{ runner.temp }}
+        run: |
+          node p3/actual-homepage-staging-smoke.cjs \
+            "$RUNNER_TEMP_DIR/judun-p3-v12114-original.html" \
+            "$RUNNER_TEMP_DIR/judun-p3-v12114-patched.html"
       - name: Check live-public-home in TEMPORARY browser only at five viewports
         run: node p0/preview-test.cjs
       - name: Review published unlock success branch source (read-only)
