@@ -347,7 +347,7 @@ class EvidenceGateTests(unittest.TestCase):
 
     def test_total_amount_requires_identical_quantity(self):
         source = {**valid_case(), "price_basis":"total_price", "quantity":25,
-                  "body":"台北室內裝修油漆工程，批土兩道、乳膠漆三道，整項總價 NT$18,000 元。"}
+                  "body":"台北室內裝修油漆工程，批土兩道、乳膠漆三道，整項總價 NT$18,000 元（含稅）。"}
         target = {k:source[k] for k in ("category", "item_name", "unit", "spec", "locality",
                                       "currency", "price_basis", "tax_included")}
         target["amount"] = "20000"
@@ -402,7 +402,7 @@ class EvidenceGateTests(unittest.TestCase):
 
     def test_explicit_same_occurrence_per_unit_price_is_comparable(self):
         source = {**valid_case(),
-                  "body": "台北裝修油漆工程，批土兩道、乳膠漆三道，每坪報價 NT$18,000。"}
+                  "body": "台北裝修油漆工程，批土兩道、乳膠漆三道，每坪報價 NT$18,000（含稅）。"}
         target = {key: source[key] for key in
                   ("category", "item_name", "unit", "spec", "locality",
                    "currency", "price_basis", "tax_included")}
