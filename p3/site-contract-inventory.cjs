@@ -13,7 +13,7 @@ const OUT="p3/results/site-contract-inventory.json";
 async function inspect(page,viewport) {
   await page.goto(BASE,{waitUntil:"domcontentloaded",timeout:45000});
   await page.locator("body").waitFor({timeout:20000});
-  const observation=await page.evaluate(()=>{
+  const observation=await page.evaluate(async()=>{
     const exists=id=>!!document.getElementById(id);
     const controls={
       "fileInput":exists("fileInput"),
@@ -77,6 +77,23 @@ async function inspect(page,viewport) {
       }
       branchTokens[name]=signals;
     }
+    // Fingerprint the PUBLIC code entry points for source-version matching.
+    // No source text, cookies, API payloads or credentials are persisted.
+    const functionHashes={};
+    for(const name of checkedFunctions){
+      const fn=window[name];
+      if(typeof fn!=="function" || !globalThis.crypto?.subtle){
+        functionHashes[name]=null;
+        continue;
+      }
+      const source=Function.prototype.toString.call(fn);
+      if(!source || source.length>200000){
+        functionHashes[name]=null;
+        continue;
+      }
+      const digest=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(source));
+      functionHashes[name]=Array.from(new Uint8Array(digest),x=>x.toString(16).padStart(2,"0")).join("");
+    }
     const destinations={};
     for(const [key,selector] of Object.entries({
       "primary-cta":"button.v128-primary-cta",
@@ -102,6 +119,7 @@ async function inspect(page,viewport) {
       globalFunctions,
       staticNavigationHints,
       branchTokens,
+      functionHashes,
       destinations,
       brandHeroPresent:!!brand,
       hasOriginalHeading:!!brand?.querySelector("h1")?.textContent?.includes("用專業"),
