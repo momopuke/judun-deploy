@@ -6,9 +6,12 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from patch_authoritative_app import apply_app_patch, write_staging
+from patch_authoritative_app import (
+    KNOWN_NONCURRENT_SOURCE_SHA256, apply_app_patch, write_staging
+)
 from patch_paid_preference import OLD, NEW, OLD_COMPLETION, NEW_COMPLETION
 
 
@@ -96,6 +99,16 @@ class SourcePatchTests(unittest.TestCase):
                 write_staging(source, source, patched)
             with self.assertRaises(ValueError):
                 write_staging(source, root/"candidate.bin", patched)
+
+    def test_known_archived_app_can_never_be_staged_as_current(self):
+        historical = "1c5c2c12bcc956af98e9349fefc35c7d0fb6b47568be50921d4ef27ca335247d"
+        self.assertIn(historical, KNOWN_NONCURRENT_SOURCE_SHA256)
+        # Simulate the digest of the actual archived file without including
+        # proprietary source code inside this public test repository.
+        with patch("patch_authoritative_app.sha256", return_value=historical):
+            with self.assertRaisesRegex(
+                    ValueError, "KNOWN_ARCHIVED_SOURCE_NOT_PRODUCTION_CURRENT"):
+                apply_app_patch(sample_app(), historical)
 
     def test_only_module_level_literal_global_js_is_patchable(self):
         raw = sample_app()
