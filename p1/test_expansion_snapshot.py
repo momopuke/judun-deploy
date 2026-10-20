@@ -257,6 +257,40 @@ class SnapshotTests(unittest.TestCase):
             write_event_snapshot(path, SAMPLE,updated_at=NOW)
             self.assertEqual(read_public_snapshot(path,now_epoch=EPOCH+10)["status"],"running")
 
+    def test_newer_heartbeat_cannot_roll_back_committed_cumulative_counts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "status.json"
+            write_event_snapshot(path, {**SAMPLE, "rounds_completed": 12,
+                                        "validated_total": 350,
+                                        "formal_records_added_total": 500},
+                                 updated_at=NOW)
+            original = path.read_bytes()
+            newer = "2026-10-20T00:01:00+00:00"
+            for key in ("rounds_completed", "validated_total",
+                        "formal_records_added_total"):
+                with self.subTest(key=key):
+                    next_state = {**SAMPLE, "rounds_completed": 12,
+                                  "validated_total": 350,
+                                  "formal_records_added_total": 500}
+                    next_state[key] -= 1
+                    with self.assertRaisesRegex(ValueError,
+                                                "cumulative count regressed"):
+                        write_event_snapshot(path, next_state, updated_at=newer)
+                    self.assertEqual(path.read_bytes(), original)
+
+    def test_repeated_heartbeat_with_unchanged_totals_is_valid(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "status.json"
+            write_event_snapshot(path, SAMPLE, updated_at=NOW)
+            new_time = "2026-10-20T00:01:00+00:00"
+            write_event_snapshot(path, SAMPLE, updated_at=new_time)
+            state = read_public_snapshot(path, now_epoch=EPOCH+65)
+            self.assertEqual(state["rounds_completed"], 10)
+            self.assertEqual(state["validated_total"], 33)
+            self.assertEqual(state["formal_records_added_total"], 490)
+            self.assertEqual(state["last_progress_age_seconds"], 65)
+            self.assertEqual(state["snapshot_age_seconds"], 5)
+
     def test_only_complete_committed_snapshot_readable(self):
         with tempfile.TemporaryDirectory() as tmp:
             path=Path(tmp)/"status.json"
