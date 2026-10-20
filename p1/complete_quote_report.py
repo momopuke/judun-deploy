@@ -17,7 +17,7 @@ import json
 
 from evidence_gate import parse_twd_amount
 from evidence_display import fingerprint_approval_source
-from paged_evidence_report import render_paged_public_price_sources
+from paged_evidence_report import render_paged_public_price_sources, source_row_snapshot_marker
 
 MAX_QUOTE_ITEMS = 5000
 ITEMS_PER_PAGE = 30
@@ -44,13 +44,15 @@ def quote_snapshot_digest(quote_rows: list) -> str:
     for quote in quote_rows:
         if isinstance(quote, dict):
             fields = {name: quote.get(name) for name in _QUOTE_FIELDS}
-            try:
-                raw = json.dumps(fields, ensure_ascii=False, sort_keys=True,
-                                 separators=(",", ":"), allow_nan=False).encode("utf-8")
-            except (TypeError, ValueError):
-                raw = b"INVALID_QUOTE_FIELDS"
         else:
-            raw = b"INVALID_QUOTE_ROW"
+            fields = quote
+        try:
+            raw = json.dumps(fields, ensure_ascii=False, sort_keys=True,
+                             separators=(",", ":"), allow_nan=False).encode("utf-8")
+        except (TypeError, ValueError, OverflowError, RecursionError) as exc:
+            raise ValueError("unverifiable quote row") from exc
+        if len(raw) > 131072:
+            raise ValueError("oversized quote row")
         digest.update(len(raw).to_bytes(8, "big") + raw)
     return digest.hexdigest()
 
@@ -73,21 +75,23 @@ def source_association_digest(rows: list, expected_items: int) -> tuple[str, boo
         digest.update(b"OVERSIZED")
         digest.update(str(total).encode("ascii"))
         return digest.hexdigest(), False
+    safe_for_pairing = True
     for part in rows:
         if not isinstance(part, list):
             digest.update(b"INVALID_PART")
+            safe_for_pairing = False
             continue
         digest.update(len(part).to_bytes(8, "big"))
         for item in part:
-            if isinstance(item, dict):
-                try:
-                    marker = fingerprint_approval_source(item)
-                except (TypeError, ValueError):
-                    marker = "INVALID_EVIDENCE"
-            else:
-                marker = "INVALID_ROW"
+            try:
+                marker = source_row_snapshot_marker(item)
+            except ValueError:
+                marker = "UNVERIFIABLE"
+                # Preserve the customer's quote while forbidding unbound
+                # evidence comparison for the whole report.
+                safe_for_pairing = False
             digest.update(marker.encode("ascii") + b";")
-    return digest.hexdigest(), True
+    return digest.hexdigest(), safe_for_pairing
 
 
 @dataclass(frozen=True)
@@ -150,9 +154,12 @@ def render_authorized_quote_items(
         sources_safe = prepared.sources_safe
     else:
         # Standalone continuation always hashes current source and quote data.
-        digest = quote_snapshot_digest(quote_rows)
-        source_digest, sources_safe = source_association_digest(
-            source_rows_by_item, len(quote_rows))
+        try:
+            digest = quote_snapshot_digest(quote_rows)
+            source_digest, sources_safe = source_association_digest(
+                source_rows_by_item, len(quote_rows))
+        except ValueError:
+            return {**empty, "status": "QUOTE_SNAPSHOT_UNVERIFIABLE"}
     if ((offset > 0 and expected_quote_digest != digest)
             or (expected_quote_digest is not None and expected_quote_digest != digest)):
         return {**empty, "status": "QUOTE_SNAPSHOT_CHANGED",
@@ -341,9 +348,12 @@ def render_complete_authorized_quote_report(
         coverage = "SOURCE_CANDIDATES_PRESENT"
     all_pages = []
     cumulative_alerts = []
-    checked_quote_digest = quote_snapshot_digest(quote_rows)
-    checked_source_digest, sources_safe = source_association_digest(
-        source_rows_by_item, len(quote_rows))
+    try:
+        checked_quote_digest = quote_snapshot_digest(quote_rows)
+        checked_source_digest, sources_safe = source_association_digest(
+            source_rows_by_item, len(quote_rows))
+    except ValueError:
+        return {**invalid, "status": "QUOTE_SNAPSHOT_UNVERIFIABLE"}
     prepared = _TrustedOrchestratorSnapshot(
         quote_rows, source_rows_by_item,
         checked_quote_digest, checked_source_digest, sources_safe)
@@ -373,8 +383,11 @@ def render_complete_authorized_quote_report(
             # sources for every 30 quote items on a small VPS.
             current_source_digest, _ = source_association_digest(
                 source_rows_by_item, len(quote_rows))
-            if (quote_snapshot_digest(quote_rows) != checked_quote_digest
-                    or current_source_digest != checked_source_digest):
+            try:
+                same_quotes = quote_snapshot_digest(quote_rows) == checked_quote_digest
+            except ValueError:
+                same_quotes = False
+            if (not same_quotes or current_source_digest != checked_source_digest):
                 return {**invalid, "status": "SOURCE_SNAPSHOT_CHANGED"}
             complete = page["complete"]
             return {
