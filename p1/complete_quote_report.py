@@ -67,7 +67,6 @@ def render_authorized_quote_items(
     }
     if (not isinstance(quote_rows, list)
             or not isinstance(source_rows_by_item, list)
-            or len(quote_rows) != len(source_rows_by_item)
             or len(quote_rows) > MAX_QUOTE_ITEMS
             or type(offset) is not int or offset < 0 or offset > len(quote_rows)):
         return empty
@@ -79,6 +78,9 @@ def render_authorized_quote_items(
                 "quote_digest": digest}
 
     finish = min(len(quote_rows), offset + ITEMS_PER_PAGE)
+    # Never associate sources with the wrong customer quote: if arrays are
+    # misaligned, preserve every quote line but suppress ALL source matching.
+    aligned = len(quote_rows) == len(source_rows_by_item)
     source_alerts = []
     markup = [
         '<section class="judun-complete-quote-lines" aria-label="完整估價工項明細">',
@@ -86,7 +88,7 @@ def render_authorized_quote_items(
     ]
     for i in range(offset, finish):
         row = quote_rows[i]
-        sources = source_rows_by_item[i]
+        sources = source_rows_by_item[i] if aligned else None
         # A malformed item is never skipped or presented as a valid quote.
         if not isinstance(row, dict):
             markup.append(
