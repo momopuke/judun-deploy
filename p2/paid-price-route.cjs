@@ -35,7 +35,13 @@ function showVerifiedPriceSection(input, interfaces) {
   }
   try {
     // Some report views create the price section only when its tab is mounted.
-    if (typeof interfaces.mount === "function") interfaces.mount(target);
+    if (typeof interfaces.mount === "function") {
+      const pending = interfaces.mount(target);
+      if (pending && typeof pending.then === "function") {
+        // Never claim a page is ready before its asynchronous mount finishes.
+        return { ok: false, reason: "ASYNC_MOUNT_REQUIRES_ASYNC_API" };
+      }
+    }
     const section = interfaces.findSection(target);
     if (!section) return { ok: false, reason: "PRICE_SECTION_NOT_RENDERED" };
     // Do not mark paid/available in browser storage. Entitlement is server-owned.
