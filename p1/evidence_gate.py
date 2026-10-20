@@ -154,6 +154,11 @@ def evaluate(record: dict) -> GateDecision:
     if final_url:
         if not public_source_url(final_url):
             return d("REJECT", "REDIRECT_TO_BLOCKED_OR_NONPUBLIC_URL")
+        # A regular successful fetch often records resolved_url == url even
+        # when no HTTP redirect occurred. Do not require a fictitious chain.
+        if redirected is not True and final_url == url:
+            final_url = None
+    if final_url:
         # The collector must record and audit EVERY network redirect hop, not
         # merely set redirect_chain_verified=True on an unreviewed final URL.
         chain = record.get("redirect_chain_urls")
