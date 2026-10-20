@@ -170,6 +170,18 @@ class SnapshotTests(unittest.TestCase):
             self.assertEqual(state["last_known_status"],"idle")
             self.assertFalse(state["status_confident"])
 
+    def test_idle_status_without_progress_never_invents_checkpoint_time(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "status.json"
+            no_progress = {key: value for key, value in SAMPLE.items()
+                           if key != "last_progress_at"}
+            write_event_snapshot(path, {**no_progress, "status":"idle"},
+                                 updated_at=NOW)
+            state = read_public_snapshot(path, now_epoch=EPOCH+10)
+            self.assertEqual(state["status"], "idle")
+            self.assertIsNone(state["last_progress_at"])
+            self.assertIsNone(state["last_progress_age_seconds"])
+
     def test_recent_idle_remains_idle_and_confident(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "status.json"
