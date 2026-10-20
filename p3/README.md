@@ -126,3 +126,15 @@ python3 p3/patch_authoritative_app.py \
 上方命令是**在已授權的正式原始碼工作環境中**執行的流程範例，不應在不明機器、不明版本直接使用。產生候選仍需查現版 backend API 權益、真實 Basic/ProMax/付款失敗/重複回呼、報告與 PDF，通過後由原授權發行者以**既有簽章、同一正式版本發布**。新工具既不碰 VPS、不使用簽章私鑰、不變更 DB，也不自行宣布付款已開放。
 
 自動測試包括拒絕錯 SHA、錯版本、錯函式區塊、無效 Python、輸入/輸出重疊、覆寫既有檔案；唯有取得**現行 v1.2.114 的權威 `app.py`**才能完成正式版本驗收。DigitalOcean 插件提供 VM 管理而沒有此對話內的 SSH Shell；此工具不可替代實際部署權限。
+
+## 2026-10-21｜原部署通道接線調查（持續保留唯一正式站）
+
+已從過去交付的 `Judun_v1.2.82_PersistentLearning_AUTODEPLOY_20261004.zip` 找回原版 `AUTODEPLOY_AGENT.sh` 和 `AUTODEPLOY_INSTALL.sh`：安裝預設 `BRANCH=main`，`judun-autodeploy.timer` 每分鐘檢查一次 `channel/stable.json` 及 `channel/stable.json.sig.b64`。它會先驗 Ed25519、現行 base artifact，再下載和解密 CMS payload，最後透過舊 advisor 服務更新；但**安裝包只證實設計，不能證明現行 VPS 上的 timer/config/agent 真正運行**。
+
+歷史 v1.2.87 發布紀錄也顯示曾透過獨立 HTTPS receiver 啟動原代理。2026-10-21 的 GitHub Runner 唯讀檢查已證明 `https://deploy-judun.142-93-91-214.sslip.io/health` 及 `/version` 皆回 HTTP 200；新 `p3/receiver_readiness.py` 進一步只核對 `/version` 的公開字串是否**精確等於 `v3`**，並以固定格式輸出診斷結果，不公開原始回應、不送出任何 POST、沒有上傳和付款操作。它已加入既有 CI。
+
+原 VPS 代理的唯讀診斷工具是 `p3/local_agent_diagnostic.py`：在原有授權的 VPS 執行環境執行後，只輸出 systemd 啟用狀態、非敏感設定（repo、branch、channel）、失敗事件計數及本機 health 版號。**絕不輸出部署 token、私鑰、原始 journal 或個資，也不會修改 VPS。** 新測試 `test_local_agent_diagnostic.py` 防止資料洩漏與錯誤推論。此工具不能從 GitHub Runner 遠端執行，必須在真正已授權的 VPS shell 或既有受控接收器上執行。
+
+**下一必要關卡：** 取得現行 systemd timer 狀態及代理失敗分類，確認設定是否仍追蹤 GitHub `main`。若 timer 不運作才修復原 timer；若 signature/base mismatch 應核對現行 artifact 和 GitHub 發行來源；若 HTTPS receiver 的 `v3` 不符先停用部署企圖。通過後才用原權威 v1.2.114 source、受控簽章及既有接收器發行唯一版本，再作付款/報告/PDF 真實 E2E 和 deep SHA 回讀。
+
+先前暫時發布的 v1.2.115 簽章 channel 已還原，現 GitHub `main/channel/stable.json` 是舊 v1.2.106 來源；即使 timer 運行，它也可能因為現行 live 已是 v1.2.114 而記錄 base mismatch。**不可用不一致的舊 channel 覆蓋正式站，也不可把 receiver HTTP 200 當作 agent 也正常。**
