@@ -229,6 +229,33 @@ class EvidencePresentationTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     fingerprint_approval_source(source)
 
+    def test_extreme_decimal_ratio_never_crashes_or_reports_false_gap(self):
+        source = dict(valid_case(),
+                      amount="NT$0.000000000000000000000001",
+                      body=("台北室內裝修油漆工程，批土兩道、乳膠漆三道，"
+                            "公開報價 NT$0.000000000000000000000001／坪。"))
+        quote = {**customer_quote(source), "amount": "NT$10000000000"}
+        result = build_public_evidence_view(
+            source, quote, approved_record_lookup=approved_lookup(source))
+        self.assertEqual(result["tier"], "REFERENCE_ONLY")
+        self.assertIsNone(result["difference_percent"])
+        self.assertIsNone(result["reference_amount_twd"])
+        self.assertNotIn("NT$0.00", render_public_evidence_html(result))
+
+    def test_decimal_prices_render_without_silent_cent_rounding(self):
+        source = dict(valid_case(),
+                      amount="NT$18,000.125",
+                      body=("台北室內裝修油漆工程，批土兩道、乳膠漆三道，"
+                            "公開報價 NT$18,000.125／坪。"))
+        quote = {**customer_quote(source), "amount": "NT$20,000.375"}
+        result = build_public_evidence_view(
+            source, quote, approved_record_lookup=approved_lookup(source))
+        self.assertEqual(result["tier"], "COMPARABLE")
+        html = render_public_evidence_html(result)
+        self.assertIn("NT$18,000.125", html)
+        self.assertIn("NT$20,000.375", html)
+        self.assertIn("NT$2,000.25", html)
+
     def test_non_serializable_snapshot_has_no_approval(self):
         source = dict(valid_case(), quantity=object())
         view = build_public_evidence_view(
