@@ -16,14 +16,12 @@ function postUnlockTarget(input) {
   if (input.reportReady !== true) return null;
   // Fail closed: an absent/unknown task state is not proof of completion.
   if (input.unlockTaskState !== "completed") return null;
-  // If either report binding is supplied, BOTH must be present and equal.
-  // This is a client guard only; server-side report ownership is authoritative.
+  // Every successful route must be tied to the specific authorized report.
+  // This is only an extra client guard, not a substitute for server ownership checks.
   const reportId = input.reportId;
   const verifiedReportId = input.entitlementReportId;
-  if (reportId !== undefined || verifiedReportId !== undefined) {
-    if (typeof reportId !== "string" || !reportId.trim() ||
-        typeof verifiedReportId !== "string" || reportId !== verifiedReportId) return null;
-  }
+  if (typeof reportId !== "string" || !reportId.trim() ||
+      typeof verifiedReportId !== "string" || reportId !== verifiedReportId) return null;
   return PRICE_SECTION;
 }
 
@@ -32,6 +30,9 @@ function showVerifiedPriceSection(input, interfaces) {
   if (!target) return { ok: false, reason: "NOT_VERIFIED_OR_NOT_READY" };
   if (!interfaces || typeof interfaces.findSection !== "function") {
     return { ok: false, reason: "MISSING_REPORT_UI" };
+  }
+  if (typeof interfaces.whenRendered === "function") {
+    return { ok: false, reason: "ASYNC_RENDER_REQUIRES_ASYNC_API" };
   }
   try {
     // Some report views create the price section only when its tab is mounted.
