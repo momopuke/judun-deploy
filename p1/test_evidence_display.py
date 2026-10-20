@@ -218,6 +218,17 @@ class EvidencePresentationTests(unittest.TestCase):
             with self.subTest(change=change):
                 self.assertNotEqual(fp, fingerprint_approval_source({**original, **change}))
 
+    def test_overlarge_captured_page_fails_closed_before_rendering(self):
+        for changes in (
+            {"body": "裝修工程報價 NT$18,000／坪" + "X" * 62000},
+            {"title": "台北室內裝修" + "A" * 1000},
+            {"redirect_chain_urls": ["https://example.com.tw/a"] * 11},
+        ):
+            with self.subTest(changes=list(changes)):
+                source = {**valid_case(), **changes}
+                with self.assertRaises(ValueError):
+                    fingerprint_approval_source(source)
+
     def test_non_serializable_snapshot_has_no_approval(self):
         source = dict(valid_case(), quantity=object())
         view = build_public_evidence_view(
