@@ -1,4 +1,4 @@
-"""P3 one-statement, fail-closed patch for the PUBLIC v1.2.114 unlock entry.
+"""P3 exact two-statement, fail-closed patch for PUBLIC v1.2.114.
 
 This repairs two small client-side issues: a stale ProMax preferred-section
 value and completion-string false positives. It DOES NOT
@@ -20,6 +20,7 @@ import argparse
 import difflib
 import hashlib
 import json
+import os
 from pathlib import Path
 from urllib.request import Request, urlopen
 from urllib.error import URLError, HTTPError
@@ -129,6 +130,37 @@ def fetch_public() -> bytes:
     raise RuntimeError("PUBLIC_SOURCE_UNAVAILABLE_AFTER_3_READ_ATTEMPTS") from last_error
 
 
+
+def write_staging_artifacts(artifacts: list[tuple[Path, bytes]]) -> None:
+    """Create staging artifacts exclusively; never overwrite an existing path.
+
+    Roll back only files created by this invocation if a later create fails.
+    Preflight Path.exists() alone is insufficient (dangling symlinks/races).
+    """
+    created: list[Path] = []
+    try:
+        for target, contents in artifacts:
+            if target.suffix not in {".html"}:
+                raise ValueError("STAGING_ARTIFACT_MUST_BE_HTML")
+            target.parent.mkdir(parents=True, exist_ok=True)
+            flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+            if hasattr(os, "O_NOFOLLOW"):
+                flags |= os.O_NOFOLLOW
+            try:
+                fd = os.open(target, flags, 0o600)
+            except FileExistsError as exc:
+                raise ValueError("STAGING_PATH_ALREADY_EXISTS") from exc
+            created.append(target)
+            with os.fdopen(fd, "wb") as stream:
+                stream.write(contents)
+                stream.flush()
+                os.fsync(stream.fileno())
+    except BaseException:
+        for target in reversed(created):
+            target.unlink(missing_ok=True)
+        raise
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     mode = parser.add_mutually_exclusive_group(required=True)
@@ -163,13 +195,9 @@ def main() -> int:
             raise ValueError("STAGING_SOURCE_OUTPUT_PATH_COLLISION")
         if args.input and any(p.resolve() == args.input.resolve() for p in paths):
             raise ValueError("OVERWRITING_SOURCE_FORBIDDEN")
-        if any(p.exists() for p in paths):
-            raise ValueError("STAGING_PATH_ALREADY_EXISTS")
-        for p in paths:
-            p.parent.mkdir(parents=True, exist_ok=True)
-        if args.original_out:
-            args.original_out.write_bytes(original)
-        args.output.write_bytes(changed)
+        artifacts = ([(args.original_out, original)] if args.original_out else [])
+        artifacts.append((args.output, changed))
+        write_staging_artifacts(artifacts)
     print("P3_EXACT_SOURCE_PATCH_READY", json.dumps(report, ensure_ascii=False))
     print("NO_PRODUCTION_DEPLOYMENT_OR_PAYMENT")
     return 0
