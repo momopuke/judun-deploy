@@ -166,7 +166,49 @@ class SnapshotTests(unittest.TestCase):
             path=Path(tmp)/"status.json"
             write_event_snapshot(path,{**SAMPLE,"status":"idle"},updated_at=NOW)
             state=read_public_snapshot(path,now_epoch=EPOCH+10000)
-            self.assertEqual(state["status"],"idle")
+            self.assertEqual(state["status"],"snapshot_stale")
+            self.assertEqual(state["last_known_status"],"idle")
+            self.assertFalse(state["status_confident"])
+
+    def test_recent_idle_remains_idle_and_confident(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "status.json"
+            write_event_snapshot(path, {**SAMPLE, "status":"idle"}, updated_at=NOW)
+            state = read_public_snapshot(path, now_epoch=EPOCH+10)
+            self.assertEqual(state["status"], "idle")
+            self.assertTrue(state["status_confident"])
+
+    def test_completed_without_verified_checkpoint_is_not_success(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "status.json"
+            write_event_snapshot(path, {**SAMPLE, "status":"completed",
+                                        "checkpoint_verified":False}, updated_at=NOW)
+            state = read_public_snapshot(path, now_epoch=EPOCH+15)
+            self.assertEqual(state["status"], "completion_unverified")
+            self.assertEqual(state["last_known_status"], "completed")
+            self.assertFalse(state["status_confident"])
+            self.assertFalse(state["automatic_restart_permitted"])
+
+    def test_valid_recent_completed_checkpoint_is_confident(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "status.json"
+            write_event_snapshot(path, {**SAMPLE, "status":"completed"}, updated_at=NOW)
+            state = read_public_snapshot(path, now_epoch=EPOCH+15)
+            self.assertEqual(state["status"], "completed")
+            self.assertTrue(state["status_confident"])
+
+    def test_last_progress_must_not_be_later_than_observation_timestamp(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "status.json"
+            stamp = "2026-10-20T00:03:00+00:00"
+            write_event_snapshot(path, {**SAMPLE, "last_progress_at":stamp},
+                                 updated_at=NOW)
+            outcome = read_public_snapshot(path, now_epoch=EPOCH+220)
+            self.assertEqual(outcome["status"],"unknown")
+
+    def test_bool_stale_threshold_is_invalid(self):
+        with self.assertRaises(ValueError):
+            read_public_snapshot("/tmp/nonexistent.json", stale_after=True)
 
     def test_only_complete_committed_snapshot_readable(self):
         with tempfile.TemporaryDirectory() as tmp:
