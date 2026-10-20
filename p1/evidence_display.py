@@ -12,6 +12,8 @@ from __future__ import annotations
 
 from decimal import Decimal
 from html import escape
+import hashlib
+import json
 
 from evidence_gate import (
     evaluate,
@@ -42,18 +44,70 @@ def _money(value: Decimal) -> str:
     return format(value, "f")
 
 
+# Hash all captured fields used by relevance, routing, pair-match and price display.
+# The formal registry must store this snapshot digest AT the time of QA approval.
+_APPROVED_SOURCE_KEYS = (
+    "url", "resolved_url", "redirected", "redirect_chain_urls",
+    "redirect_chain_verified", "title", "body", "locality", "region",
+    "currency", "amount", "category", "item_name", "unit", "spec",
+    "price_phase", "evidence_type", "price_basis", "tax_included", "quantity",
+)
+
+
+def fingerprint_approval_source(source: dict) -> str:
+    """Canonical digest for a formally reviewed PUBLIC SOURCE snapshot.
+
+    No trust is created by this digest: only the server-side approved registry
+    can grant status. Compare the complete critical snapshot, not just a URL or
+    user-supplied price, to prevent stale approvals being reused after changes.
+    """
+    if not isinstance(source, dict):
+        raise ValueError("source must be a mapping")
+    snapshot = {key: source.get(key) for key in _APPROVED_SOURCE_KEYS}
+    try:
+        raw = json.dumps(snapshot, ensure_ascii=False, sort_keys=True,
+                         separators=(",", ":"), allow_nan=False).encode("utf-8")
+    except (TypeError, ValueError) as exc:
+        raise ValueError("source contains unsupported review fields") from exc
+    return hashlib.sha256(raw).hexdigest()
+
+
+def _find_approved_id(source: dict, approved_record_lookup) -> str | None:
+    """Fail closed unless a trusted backend registry confirms the same snapshot.
+
+    approved_record_lookup must be a *server-defined* callable accepting a
+    snapshot SHA-256 and returning {state, fingerprint, evidence_id}. NEVER
+    accept this callable, its output, or approval flags from a browser request.
+    """
+    if not callable(approved_record_lookup):
+        return None
+    try:
+        digest = fingerprint_approval_source(source)
+        record = approved_record_lookup(digest)
+    except Exception:  # A registry failure must never grant price comparison.
+        return None
+    if not isinstance(record, dict):
+        return None
+    record_id = record.get("evidence_id")
+    if (record.get("state") != "approved"
+            or record.get("fingerprint") != digest
+            or not isinstance(record_id, str)
+            or not 0 < len(record_id.strip()) <= 128):
+        return None
+    return record_id.strip()
+
+
 def build_public_evidence_view(
     source: dict,
     customer_quote: dict | None = None,
     *,
-    formal_qa_approved: bool = False,
-    formal_evidence_id: str | None = None,
+    approved_record_lookup=None,
 ) -> dict:
     """Return safe display data; comparisons require BOTH strict match and formal QA.
 
-    The formal approval flag and evidence ID must be supplied by the trusted
-    server after looking up this very source in its approved evidence registry.
-    They are NOT evidence of approval by themselves.
+    A verified price gap requires the trusted server's registry to return an
+    approved record bound to the EXACT snapshot fingerprint. Booleans and
+    evidence IDs from forms/query parameters are NOT proof of approval.
     """
     gate = evaluate(source)
     if gate.status in ("REJECT", "HOLD"):
@@ -99,12 +153,9 @@ def build_public_evidence_view(
             view["explanation"] = "尚未證實與屋主工項的規格、計價基準、含稅及數量條件一致；不得顯示精確價差。"
         return view
 
-    # A structurally matched page is not automatically accepted formal data.
-    # An approval ID must also identify a nonempty approved source record.
-    approved = (formal_qa_approved is True
-                and isinstance(formal_evidence_id, str)
-                and 0 < len(formal_evidence_id.strip()) <= 128)
-    if not approved:
+    # Comparing matching fields never confers formal QA approval.
+    approved_id = _find_approved_id(source, approved_record_lookup)
+    if approved_id is None:
         view["label"] = "規格相符，待正式覆核"
         view["explanation"] = "比對欄位吻合，但此來源尚未取得正式證據 QA 核准，不提供精確價差。"
         return view
@@ -122,7 +173,7 @@ def build_public_evidence_view(
         "difference_twd": _money(delta),
         "difference_percent": _money(percent),
         "difference_basis": "客戶報價減公開來源價格；百分比以公開來源價格為分母",
-        "formal_evidence_id": formal_evidence_id.strip(),
+        "formal_evidence_id": approved_id,
     })
     return view
 
