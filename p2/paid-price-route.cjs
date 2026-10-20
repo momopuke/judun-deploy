@@ -12,7 +12,9 @@ function postUnlockTarget(input) {
   if (!input || typeof input !== "object") return null;
   if (input.entitlementVerified !== true) return null;
   if (!PAID_TIERS.has(input.tier)) return null;
-  if (input.paymentPending === true) return null;
+  // Server must explicitly confirm that payment is no longer pending.
+  // Missing, null, string or numeric flags are not reliable completion proof.
+  if (input.paymentPending !== false) return null;
   if (input.reportReady !== true) return null;
   // Fail closed: an absent/unknown task state is not proof of completion.
   if (input.unlockTaskState !== "completed") return null;
