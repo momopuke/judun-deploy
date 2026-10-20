@@ -279,6 +279,25 @@ def render_complete_authorized_quote_report(
             or not isinstance(source_rows_by_item, list)
             or len(quote_rows) > MAX_QUOTE_ITEMS):
         return invalid
+    # Completion of the quote listing and public price-evidence coverage are
+    # distinct dimensions. An empty source list does not erase the customer's
+    # item, but MUST NOT imply that its price was substantiated.
+    source_mapping_valid = len(quote_rows) == len(source_rows_by_item)
+    with_sources = sum(1 for v in source_rows_by_item
+                       if isinstance(v, list) and bool(v)) if source_mapping_valid else 0
+    missing_sources = (sum(1 for v in source_rows_by_item
+                           if not isinstance(v, list) or not v)
+                       if source_mapping_valid else len(quote_rows))
+    if not source_mapping_valid:
+        coverage = "SOURCE_MAPPING_INVALID"
+    elif not quote_rows:
+        coverage = "NO_QUOTE_ITEMS"
+    elif with_sources == 0:
+        coverage = "NO_PUBLIC_SOURCES"
+    elif missing_sources:
+        coverage = "PARTIAL_SOURCE_COVERAGE"
+    else:
+        coverage = "SOURCE_CANDIDATES_PRESENT"
     all_pages = []
     cumulative_alerts = []
     digest = None
@@ -304,9 +323,27 @@ def render_complete_authorized_quote_report(
             complete = page["complete"]
             return {
                 "status": "COMPLETE" if complete else "SOURCE_REVIEW_REQUIRED",
-                "html": "".join(all_pages),
+                "html": (
+                    '<p class="judun-evidence-coverage-note">'
+                    + (
+                        "公開來源清單與估價工項對應未確認，全部來源配對暫停。"
+                        if coverage == "SOURCE_MAPPING_INVALID" else
+                        "本報告沒有可供核對的公開報價來源；完整列出估價不代表價格已驗證。"
+                        if coverage == "NO_PUBLIC_SOURCES" else
+                        "部分工項尚無公開來源；不得將未配對工項視為已驗證。"
+                        if coverage == "PARTIAL_SOURCE_COVERAGE" else
+                        "已有公開來源候選；每項價格是否可比仍須查看原始證據與正式 QA。"
+                        if coverage == "SOURCE_CANDIDATES_PRESENT" else
+                        "本報告尚無可列出的估價工項。"
+                    ) + '</p>' + "".join(all_pages)
+                ),
                 "complete": complete,
                 "quote_items": len(quote_rows),
+                "quote_list_rendered": len(quote_rows),
+                "source_coverage_status": coverage,
+                "quote_items_with_source_candidates": with_sources,
+                "quote_items_without_sources": missing_sources,
+                "source_price_verification_claimed": False,
                 "pages": len(all_pages),
                 "source_alerts": cumulative_alerts,
             }
