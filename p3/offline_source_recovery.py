@@ -132,6 +132,35 @@ def inspect_plaintext(plain: Path, version: str) -> tuple[bytes, dict]:
     }
 
 
+
+def verify_live_app_tree(app: bytes, manifest: dict, live_source_tree_sha256: str) -> bool:
+    """Require a full trusted manifest matching independently published tree."""
+    from production_delta_patch import computed_tree_sha
+    if (manifest.get("schema") != "judun.deploy-manifest.v1"
+            or manifest.get("artifact_id") != "JUDUN-1.2.114-AA38F0567A4D"
+            or manifest.get("version") != "1.2.114"):
+        deny("INDEPENDENT_MANIFEST_IDENTITY_MISMATCH")
+    records = manifest.get("files")
+    if not isinstance(records, list) or len(records) < 79:
+        deny("INCOMPLETE_INDEPENDENT_MANIFEST")
+    paths = [x.get("path") for x in records if isinstance(x, dict)]
+    if len(paths) != len(records) or len(paths) != len(set(paths)):
+        deny("INVALID_INDEPENDENT_MANIFEST_FILES")
+    if (not isinstance(live_source_tree_sha256, str)
+            or not re.fullmatch(r"[0-9a-f]{64}", live_source_tree_sha256)
+            or computed_tree_sha(records) != live_source_tree_sha256
+            or manifest.get("source_tree_sha256") != live_source_tree_sha256):
+        deny("INDEPENDENT_SOURCE_TREE_DRIFT")
+    matches = [x for x in records if x.get("path") in
+               ("app.py", "system_files/app.py", "runtime/app.py")]
+    if len(matches) != 1:
+        deny("INDEPENDENT_APP_ENTRY_NOT_UNIQUE")
+    row = matches[0]
+    if row.get("size") != len(app) or row.get("sha256") != sha(app):
+        deny("APP_DOES_NOT_MATCH_LIVE_TREE")
+    return True
+
+
 def recover(encoded: Path, verification: Path, historical_zip: Path,
             *, out_private: Path | None = None) -> dict:
     record = json.loads(verification.read_text("utf-8"))
