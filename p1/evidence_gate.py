@@ -127,6 +127,47 @@ def parse_twd_amount(value: object) -> Decimal | None:
         return None
 
 
+
+# A normalized numeric amount from a parser is NOT itself source evidence.
+# Only accept a price that appears near a currency marker or price descriptor
+# in the captured public title/quote excerpt. Bare years, floor areas and
+# arbitrary digits never count as price evidence.
+_PRICE_NUMBER = r"(?:\\d{1,3}(?:[,，]\\d{3})+|\\d+)(?:\\.\\d+)?"
+_SOURCE_PRICE_PATTERN = re.compile(
+    rf"(?:"
+    rf"(?:NT\\s*\\$|NTD|TWD|新[臺台]幣|[$＄])\\s*(?P<currency_amount>{_PRICE_NUMBER})\\s*(?P<currency_unit>萬元?|元)?"
+    rf"|(?P<unit_amount>{_PRICE_NUMBER})\\s*(?P<unit_suffix>萬元?|元)"
+    rf"|(?:報價|估價|價格|單價|總價|金額|費用|每坪|一坪|每平方公尺|單坪價)"
+    rf"\\s*(?:[:：]|約|為|是|從)?\\s*(?P<label_amount>{_PRICE_NUMBER})\\s*(?P<label_suffix>萬元?|元)?"
+    rf")",
+    re.I,
+)
+
+
+def source_explicitly_supports_amount(title: str, excerpt: str, amount: Decimal) -> bool:
+    """Verify the *same* number exists as a contextual price in captured text.
+
+    Never infer paid/settled price from the display amount or page metadata.
+    This is necessary but not sufficient for source authenticity: crawler
+    signatures, downloaded-page hashes and human QA remain separate controls.
+    """
+    if not isinstance(title, str) or not isinstance(excerpt, str):
+        return False
+    for text in (title[:500], excerpt[:3500]):
+        for found in _SOURCE_PRICE_PATTERN.finditer(text):
+            for key, suffix in (("currency_amount", "currency_unit"),
+                                ("unit_amount", "unit_suffix"),
+                                ("label_amount", "label_suffix")):
+                numeric = found.group(key)
+                if numeric is None:
+                    continue
+                unit = found.group(suffix) or ""
+                parsed = parse_twd_amount(numeric + unit)
+                if parsed is not None and parsed == amount:
+                    return True
+    return False
+
+
 def evaluate(record: dict) -> GateDecision:
     """Never claim a real paid transaction from text alone.
 
@@ -204,6 +245,8 @@ def evaluate(record: dict) -> GateDecision:
     amount = parse_twd_amount(record.get("amount"))
     if amount is None:
         return d("HOLD", "NO_VALID_EXPLICIT_PRICE")
+    if not source_explicitly_supports_amount(title, body, amount):
+        return d("HOLD", "PRICE_NOT_IN_CAPTURED_PUBLIC_SOURCE")
 
     evidence_type = str(record.get("evidence_type") or "").upper()
     if evidence_type not in TYPES:
