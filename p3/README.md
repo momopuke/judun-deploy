@@ -172,3 +172,14 @@ python3 p3/patch_authoritative_app.py \
 - `p3/https_receiver_bundle_audit.py` 現在還檢驗內嵌 CMS 之外的 runtime ZIP bytes/SHA、對照 `RUNTIME_RELEASE_LOCK.json`、內層 `DEPLOY_MANIFEST.json`、全部已鎖定 runtime 路徑/雜湊、必要的 source registry 與 controller 檔案；支援 LF/CRLF 標記、拒絕重複或缺少標記和過量解壓。合成檔案包含真正雙層 ZIP，變造任一層都被阻擋。
 - `p3/public_deep_contract.py` 已由獨立 Runner 唯讀證實現網站 deep-health 的 `deep_verified`、`formal_evidence_sha256`、`source_tree_sha256`、`files_verified` 等欄位確實存在。既有 live preflight 的關鍵欄位**不需放寬**。
 - **本輪全部程式仍在 PR #9，沒有部署到 v1.2.114，沒有變更簽章 stable channel、品牌外觀、實際付款或正式資料。** 正式發布卡在「現行來源真實解密/比對、產生完整 v3 ZIP、驗證現有 HTTPS receiver 的實際授權部署」；不得以加密資產 hash 或單元測試通過冒充已上線。
+
+
+### 2026-10-21 追加：CMS 收件憑證實際核對與持續自驗
+
+現存 v1.2.114 CMS envelope 的 IssuerAndSerial RecipientIdentifier 序號，已與早期加密憑證序號獨立比較，**完全相同**；早期歷史解密私鑰經 OpenSSL 取得的 public key 與該加密憑證也**完全匹配**。再加上加密檔位元組 SHA-256 與原始驗證 JSON 相符，已具備「密文正確／CMS 收件憑證正確／歷史私鑰對應證書」三道證據，但**未實際以此鑰解密 v1.2.114 密文**。
+
+新增 `p3/attest_encrypted_source.py` / `p3/test_attest_encrypted_source.py`，並設為同一 GitHub Actions Quality 工作的必要步驟：直接核對 GitHub 已存的密文、驗證 JSON 和公開憑證，拒絕改包、改簽、不同 CMS 收件序號，不下載私鑰、不產生明文、不觸發任何部署。合成資料同時驗證正常憑證、無效憑證及另一張有效但錯誤的憑證。
+
+預計的下一必要執行是將**既存密文從受權 GitHub 來源以受控檔案交接方式**送入真正持有歷史私鑰的離線環境，使用 `p3/offline_source_recovery.py` 解密，從容器外獨立的正式 source manifest 對出 app SHA / 實際 runtime 版本，再進行 HTTPS v3 完整新包。**本對話目前的 GitHub 連接雖可讀取文字形式的密文，卻沒有將檔案原始位元組直接寫入隔離工作容器的授權傳輸操作**，因此不把無法驗證的源碼或舊版 ZIP 當作正式來源。
+
+保護狀態不變：正式唯一站 v1.2.114 未修改、GitHub `main` stable manifest / Ed25519 簽章仍是原本內容、無任何實際付款或用戶資料操作。
