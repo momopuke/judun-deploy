@@ -233,7 +233,7 @@ class EvidencePresentationTests(unittest.TestCase):
         source = dict(valid_case(),
                       amount="NT$0.000000000000000000000001",
                       body=("台北室內裝修油漆工程，批土兩道、乳膠漆三道，"
-                            "公開報價 NT$0.000000000000000000000001／坪。"))
+                            "公開報價 NT$0.000000000000000000000001／坪（含稅）。"))
         quote = {**customer_quote(source), "amount": "NT$10000000000"}
         result = build_public_evidence_view(
             source, quote, approved_record_lookup=approved_lookup(source))
