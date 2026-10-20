@@ -61,6 +61,15 @@ test("after verified completion only one target is mounted", () => {
     ["focus",PRICE_SECTION],["scroll",PRICE_SECTION]
   ]);
 });
+test("synchronous helper refuses to claim async mount complete", () => {
+  let lookedUp = false;
+  const result=showVerifiedPriceSection(unlocked("promax"), {
+    mount:() => Promise.resolve(),
+    findSection:() => {lookedUp=true; return {id:PRICE_SECTION};}
+  });
+  assert.deepEqual(result,{ok:false,reason:"ASYNC_MOUNT_REQUIRES_ASYNC_API"});
+  assert.equal(lookedUp,false);
+});
 test("price section created during mount is found after rendering", () => {
   let section=null;
   const result=showVerifiedPriceSection(unlocked("basic"), {
