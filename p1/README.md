@@ -37,3 +37,10 @@
 - **`/health/data-expansion` 超過 20 秒無回應**。可能是狀態 API、服務資源或控制器競爭；目前無法判定真正擴充工作有否停止，因此另外開追蹤 issue #5。
 
 **部署狀態：** 這裡是 GitHub 加密交付通道，沒有正式網站可編輯原始碼及私鑰。此工作為安全可整合的 P0 修正候選與已驗證的 QA，**不是已上線版本**。
+
+## 與居盾歷史真實程式格式核對（2026-10-20）
+已從使用者原始檔案庫讀取 `Judun_v1.2.82_PersistentLearning_AUTODEPLOY_20261004.zip`，實際核對歷史 `data_expansion_controller/controller.py` 的 `page_candidate()`、`formal_bundle()`、`evidence_store.validate_bundle()` 與 `data_expansion_web.snapshot()`。
+
+實際歷史候選使用 `canonical_url`、`region`、`price_stage`、`validation.pass`、`draft_records[].raw_price_text`、`amount_twd`、`unit`，且明示 `payment_verified=false` 與 `approved_comparable=false`。新增 `legacy_candidate_adapter.py` 將這些欄位**逐筆保守轉接**，其中舊版普遍欠缺明確 `spec`，絕不補猜，不以此允許正式自動匯入。已新增 9 項欄位與拒絕案例測試，合計 **40 項回歸測試通過**：https://github.com/momopuke/judun-deploy/actions/runs/39346080140 。
+
+**重要：v1.2.82 是歷史結構，不是 v1.2.114 現行原始碼。** 整合前仍必須重新核對最新控制器／報價 QA 欄位及正式簽章，不能因歷史格式相符就宣稱線上已整合。
