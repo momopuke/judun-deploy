@@ -10,7 +10,7 @@ publication. Source contents and URLs remain untrusted.
 """
 from __future__ import annotations
 
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from html import escape
 import hashlib
 import json
@@ -215,13 +215,33 @@ def render_public_evidence_html(view: dict, title: str = "公開報價依據") -
     )
     if view["tier"] == "COMPARABLE":
         customer = parse_twd_amount(view.get("customer_amount_twd"))
-        diff = view.get("difference_twd")
-        percent = view.get("difference_percent")
-        if customer is None or not isinstance(diff, str) or not isinstance(percent, str):
+        if customer is None:
             return ""
+        try:
+            delta = Decimal(str(view.get("difference_twd")))
+            percentage = Decimal(str(view.get("difference_percent")))
+            if not delta.is_finite() or not percentage.is_finite():
+                return ""
+            # Renderer must not silently display an inconsistent price claim.
+            if delta != customer - amount:
+                return ""
+            expected = (delta / amount * Decimal("100")).quantize(Decimal("0.1"))
+            if percentage != expected:
+                return ""
+        except (ValueError, InvalidOperation, TypeError, ZeroDivisionError):
+            return ""
+        def money(value):
+            return escape(f"{value:,.2f}".removesuffix(".00"))
+        direction = "高於" if delta > 0 else "低於" if delta < 0 else "等於"
         html += (
-            '<p>屋主報價：NT$' + escape(f"{customer:,.2f}".removesuffix(".00")) +
-            '；與公開來源差額：NT$' + escape(diff) +
-            '（' + escape(percent) + '%，以公開來源價格為基準）</p>'
+            '<p>屋主報價：NT
+    return html + '<p>' + link + '</p></article>'
+ + money(customer) +
+            '；' + ('與公開來源價格相同' if delta == 0 else
+                      '屋主報價' + direction + '公開來源價格 NT
+    return html + '<p>' + link + '</p></article>'
+ + money(abs(delta))) +
+            '（' + escape(format(abs(percentage), "f")) +
+            '%，以公開來源價格為基準）</p>'
         )
     return html + '<p>' + link + '</p></article>'
