@@ -111,3 +111,13 @@ if result["status"] == "OK":
 - **正式 QA 身分再保護**：受信任只讀 registry 不接受同一 evidence ID 對應多份來源快照，也不信任審核時間晚於目前時間太多的核准列；候選表的 evidence_id 另加 UNIQUE。既有正式 DB 不自動修改。
 
 所有新增功能**尚未接線到正式網站，也未執行真實客戶報價或付款、PDF 的完整 E2E**。此處的 synthetic SQLite 不等於目前真實正式證據庫 schema。商用部署前仍要取得可編輯權威原始碼與簽章權限；任何單元測試通過都不能當成已發布證據。
+
+
+## 2026-10-20 追加：擴充控制器健康狀態不得偽裝正常（候選）
+
+- `write_event_snapshot` 不再把每次寫入時間當作實際進度時間：執行中未提供 `last_progress_at` 時保留未知，而不是製造「剛有進度」的假訊號。必須由真正完成批次、驗證 checkpoint 等可信事件更新實際進度時間。
+- `read_public_snapshot` 獨立提供 `snapshot_age_seconds`、`snapshot_stale` 與 `last_progress_age_seconds`；區分 API 狀態快照是否有更新、工作是否有真進展。原本 `progress_stale` 仍表示**停滯跡象，不是已證實崩潰**；未知進度則為 `progress_unknown`，未經 checkpoint 認證永遠不可自動重啟。
+- 讀取的是最多 8192 bytes 的單一 JSON 檔，對不合法資料結構、負數計數、未帶時區或超前的時間戳一律回報 `unknown`，不讓異常 JSON 導致 health handler 丟出未處理例外。
+- `phase` 改為公開可揭露的固定階段名稱清單；無法辨識的階段顯示 `other`，杜絕把原始例外、檔案路徑、帶 token 的 URL 直接寫到對外快照。
+- 原子寫入新增檔案 `fsync`，在成功替換前先寫入完整內容。仍須由正式控制器在可信事件呼叫 writer、公開 GET 只讀 reader，才會改善線上 `/health/data-expansion` 卡住狀態。
+- 加入「只有 heartbeat、沒有實際進度」、「進度時間在未來」、「狀態快照被破壞」、「敏感 phase」、「空/陣列 JSON」回歸驗證。以上**不保證現行 VPS 的擴充引擎已正常**，也不提供自動強制重啟；正式整合仍需現行可編輯原始碼及受控部署。
