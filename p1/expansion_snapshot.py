@@ -30,9 +30,19 @@ def write_event_snapshot(path: str | Path, data: dict, *, updated_at: str | None
     status = data.get("status")
     if status not in STATUS_VALUES:
         raise ValueError("invalid expansion state")
+    stamp = updated_at or utc_now()
+    progress = data.get("last_progress_at")
+    # A status heartbeat is NOT a proven increase of completed work. If the
+    # controller cannot identify its last real progress event, preserve that
+    # uncertainty instead of manufacturing a fresh progress timestamp.
+    if progress is None and status != "running":
+        progress = stamp
+    _parse_time(stamp)
+    if progress is not None:
+        _parse_time(progress)
     payload = {"schema": SCHEMA, "status": status,
-               "updated_at": updated_at or utc_now(),
-               "last_progress_at": data.get("last_progress_at") or updated_at or utc_now()}
+               "updated_at": stamp,
+               "last_progress_at": progress}
     for key in ALLOWED_COUNTS:
         val = data.get(key, 0)
         if not isinstance(val, int) or isinstance(val, bool) or val < 0:
@@ -53,6 +63,7 @@ def write_event_snapshot(path: str | Path, data: dict, *, updated_at: str | None
             temp_name = f.name
             f.write(raw)
             f.flush()
+            os.fsync(f.fileno())
         os.replace(temp_name, target)
     finally:
         if temp_name and os.path.exists(temp_name):
@@ -81,17 +92,39 @@ def read_public_snapshot(path: str | Path, *, now_epoch: float | None = None, st
         p = json.loads(raw.decode("utf-8"))
         if p.get("schema") != SCHEMA or p.get("status") not in STATUS_VALUES:
             raise ValueError("invalid snapshot schema")
-        last = _parse_time(p["last_progress_at"])
-        age = max(0, int((now_epoch if now_epoch is not None else time.time()) - last))
+        now = now_epoch if now_epoch is not None else time.time()
+        snapshot_time = _parse_time(p["updated_at"])
+        if snapshot_time > now + 60:
+            raise ValueError("future-dated status snapshot")
+        snapshot_age = max(0, int(now - snapshot_time))
         state = p["status"]
-        observed = "progress_stale" if state == "running" and age > stale_after else state
+        progress_stamp = p.get("last_progress_at")
+        last = _parse_time(progress_stamp) if progress_stamp is not None else None
+        if last is not None and last > now + 60:
+            raise ValueError("future-dated progress")
+        age = max(0, int(now - last)) if last is not None else None
+        if state == "running" and age is None:
+            observed = "progress_unknown"
+        elif state == "running" and age > stale_after:
+            observed = "progress_stale"
+        else:
+            observed = state
+        for count in ALLOWED_COUNTS:
+            number = p[count]
+            if type(number) is not int or number < 0:
+                raise ValueError("invalid snapshot count")
+        phase = p.get("phase", "")
+        if not isinstance(phase, str) or len(phase) > 70:
+            raise ValueError("invalid status phase")
         return {
             "status": observed,
             "last_known_status": state,
             "last_progress_age_seconds": age,
-            "last_progress_at": p["last_progress_at"],
+            "last_progress_at": progress_stamp,
             "updated_at": p["updated_at"],
-            "phase": p.get("phase", ""),
+            "snapshot_age_seconds": snapshot_age,
+            "snapshot_stale": snapshot_age > stale_after,
+            "phase": phase,
             **{k: p[k] for k in ALLOWED_COUNTS},
             "checkpoint_verified": p.get("checkpoint_verified") is True,
             "automatic_restart_permitted": False,
