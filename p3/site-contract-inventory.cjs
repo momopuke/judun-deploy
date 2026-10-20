@@ -9,6 +9,7 @@ const fs=require("fs");
 const assert=require("node:assert/strict");
 const BASE="https://judun.142-93-91-214.sslip.io/";
 const OUT="p3/results/site-contract-inventory.json";
+const expectedLiveFns=require("./production-function-baseline.json");
 
 async function inspect(page,viewport) {
   await page.goto(BASE,{waitUntil:"domcontentloaded",timeout:45000});
@@ -133,6 +134,12 @@ async function inspect(page,viewport) {
   assert.equal(observation.controls.fileInput,true,"upload control missing");
   assert.equal(observation.controls.dataConsentInput,true,"consent control missing");
   assert.equal(observation.controls.submitBtn,true,"upload submit control missing");
+  // The candidate targets ONE observed production code version. If the public
+  // JS has drifted, re-review actual callbacks; do not silently apply old fix.
+  for(const [fnName,sha] of Object.entries(expectedLiveFns.sha256)){
+    assert.equal(observation.functionHashes[fnName],sha,
+      "LIVE_UNLOCK_FUNCTION_CHANGED_REVIEW_REQUIRED: "+fnName);
+  }
   return {viewport,observation};
 }
 (async()=>{
