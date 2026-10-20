@@ -102,3 +102,25 @@ npx esbuild p3/report-browser-entry.cjs --bundle --platform=browser --format=iif
 最新 [GitHub Actions #39442619160](https://github.com/momopuke/judun-deploy/actions/runs/39442619160)：Python 230/230、Node 40/40、P3 patch 3/3、**12/12 個真實前端回呼隔離狀態比較**、首頁五尺寸、正式站唯讀完整性、簽章邊界均 success。原版的否定完成狀態會錯誤掛載；修正版全阻擋；正向完成仍能掛載價差。網路、使用者資料、付款及正式站均未受到測試影響。
 
 **非正式付款安全保證**：正式付款/解鎖身分與所有權必須由受信任後端驗證，前端字串檢查不能代替授權；本修補只防錯誤的視覺完成分支。權威原始碼、既有受控 Ed25519 發布與真正支付/報告/PDF E2E 仍為正式上線必要條件。舊文件中「只需修一行」是上一輪歷史狀態，**已由本段最新兩敘述修補取代**。
+
+
+## 2026-10-21 真正 FastAPI 原始碼的可逆修補與版本相容性
+
+從使用者先前交付的私人 `Judun_v1.2.87_Deployment_Repair_20261005.tar.gz` 確認：
+- `runtime/app.py` 是完整 FastAPI 後端（2,700,308 bytes／11,424 行），不是純部署描述；原 SHA-256：`1c5c2c12bcc956af98e9349fefc35c7d0fb6b47568be50921d4ef27ca335247d`。
+- `GLOBAL_JS = r"""..."""` 是 Python 中的真實前端 JS 原始區塊；`window.unlockTier` 與 `function checkMicroStatus(...)` 都在其中，兩個欲修敘述各只出現 **1 次**。
+- 在本地唯讀解封後，以 Python `compile()` 實測原版和只替換這兩句的 v1.2.87 後端都能通過語法解析，反向替換完全還原原始碼；舊版修補後 SHA-256：`7c4d5369ea739ca0c249c9dc9d48e6718fca0738f5a825aa01cb1d79ada33bbd`。
+- v1.2.87 包含此前的 HTTPS receiver、受控發布代理及 rollback 設計痕跡，但**不可直接用 v1.2.87 源碼覆蓋線上 v1.2.114**；不得把私人完整原始碼或簽章私鑰上傳公開 GitHub Repo/CI。
+
+新工具 `p3/patch_authoritative_app.py` 接受**正式受信任工作目錄的完整 `app.py`**，強制使用操作者核對的整份來源 SHA-256、確認 `GLOBAL_JS` 與兩個已知函式內的目標敘述、原版及修正版 Python `compile()`、逐位元可逆，只建立**不同路徑的唯讀驗收候選檔**，且用檔案排他建立避免覆蓋任何已存在的路徑：
+
+```bash
+python3 p3/patch_authoritative_app.py \
+  --input /trusted/authorized/current/app.py \
+  --expect-sha256 "$(sha256sum /trusted/authorized/current/app.py | cut -d' ' -f1)" \
+  --output /trusted/staging/judun_p3/app.py
+```
+
+上方命令是**在已授權的正式原始碼工作環境中**執行的流程範例，不應在不明機器、不明版本直接使用。產生候選仍需查現版 backend API 權益、真實 Basic/ProMax/付款失敗/重複回呼、報告與 PDF，通過後由原授權發行者以**既有簽章、同一正式版本發布**。新工具既不碰 VPS、不使用簽章私鑰、不變更 DB，也不自行宣布付款已開放。
+
+自動測試包括拒絕錯 SHA、錯版本、錯函式區塊、無效 Python、輸入/輸出重疊、覆寫既有檔案；唯有取得**現行 v1.2.114 的權威 `app.py`**才能完成正式版本驗收。DigitalOcean 插件提供 VM 管理而沒有此對話內的 SSH Shell；此工具不可替代實際部署權限。
