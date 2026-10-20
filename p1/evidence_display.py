@@ -222,7 +222,7 @@ def render_public_evidence_html(view: dict, title: str = "公開報價依據") -
             percentage = Decimal(str(view.get("difference_percent")))
             if not delta.is_finite() or not percentage.is_finite():
                 return ""
-            # Renderer must not silently display an inconsistent price claim.
+            # Refuse an inconsistent or falsified figure at rendering time.
             if delta != customer - amount:
                 return ""
             expected = (delta / amount * Decimal("100")).quantize(Decimal("0.1"))
@@ -232,15 +232,11 @@ def render_public_evidence_html(view: dict, title: str = "公開報價依據") -
             return ""
         def money(value):
             return escape(f"{value:,.2f}".removesuffix(".00"))
-        direction = "高於" if delta > 0 else "低於" if delta < 0 else "等於"
+        direction = "高於" if delta > 0 else "低於"
+        comparison = ("與公開來源價格相同" if delta == 0
+                      else "屋主報價" + direction + "公開來源價格 NT$" + money(abs(delta)))
         html += (
-            '<p>屋主報價：NT
-    return html + '<p>' + link + '</p></article>'
- + money(customer) +
-            '；' + ('與公開來源價格相同' if delta == 0 else
-                      '屋主報價' + direction + '公開來源價格 NT
-    return html + '<p>' + link + '</p></article>'
- + money(abs(delta))) +
+            '<p>屋主報價：NT$' + money(customer) + '；' + comparison +
             '（' + escape(format(abs(percentage), "f")) +
             '%，以公開來源價格為基準）</p>'
         )
