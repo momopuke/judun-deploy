@@ -64,9 +64,21 @@ def fingerprint_approval_source(source: dict) -> str:
     if not isinstance(source, dict):
         raise ValueError("source must be a mapping")
     snapshot = {key: source.get(key) for key in _APPROVED_SOURCE_KEYS}
+    # Reject huge scraped pages before serializing or passing them through a
+    # registry for one quote item on a memory-constrained report server.
+    if (not isinstance(snapshot["title"], str)
+            or len(snapshot["title"]) > 1000
+            or not isinstance(snapshot["body"], str)
+            or len(snapshot["body"]) > 60000):
+        raise ValueError("captured source text exceeds safe review bounds")
+    chain = snapshot["redirect_chain_urls"]
+    if chain is not None and (not isinstance(chain, list) or len(chain) > 10):
+        raise ValueError("redirect chain exceeds safe review bounds")
     try:
         raw = json.dumps(snapshot, ensure_ascii=False, sort_keys=True,
                          separators=(",", ":"), allow_nan=False).encode("utf-8")
+        if len(raw) > 65536:
+            raise ValueError("source fingerprint payload too large")
     except (TypeError, ValueError) as exc:
         raise ValueError("source contains unsupported review fields") from exc
     return hashlib.sha256(raw).hexdigest()
