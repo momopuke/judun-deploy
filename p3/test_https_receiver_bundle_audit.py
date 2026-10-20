@@ -197,6 +197,23 @@ class OriginalHttpsReceiverPackageTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "UNSAFE_OR_NONCANONICAL_ZIP_PATH"):
                 audit(path)
 
+    def test_release_control_json_rejects_duplicate_fields_and_nonfinite_values(self):
+        with tempfile.TemporaryDirectory() as directory:
+            dest = Path(directory) / "candidate.zip"
+            for injection,expected in [
+                (b',"version":"1.2.999"', "DUPLICATE_CONTROL_JSON_KEY"),
+                (b',"untrustedAmount":NaN', "NONFINITE_CONTROL_JSON_NUMBER"),
+                (b',"untrustedAmount":Infinity', "NONFINITE_CONTROL_JSON_NUMBER"),
+            ]:
+                with self.subTest(expected=expected,injection=injection):
+                    members = make_members()
+                    original = members["RELEASE.json"]
+                    self.assertTrue(original.endswith(b"}"))
+                    members["RELEASE.json"] = original[:-1] + injection + b"}"
+                    save(dest,members)
+                    with self.assertRaisesRegex(ValueError,expected):
+                        audit(dest)
+
     def test_rejects_missing_snapshot_policy(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "review.zip"
