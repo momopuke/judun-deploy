@@ -155,3 +155,20 @@ python3 p3/patch_authoritative_app.py \
 新增 \`p3/https_receiver_bundle_audit.py\` 及 \`test_https_receiver_bundle_audit.py\`：按照歷史 Windows \`BUILD_PAYLOAD.ps1\` 實際格式，驗證 ZIP 中的 \`RELEASE.json\`、\`RUNTIME_RELEASE_LOCK.json\`、\`system_files/DEPLOY_MANIFEST.json\`，目標 artifact/instance/build signature、正式 evidence SHA 鎖定、所有 source ZIP 成員雜湊、另外的 runtime tree SHA、三版本備份與正式資料增量保護策略。禁止路徑穿越、重複路徑、符號連結、額外未列入管理清單的內容及壓縮解壓超限；**只讀本地 ZIP，沒有 HTTP、密碼或任何部署操作**。
 
 > 歷史規格是為了正確建立驗收邊界。當前 v1.2.114 的權威完整來源仍需驗證；不能直接拿舊的 v1.2.82 發行包重新打包覆蓋網站。原 HTTPS receiver 的存活與 v3 協定已由 Runner 驗證，下一個必要條件是取得同現網一致的現行可編輯來源、建立新版本完整 ZIP 並在隔離環境驗證後，才可使用原授權部署憑證直接上傳，最後檢查真實付費/報告/PDF 與 deep-SHA。**未滿足這些條件不發布。**
+
+
+## 2026-10-21｜加密現版來源實證與雙層封裝驗收（同一 PR）
+
+### 現版加密來源已確實存在，並通過原始封存指紋比對
+
+- GitHub 的 `assets/v1.2.114-expansion-resilience-source-20261017.cms.b64` 解出 **152,551 bytes CMS ciphertext**；以原始 SHA-256 重新計算得到 `82bad0e7fce3dd6000f84d6ecaaf991f10d254fad9baaf2978fd39da7ccd2fd9`，和 2026-10-17 `assets/v1.2.114-expansion-resilience-verification-20261017.json` 裡的歷史正式記錄**完全一致**。這證明密文未漂移，**不代表已解出或獨立驗證 v1.2.114 的原始碼內容**。
+- 在不輸出私鑰內容的本地隔離驗證中，早期 `Judun_v1.2.82_PersistentLearning_AUTODEPLOY_20261004.zip` 的 `payload_decrypt_private.pem` 與 `payload_encrypt_cert.pem` 公鑰配對一致；**尚未證明這把歷史金鑰可解開 v1.2.114 的 CMS 密文**。
+- 新增 `p3/offline_source_recovery.py` 和 `p3/test_offline_source_recovery.py`：允許在授權的、具有**同一份加密來源與歷史私有封存檔**的本機離線環境中，先比對密文 SHA，再以 OpenSSL CMS 解密到限權暫存；拒絕任意 tar/zip 特殊成員、舊版 APP_VERSION、無效 Python、輸出覆蓋、共用/Git 工作樹。預設只輸出脫敏 hash/版本，不保存明文原始碼；只有指定受限私有資料夾才可選擇存放單一 app.py。**不會自動發布到 GitHub、VPS 或其他雲端**。
+- GitHub 連接可唯讀取得密文原始內容，但此次執行環境**未能將 connector 密文檔安全帶入同一個本機容器**與歷史私鑰配對進行真正解密；因此仍不可稱為權威 app.py 已還原。完整來源必須核對現網版本、artifact 及官方 manifest 的獨立 app SHA，才能進入正式 HTTPS v3 發版。
+
+### 已修復 HTTPS v3 的內嵌 runtime 缺口
+
+- 原 Windows `BUILD_PAYLOAD.ps1` 不只檢查外層 `system_files/DEPLOY_MANIFEST.json`，還必須驗證 `system_files/deploy_paid_test.sh` 裡的 `JUDUN_RUNTIME_B64` **二層 ZIP**。原 P3 離線驗收漏掉這一層，是另一個實際安全/相容缺口。
+- `p3/https_receiver_bundle_audit.py` 現在還檢驗內嵌 CMS 之外的 runtime ZIP bytes/SHA、對照 `RUNTIME_RELEASE_LOCK.json`、內層 `DEPLOY_MANIFEST.json`、全部已鎖定 runtime 路徑/雜湊、必要的 source registry 與 controller 檔案；支援 LF/CRLF 標記、拒絕重複或缺少標記和過量解壓。合成檔案包含真正雙層 ZIP，變造任一層都被阻擋。
+- `p3/public_deep_contract.py` 已由獨立 Runner 唯讀證實現網站 deep-health 的 `deep_verified`、`formal_evidence_sha256`、`source_tree_sha256`、`files_verified` 等欄位確實存在。既有 live preflight 的關鍵欄位**不需放寬**。
+- **本輪全部程式仍在 PR #9，沒有部署到 v1.2.114，沒有變更簽章 stable channel、品牌外觀、實際付款或正式資料。** 正式發布卡在「現行來源真實解密/比對、產生完整 v3 ZIP、驗證現有 HTTPS receiver 的實際授權部署」；不得以加密資產 hash 或單元測試通過冒充已上線。
