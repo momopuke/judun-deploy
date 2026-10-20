@@ -236,7 +236,9 @@ def main() -> int:
     args = parser.parse_args()
     try:
         report = recover(args.encrypted, args.verification, args.historical_zip,
-                         out_private=args.out_private)
+                         out_private=args.out_private,
+                         trusted_manifest=args.trusted_manifest,
+                         public_tree_sha256=args.public_tree_sha256)
         print("JUDUN_SOURCE_RECOVERY", json.dumps(report, sort_keys=True))
         return 0
     except (ValueError, OSError, KeyError, tarfile.TarError, RuntimeError):
