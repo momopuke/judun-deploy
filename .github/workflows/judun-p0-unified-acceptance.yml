@@ -60,7 +60,7 @@ jobs:
       - name: Execute source QA, redirect chain, price-basis and expansion snapshot tests
         run: python3 -m unittest discover -s p1 -p 'test_*.py' -v
       - name: Execute checkout-to-price navigation and asynchronous report tests
-        run: node --test p2/paid-price-route.test.cjs
+        run: node --test p2/paid-price-route.test.cjs p3/report-integration.test.cjs
       - name: Observe published free entry WITHOUT any payment/upload
         run: python3 p2/audit_public_funnel.py
       - name: P3 read-only live integration and release gate (never deploy)
