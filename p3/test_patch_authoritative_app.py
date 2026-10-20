@@ -28,7 +28,7 @@ def get_status(job_id):
     code = code.replace("class FastAPI:\n    pass\n",
         "class FastAPI:\n    def get(self, path):\n        return lambda fn: fn\n")
     html = (
-        'INDEX_HTML = """<!DOCTYPE html><html lang="zh-Hant">'
+        'GLOBAL_JS = r"""<!DOCTYPE html><html lang="zh-Hant">'
         '<header>用專業守護家</header><style>h1{color:navy}</style><script>\n'
         'window.unlockTier = function(btn, jobId, tier) {\n' + OLD +
         '\n};\nfunction checkMicroStatus(jobId, activeBtn, preferredSectionId) {\n'
@@ -72,7 +72,7 @@ class SourcePatchTests(unittest.TestCase):
 
     def test_refuses_js_only_page_and_python_syntax_error(self):
         raw = sample_app()
-        source = raw.replace(b"INDEX_HTML = ", b"", 1)
+        source = raw.replace(b"GLOBAL_JS = r", b"", 1)
         with self.assertRaises(ValueError):
             apply_app_patch(source, hashlib.sha256(source).hexdigest())
         source = raw.replace(b"from __future__ import annotations\n", b"if:\n", 1)
