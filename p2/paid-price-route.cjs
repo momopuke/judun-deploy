@@ -16,6 +16,14 @@ function postUnlockTarget(input) {
   if (input.reportReady !== true) return null;
   // Fail closed: an absent/unknown task state is not proof of completion.
   if (input.unlockTaskState !== "completed") return null;
+  // If either report binding is supplied, BOTH must be present and equal.
+  // This is a client guard only; server-side report ownership is authoritative.
+  const reportId = input.reportId;
+  const verifiedReportId = input.entitlementReportId;
+  if (reportId !== undefined || verifiedReportId !== undefined) {
+    if (typeof reportId !== "string" || !reportId.trim() ||
+        typeof verifiedReportId !== "string" || reportId !== verifiedReportId) return null;
+  }
   return PRICE_SECTION;
 }
 
@@ -39,6 +47,42 @@ function showVerifiedPriceSection(input, interfaces) {
   }
 }
 
-const api = Object.freeze({ PRICE_SECTION, postUnlockTarget, showVerifiedPriceSection });
+// Use this path if the report UI mounts asynchronously (e.g. fetched HTML/PDF tab).
+// For an asynchronous mount, the integration MUST await readiness, and SHOULD
+// provide whenRendered() if it renders after mount() has resolved.
+async function showVerifiedPriceSectionAsync(input, interfaces, timeoutMs = 3000) {
+  const target = postUnlockTarget(input);
+  if (!target) return { ok: false, reason: "NOT_VERIFIED_OR_NOT_READY" };
+  if (!interfaces || typeof interfaces.findSection !== "function") {
+    return { ok: false, reason: "MISSING_REPORT_UI" };
+  }
+  const wait = Number.isFinite(timeoutMs) && timeoutMs >= 100 &&
+      timeoutMs <= 8000 ? timeoutMs : 3000;
+  let timer;
+  try {
+    const complete = async () => {
+      if (typeof interfaces.mount === "function") await interfaces.mount(target);
+      if (typeof interfaces.whenRendered === "function") await interfaces.whenRendered(target);
+      const section = interfaces.findSection(target);
+      if (!section) return { ok: false, reason: "PRICE_SECTION_NOT_RENDERED" };
+      if (typeof interfaces.focus === "function") await interfaces.focus(section);
+      if (typeof interfaces.scroll === "function") await interfaces.scroll(section);
+      return { ok: true, target };
+    };
+    return await Promise.race([
+      complete(),
+      new Promise((resolve) => {
+        timer = setTimeout(() =>
+          resolve({ ok: false, reason: "REPORT_UI_TIMEOUT" }), wait);
+      })
+    ]);
+  } catch (_error) {
+    return { ok: false, reason: "REPORT_UI_RENDER_FAILED" };
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
+  }
+}
+
+const api = Object.freeze({ PRICE_SECTION, postUnlockTarget, showVerifiedPriceSection, showVerifiedPriceSectionAsync });
 if (typeof module !== "undefined" && module.exports) module.exports = api;
 if (typeof window !== "undefined") window.JudunPaidNavigation = api;
