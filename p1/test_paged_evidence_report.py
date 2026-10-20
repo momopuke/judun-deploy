@@ -90,6 +90,29 @@ class PagedReportTests(unittest.TestCase):
         self.assertFalse(result["complete"])
         self.assertEqual(result["pages"], [])
 
+    def test_mutation_during_paginated_render_returns_no_partial_html(self):
+        from unittest.mock import patch
+        import paged_evidence_report as page
+        sources = distinct(201)
+        original = page.render_report_public_price_sources
+        triggered = []
+
+        def modify_after_render(chunk, *args, **kwargs):
+            result = original(chunk, *args, **kwargs)
+            if not triggered:
+                triggered.append(True)
+                sources[0]["amount"] = "NT$19,000"
+            return result
+
+        with patch.object(page, "render_report_public_price_sources",
+                          side_effect=modify_after_render):
+            result = page.render_paged_public_price_sources(
+                sources, customer(), pages_per_call=2)
+        self.assertEqual(result["status"], "SOURCE_SNAPSHOT_CHANGED")
+        self.assertEqual(result["pages"], [])
+        self.assertEqual(result["displayed"], 0)
+        self.assertFalse(result["complete"])
+
     def test_continuation_without_initial_snapshot_digest_is_denied(self):
         result = render_paged_public_price_sources(
             distinct(201), customer(), offset=200, pages_per_call=1)
