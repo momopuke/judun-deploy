@@ -258,5 +258,52 @@ class OriginalHttpsReceiverPackageTests(unittest.TestCase):
             self.assertTrue(result["embedded_runtime_sha256_verified"])
 
 
+    def test_inner_zip_cannot_omit_or_invent_members_even_when_outer_digests_match(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "release.zip"
+            for mode, rejection in (
+                ("missing", "EMBEDDED_FILE_INVENTORY_MISMATCH"),
+                ("extra", "EMBEDDED_FILE_INVENTORY_MISMATCH"),
+                ("changed", "EMBEDDED_FILE_BYTES_MISMATCH"),
+            ):
+                with self.subTest(mode=mode):
+                    members = make_members()
+                    script_name = "system_files/deploy_paid_test.sh"
+                    script = members[script_name]
+                    head, marker, tail = script.partition(b"cat <<'JUDUN_RUNTIME_B64'\n")
+                    assert marker
+                    encoded, endmarker, suffix = tail.partition(b"\nJUDUN_RUNTIME_B64")
+                    assert endmarker
+                    original_zip = base64.b64decode(encoded)
+                    with ZipFile(BytesIO(original_zip)) as archive:
+                        entries = {n: archive.read(n) for n in archive.namelist()}
+                    if mode == "missing":
+                        del entries["app.py"]
+                    elif mode == "extra":
+                        entries["untracked.py"] = b"unreviewed"
+                    else:
+                        entries["app.py"] = b"tampered source"
+                    buffer = BytesIO()
+                    with ZipFile(buffer, "w", ZIP_DEFLATED) as archive:
+                        for name, content in entries.items():
+                            archive.writestr(name, content)
+                    nested = buffer.getvalue()
+                    members[script_name] = head + marker + base64.b64encode(nested) + endmarker + suffix
+                    lock = json.loads(members["RUNTIME_RELEASE_LOCK.json"])
+                    lock["runtime_bundle_bytes"] = len(nested)
+                    lock["runtime_bundle_sha256"] = digest(nested)
+                    members["RUNTIME_RELEASE_LOCK.json"] = json.dumps(lock).encode()
+                    manifest = json.loads(members[MANIFEST_PATH])
+                    manifest["files"] = [
+                        row(name, content) for name, content in members.items()
+                        if name != MANIFEST_PATH
+                    ]
+                    manifest["source_tree_sha256"] = computed_tree_sha(manifest["files"])
+                    members[MANIFEST_PATH] = json.dumps(manifest).encode()
+                    save(output, members)
+                    with self.assertRaisesRegex(ValueError, rejection):
+                        audit(output)
+
+
 if __name__ == "__main__":
     unittest.main()
