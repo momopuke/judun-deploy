@@ -192,6 +192,12 @@ def recover(encoded: Path, verification: Path, historical_zip: Path,
         invoke_openssl(["cms", "-decrypt", "-inform", "DER", "-in", str(cipher),
                         "-recip", str(cert), "-inkey", str(key), "-out", str(plain)])
         app, report = inspect_plaintext(plain, record["version"])
+        if (trusted_manifest is None) != (public_tree_sha256 is None):
+            deny("MANIFEST_AND_TREE_REQUIRED_TOGETHER")
+        if trusted_manifest is not None:
+            manifest = json.loads(trusted_manifest.read_text("utf-8"))
+            verify_live_app_tree(app, manifest, public_tree_sha256)
+            report["recovered_app_matches_live_authoritative_sha"] = "VERIFIED_VIA_INDEPENDENT_LIVE_TREE"
         report["ciphertext_sha256_verified"] = True
         report["history_key_certificate_match"] = True
         report["vps_modified"] = False
