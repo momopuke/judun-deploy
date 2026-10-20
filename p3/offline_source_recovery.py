@@ -231,6 +231,8 @@ def main() -> int:
     parser.add_argument("--verification", type=Path, required=True)
     parser.add_argument("--historical-zip", type=Path, required=True)
     parser.add_argument("--out-private", type=Path)
+    parser.add_argument("--trusted-manifest", type=Path)
+    parser.add_argument("--public-tree-sha256")
     args = parser.parse_args()
     try:
         report = recover(args.encrypted, args.verification, args.historical_zip,
