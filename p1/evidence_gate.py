@@ -451,6 +451,46 @@ def source_price_spec_supported(source: dict) -> bool:
     return False
 
 
+def source_price_scope_same_clause(source: dict) -> bool:
+    """Require unit basis, item category and specification to agree in one clause.
+
+    Three independently true claims taken from different prices on the same
+    page are not evidence of one identical renovation scope. Review ambiguous
+    multi-price clauses instead of composing a fictitious exact quote.
+    """
+    amount = parse_twd_amount(source.get("amount"))
+    if amount is None:
+        return False
+    body = source.get("body")
+    if not isinstance(body, str):
+        return False
+    for clause in re.split(r"[。；;\\r\\n]+", body[:3500]):
+        if not clause.strip():
+            continue
+        prices = []
+        for found in _SOURCE_PRICE_PATTERN.finditer(clause):
+            parsed = None
+            for key, suffix in (("currency_amount", "currency_unit"),
+                                ("unit_amount", "unit_suffix"),
+                                ("label_amount", "label_suffix")):
+                numeric = found.group(key)
+                if numeric is not None:
+                    parsed = parse_twd_amount(numeric + (found.group(suffix) or ""))
+                    break
+            if parsed == amount:
+                prices.append(found)
+        if len(prices) != 1:
+            continue
+        # Reuse exactly the same contract on a single source-price clause,
+        # stripping the full-page title to prevent unrelated title evidence.
+        scoped = {**source, "title": "", "body": clause}
+        if (source_price_basis_supported(scoped)
+                and source_price_work_item_supported(scoped)
+                and source_price_spec_supported(scoped)):
+            return True
+    return False
+
+
 def compare_with_target(source: dict, customer_quote: dict) -> GateDecision:
     """Only return COMPARABLE for known-identical construction scope.
 
@@ -479,6 +519,8 @@ def compare_with_target(source: dict, customer_quote: dict) -> GateDecision:
         return GateDecision("REFERENCE_ONLY", ("SOURCE_PRICE_WORK_ITEM_NOT_PROVEN",), False, False)
     if not source_price_spec_supported(source):
         return GateDecision("REFERENCE_ONLY", ("SOURCE_PRICE_SPEC_NOT_PROVEN",), False, False)
+    if not source_price_scope_same_clause(source):
+        return GateDecision("REFERENCE_ONLY", ("SOURCE_SCOPE_CROSSED_PRICE_CLAUSES",), False, False)
     src_tax, quote_tax = source.get("tax_included"), customer_quote.get("tax_included")
     if type(src_tax) is not bool or type(quote_tax) is not bool or src_tax != quote_tax:
         return GateDecision("REFERENCE_ONLY", ("TAX_TREATMENT_MISSING_OR_MISMATCH",), False, False)
