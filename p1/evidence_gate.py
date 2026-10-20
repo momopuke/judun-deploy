@@ -144,15 +144,15 @@ _SOURCE_PRICE_PATTERN = re.compile(
 )
 
 
-def source_explicitly_supports_amount(title: str, excerpt: str, amount: Decimal) -> bool:
-    """Verify the *same* number exists as a contextual price in captured text.
+def source_price_precision(title: str, excerpt: str, amount: Decimal) -> str:
+    """Return EXACT / APPROXIMATE / ABSENT for the price quoted in source.
 
-    Never infer paid/settled price from the display amount or page metadata.
-    This is necessary but not sufficient for source authenticity: crawler
-    signatures, downloaded-page hashes and human QA remain separate controls.
+    Matching a price embedded in a range, approximation or "from" figure
+    cannot substantiate a single exact unit price.
     """
     if not isinstance(title, str) or not isinstance(excerpt, str):
-        return False
+        return "ABSENT"
+    approximate_seen = False
     for text in (title[:500], excerpt[:3500]):
         for found in _SOURCE_PRICE_PATTERN.finditer(text):
             for key, suffix in (("currency_amount", "currency_unit"),
@@ -161,12 +161,32 @@ def source_explicitly_supports_amount(title: str, excerpt: str, amount: Decimal)
                 numeric = found.group(key)
                 if numeric is None:
                     continue
-                unit = found.group(suffix) or ""
-                parsed = parse_twd_amount(numeric + unit)
-                if parsed is not None and parsed == amount:
-                    return True
-    return False
+                parsed = parse_twd_amount(numeric + (found.group(suffix) or ""))
+                if parsed is None or parsed != amount:
+                    continue
+                head = text[max(0, found.start() - 6):found.start()]
+                tail = text[found.end():found.end() + 15]
+                # Adjacent unambiguous date/floor-area tokens are not prices.
+                if re.match(r"^\\s*(?:年(?:度|份)?|坪|㎡|平方(?:公尺|米)?|日|月|號)", tail):
+                    continue
+                # Pricing ranges, starting prices, and approximations may be
+                # useful for market context but must not support an exact gap.
+                is_approximate = (
+                    bool(re.search(r"(?:約|大約|概估|起價|起跳|最低|從|至少|大概|約莫)\\s*$", head))
+                    or "約" in found.group(0)
+                    or bool(re.match(r"^\\s*(?:[-~～〜－–—]|至|到|起|以上|以下|上下|左右|不等)", tail))
+                    or bool(re.search(r"(?:[-~～〜－–—]|至|到)\\s*$", head))
+                )
+                if is_approximate:
+                    approximate_seen = True
+                    continue
+                return "EXACT"
+    return "APPROXIMATE" if approximate_seen else "ABSENT"
 
+
+def source_explicitly_supports_amount(title: str, excerpt: str, amount: Decimal) -> bool:
+    """Whether the source contains that number in a price context at all."""
+    return source_price_precision(title, excerpt, amount) != "ABSENT"
 
 def evaluate(record: dict) -> GateDecision:
     """Never claim a real paid transaction from text alone.
@@ -245,8 +265,11 @@ def evaluate(record: dict) -> GateDecision:
     amount = parse_twd_amount(record.get("amount"))
     if amount is None:
         return d("HOLD", "NO_VALID_EXPLICIT_PRICE")
-    if not source_explicitly_supports_amount(title, body, amount):
+    price_precision = source_price_precision(title, body, amount)
+    if price_precision == "ABSENT":
         return d("HOLD", "PRICE_NOT_IN_CAPTURED_PUBLIC_SOURCE")
+    if price_precision == "APPROXIMATE":
+        return d("REFERENCE_ONLY", "SOURCE_PRICE_RANGE_OR_ESTIMATE_NOT_EXACT")
 
     evidence_type = str(record.get("evidence_type") or "").upper()
     if evidence_type not in TYPES:
