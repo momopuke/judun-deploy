@@ -14,10 +14,12 @@ import hashlib
 import json
 
 from evidence_gate import parse_twd_amount
+from evidence_display import fingerprint_approval_source
 from paged_evidence_report import render_paged_public_price_sources
 
 MAX_QUOTE_ITEMS = 5000
 ITEMS_PER_PAGE = 30
+MAX_ASSOCIATED_SOURCE_ROWS = 20000
 
 
 def _label(value: object, fallback: str, limit: int = 160) -> str:
@@ -51,6 +53,41 @@ def quote_snapshot_digest(quote_rows: list) -> str:
     return digest.hexdigest()
 
 
+def source_association_digest(rows: list, expected_items: int) -> tuple[str, bool]:
+    """Return (digest, safe_for_pairing) for indexed per-item source batches.
+
+    An oversized or misaligned collection disables matching but must never
+    delete the customer's original quoted lines. Hashes bind the entire ordered
+    item -> source mapping when sources can be safely inspected.
+    """
+    digest = hashlib.sha256(b"judun.quote-source-map.v1")
+    digest.update(str(expected_items).encode("ascii") + b"|")
+    if not isinstance(rows, list) or len(rows) != expected_items:
+        digest.update(b"UNALIGNED")
+        digest.update(str(len(rows) if isinstance(rows, list) else -1).encode("ascii"))
+        return digest.hexdigest(), False
+    total = sum(len(part) for part in rows if isinstance(part, list))
+    if total > MAX_ASSOCIATED_SOURCE_ROWS:
+        digest.update(b"OVERSIZED")
+        digest.update(str(total).encode("ascii"))
+        return digest.hexdigest(), False
+    for part in rows:
+        if not isinstance(part, list):
+            digest.update(b"INVALID_PART")
+            continue
+        digest.update(len(part).to_bytes(8, "big"))
+        for item in part:
+            if isinstance(item, dict):
+                try:
+                    marker = fingerprint_approval_source(item)
+                except (TypeError, ValueError):
+                    marker = "INVALID_EVIDENCE"
+            else:
+                marker = "INVALID_ROW"
+            digest.update(marker.encode("ascii") + b";")
+    return digest.hexdigest(), True
+
+
 def render_authorized_quote_items(
     quote_rows: list,
     source_rows_by_item: list,
@@ -58,6 +95,7 @@ def render_authorized_quote_items(
     offset: int = 0,
     approved_record_lookup=None,
     expected_quote_digest: str | None = None,
+    expected_source_digest: str | None = None,
     prior_source_alerts: list[int] | None = None,
 ) -> dict:
     """Render all original quote lines across pages; no speculative totals."""
@@ -65,6 +103,7 @@ def render_authorized_quote_items(
         "status": "INVALID_INPUT", "html": "", "next_offset": None,
         "complete": False, "items_rendered": 0, "source_alerts": [],
         "page_source_alerts": [], "quote_digest": None,
+        "source_digest": None,
     }
     if (not isinstance(quote_rows, list)
             or not isinstance(source_rows_by_item, list)
@@ -73,6 +112,13 @@ def render_authorized_quote_items(
         return empty
 
     digest = quote_snapshot_digest(quote_rows)
+    source_digest, sources_safe = source_association_digest(
+        source_rows_by_item, len(quote_rows))
+    if ((offset > 0 and expected_source_digest != source_digest)
+            or (expected_source_digest is not None
+                and expected_source_digest != source_digest)):
+        return {**empty, "status": "SOURCE_SNAPSHOT_CHANGED",
+                "quote_digest": digest, "source_digest": source_digest}
     # A later page must receive all earlier review flags. Without a verified
     # cumulative state it may only be described as an incomplete continuation.
     if offset > 0 and (not isinstance(prior_source_alerts, list)
@@ -92,7 +138,7 @@ def render_authorized_quote_items(
     finish = min(len(quote_rows), offset + ITEMS_PER_PAGE)
     # Never associate sources with the wrong customer quote: if arrays are
     # misaligned, preserve every quote line but suppress ALL source matching.
-    aligned = len(quote_rows) == len(source_rows_by_item)
+    aligned = sources_safe
     page_alerts = []
     markup = [
         '<section class="judun-complete-quote-lines" aria-label="完整估價工項明細">',
@@ -176,6 +222,7 @@ def render_authorized_quote_items(
         "source_alerts": source_alerts,
         "page_source_alerts": page_alerts,
         "quote_digest": digest,
+        "source_digest": source_digest,
     }
 
 
@@ -203,6 +250,7 @@ def render_complete_authorized_quote_report(
     all_pages = []
     cumulative_alerts = []
     digest = None
+    sources_digest = None
     offset = 0
     while True:
         page = render_authorized_quote_items(
@@ -211,6 +259,7 @@ def render_complete_authorized_quote_report(
             offset=offset,
             approved_record_lookup=approved_record_lookup,
             expected_quote_digest=digest,
+            expected_source_digest=sources_digest,
             prior_source_alerts=cumulative_alerts,
         )
         if page["status"] not in ("COMPLETE", "MORE_ITEMS", "SOURCE_REVIEW_REQUIRED"):
@@ -218,6 +267,7 @@ def render_complete_authorized_quote_report(
         all_pages.append(page["html"])
         cumulative_alerts = page["source_alerts"]
         digest = page["quote_digest"]
+        sources_digest = page["source_digest"]
         if page["next_offset"] is None:
             complete = page["complete"]
             return {
