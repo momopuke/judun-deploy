@@ -154,11 +154,17 @@ def evaluate(record: dict) -> GateDecision:
     if final_url:
         if not public_source_url(final_url):
             return d("REJECT", "REDIRECT_TO_BLOCKED_OR_NONPUBLIC_URL")
-        from urllib.parse import urlsplit as _urlsplit
-        initial_host = (_urlsplit(url).hostname or "").rstrip(".").lower()
-        final_host = (_urlsplit(str(final_url)).hostname or "").rstrip(".").lower()
-        if initial_host != final_host and record.get("redirect_chain_verified") is not True:
-            return d("HOLD", "CROSS_DOMAIN_REDIRECT_UNVERIFIED")
+        # The collector must record and audit EVERY network redirect hop, not
+        # merely set redirect_chain_verified=True on an unreviewed final URL.
+        chain = record.get("redirect_chain_urls")
+        if not isinstance(chain, list) or not 2 <= len(chain) <= 10:
+            return d("HOLD", "REDIRECT_CHAIN_UNDOCUMENTED")
+        if chain[0] != url or chain[-1] != final_url:
+            return d("HOLD", "REDIRECT_CHAIN_ENDPOINT_MISMATCH")
+        if any(not public_source_url(hop) for hop in chain):
+            return d("REJECT", "REDIRECT_CHAIN_BLOCKED_URL")
+        if record.get("redirect_chain_verified") is not True:
+            return d("HOLD", "REDIRECT_CHAIN_NOT_VERIFIED")
 
     locality = str(record.get("locality") or record.get("region") or "")
     if not any(term in locality for term in TAIWAN_TERMS):
