@@ -59,3 +59,35 @@ GitHub Actions: `.github/workflows/judun-p0-unified-acceptance.yml`
 **限制：** 這是報告顯示層的實作候選，**尚未串到當前正式 v1.2.114 的網站模板，也沒有使用 10–20 份屋主真實報價做配對驗證**；不能宣稱現站來源顯示已改善。
 
 **追加：區間／起價／約略估價來源仍可列為參考來源，但不能把 parser 抓到的其中一個端點印成精確的 NT$ 單價；顯示提醒文字及原始外部網址，不計算差額。**
+
+
+## 2026-10-20 追加安全修正｜正式 QA 來源快照綁定
+
+**修正了上一輪的錯誤測試預期**：明確單一公開報價（測試 NT$18,000）應能作為帶原始來源連結的「參考價」出現，但在沒有屋主相同規格配對或正式 QA 核准時，不能顯示價差。只有「約、起價、價格區間」的來源，才不能把抽到的單點金額偽裝成精確價格。
+
+原先 `build_public_evidence_view(..., formal_qa_approved=True, formal_evidence_id="...")` 的兩個呼叫參數**不再受支援**，因為 boolean 加上任意 ID 不足以證明目前的內容就是 QA 通過的那筆。現改為：
+
+```python
+from evidence_display import build_public_evidence_view, fingerprint_approval_source
+
+# 僅供正式後端內部實作：從受信任 DB 按 digest 找正式核准紀錄
+# 不得從 browser request/body/header/query 接收這個 callback 或查詢結果
+def approved_record_lookup(source_sha256):
+    row = trusted_formal_registry.lookup_exact_snapshot(source_sha256)
+    if not row or row.state != "approved":
+        return None
+    return {
+        "state": "approved",
+        "fingerprint": row.source_fingerprint,
+        "evidence_id": row.formal_evidence_id,
+    }
+
+view = build_public_evidence_view(
+    verified_public_source, verified_customer_quote,
+    approved_record_lookup=approved_record_lookup
+)
+```
+
+這是**介面契約示例，非現有正式資料庫的真實 API**。正式整合時必須由後端紀錄來源關鍵欄位的 SHA-256 快照（來源、最終 URL、跳轉鏈、來源文字、金額、工項規格、單位、含稅、數量與價格階段等），以及核准對應的證據 ID。所有關鍵欄位的任何變更都必須重新 QA，不可以只照網址或資料列 ID 繼承既有核准。審查資料不存在、非核准狀態、指紋不一致、ID 無效、查詢錯誤時一律降為「參考價」，不能顯示精確價差。
+
+GitHub Actions 加入 `pull_request` 觸發，讓同一候選 PR 的變更可以自動做 Python/Node/五視窗預覽回歸驗收。**提交與單元測試並不代表正式版已接上真實資料庫或付費／PDF 流程。**
