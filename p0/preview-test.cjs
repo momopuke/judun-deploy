@@ -7,7 +7,13 @@ const BASE="https://judun.142-93-91-214.sslip.io/";
 (async ()=>{
   fs.mkdirSync('p0/results',{recursive:true});
   const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
-  for (const [name,width,height,isMobile] of [['desktop',1440,900,false],['mobile',390,844,true]]) {
+  for (const [name,width,height,isMobile] of [
+    ['desktop',1440,900,false],
+    ['tablet',768,1024,true],
+    ['mobile-small',320,680,true],
+    ['mobile',390,844,true],
+    ['mobile-large',430,932,true]
+  ]) {
     const context=await browser.newContext({viewport:{width,height},isMobile,deviceScaleFactor:1,reducedMotion:'reduce'});
     const page=await context.newPage();
     await page.goto(BASE,{waitUntil:'domcontentloaded',timeout:45000});
