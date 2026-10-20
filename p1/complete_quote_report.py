@@ -10,6 +10,7 @@ the response status is COMPLETE. This avoids silently truncating line items.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from decimal import Decimal, InvalidOperation
 from html import escape
 import hashlib
 import json
@@ -99,6 +100,21 @@ class _TrustedOrchestratorSnapshot:
     quote_digest: str
     source_digest: str
     sources_safe: bool
+
+
+def _valid_total_quantity(row: dict) -> bool:
+    """A whole-job total needs its own explicitly numeric positive quantity."""
+    raw = row.get("quantity")
+    if raw is None or type(raw) is bool:
+        return False
+    value = str(raw)
+    if len(value) > 32:
+        return False
+    try:
+        amount = Decimal(value)
+    except (InvalidOperation, ValueError):
+        return False
+    return amount.is_finite() and amount > 0
 
 
 def render_authorized_quote_items(
@@ -197,7 +213,9 @@ def render_authorized_quote_items(
         )
         if (not fields_complete or amount is None or not twd
                 or row.get("price_basis") not in ("unit_price", "total_price")
-                or type(row.get("tax_included")) is not bool):
+                or type(row.get("tax_included")) is not bool
+                or (row.get("price_basis") == "total_price"
+                    and not _valid_total_quantity(row))):
             if i not in page_alerts:
                 page_alerts.append(i)
         if amount is not None and twd:
