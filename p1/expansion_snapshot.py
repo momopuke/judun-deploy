@@ -8,6 +8,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from pathlib import Path
 import json
+import math
 import os
 import tempfile
 import time
@@ -104,6 +105,8 @@ def read_public_snapshot(path: str | Path, *, now_epoch: float | None = None, st
                 or p["status"] not in STATUS_VALUES):
             raise ValueError("invalid snapshot schema")
         now = now_epoch if now_epoch is not None else time.time()
+        if type(now) not in (int, float) or not math.isfinite(now):
+            raise ValueError("invalid observation clock")
         snapshot_time = _parse_time(p["updated_at"])
         if snapshot_time > now + 60:
             raise ValueError("future-dated status snapshot")
