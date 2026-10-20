@@ -62,3 +62,37 @@
 - **轉址安全**：若已知發生轉址卻缺乏最終網址，先 HOLD；轉到禁止網站或非公開網址則 REJECT。跨站轉址須有來源擷取器確認轉址鏈，才能繼續審核；純函式不自行連網，也不保證已檢查實際 DNS／所有 HTTP 轉址，需在採集器做 SSRF 防護。
 - 舊版候選資料的 `final_url / resolved_url / redirected` 若存在，轉接後同樣受品質閘門約束。
 - 最新 **54 項程式回歸測試通過**：https://github.com/momopuke/judun-deploy/actions/runs/39361875048 。未對正式站資料進行刪除或發布。
+
+
+## 2026-10-20 下一步：只讀正式核准紀錄 → 真正的報告證據 HTML（整合候選）
+
+本輪新增：
+- `formal_registry_adapter.py`：受信任後端透過 SQLite `mode=ro`、`PRAGMA query_only` 讀取 `judun_formal_evidence_approvals_v1` 的正式 QA 核准快照。缺表、缺 DB、核准撤銷、無效日期、資料列不一致、來源變更均「失敗關閉」；不自動建立表、不改正式庫、不執行 schema migration。
+- `report_evidence_section.py`：將來源分類、防護、同規格比對、正式 QA 核對及外部引用連結整合成一個具界線的 HTML 區塊；REJECT/HOLD 不顯示；不符合精算條件的來源只能作參考；上限 200 筆待處理來源／20 筆顯示，超出顯示數必告知，不會偽稱全部列出。
+- 新增 `test_formal_registry_adapter.py` 和 `test_report_evidence_section.py`：完全合成的臨時 SQLite、失敗/撤銷/過期來源快照、SQL 注入、保留真正不同個案、XSS 逸出、超量處理、完整來源→核准→報告流程的回歸測試。
+
+### 信任界線（不得省略）
+1. 正式網站的**既有身分驗證、案件所有權與付款權益**必須先通過，才能由後端產生客戶的報告內容。此模組不提供身分或付款功能。
+2. 來源資料必須來自經現有收錄流程覆核的真實資料；正式 QA 必須在自身核准時持久保存**完全一致的來源快照 SHA-256**。不能讓前端自行建立審核旗標或核准內容。未經 QA 即使欄位完全一致仍不給精確價差。
+3. `judun_formal_evidence_approvals_v1` 只是**候選版本的新表契約，不是聲稱線上已有此表**；需要先拿到現行 v1.2.114 可編輯程式及真實 schema，與原本核准流程映射後，才能依正式遷移程序建立或改接表，不可直接對原 DB 執行上方 schema。
+4. 既有正式證據完全不清空、不重建、不依本模組自動入庫。候選工具不能取代原本去重、人工/既有 QA 與逐跳 DNS/SSRF 防護。
+5. 報告引用及預覽仍要進行實際瀏覽器與 PDF E2E 驗收；目前只是伺服器端候選 HTML，**尚未接入正式網頁或 PDF 模板**。
+
+### 內部接線示意（不是目前線上 API）
+
+```python
+from formal_registry_adapter import ReadOnlyFormalApprovalRegistry
+from report_evidence_section import render_report_public_price_sources
+
+# 只在通過身分／案件所有權／權益驗證的報告 route 裡執行
+registry = ReadOnlyFormalApprovalRegistry(TRUSTED_SERVER_APPROVAL_DB_PATH)
+result = render_report_public_price_sources(
+    server_verified_public_source_rows_for_one_item,
+    server_verified_customer_quote_item,
+    approved_record_lookup=registry,
+)
+if result["status"] == "OK":
+    html_evidence_section = result["html"]
+```
+
+不得將以上 DB 路徑、callback、核准資料、case ID 的所有權結果交由 HTTP 請求內容指定。既有頁面品牌與上傳流程維持不變；下一步是**原始碼與真實 DB schema 映射＋隔離 E2E 驗證**，通過後才可由原單一來源部署流程發布。
