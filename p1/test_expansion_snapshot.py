@@ -64,6 +64,61 @@ class SnapshotTests(unittest.TestCase):
                     with self.assertRaises(ValueError):
                         write_event_snapshot(path,{**SAMPLE,"rounds_completed":invalid})
 
+    def test_heartbeat_writes_cannot_reset_real_progress_age(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "status.json"
+            # Controller emits a new status heartbeat, but no new checkpoint.
+            update = "2026-10-20T00:10:00+00:00"
+            write_event_snapshot(path, SAMPLE, updated_at=update)
+            observed = read_public_snapshot(path, now_epoch=EPOCH+620, stale_after=180)
+            self.assertEqual(observed["status"], "progress_stale")
+            self.assertEqual(observed["last_progress_age_seconds"], 620)
+            self.assertEqual(observed["snapshot_age_seconds"], 20)
+            self.assertFalse(observed["snapshot_stale"])
+            self.assertFalse(observed["automatic_restart_permitted"])
+
+    def test_missing_real_progress_timestamp_is_not_running_success(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "status.json"
+            without = {key:value for key,value in SAMPLE.items()
+                       if key != "last_progress_at"}
+            write_event_snapshot(path, without, updated_at=NOW)
+            snap = read_public_snapshot(path, now_epoch=EPOCH+10)
+            self.assertEqual(snap["status"], "progress_unknown")
+            self.assertIsNone(snap["last_progress_age_seconds"])
+            self.assertFalse(snap["automatic_restart_permitted"])
+
+    def test_status_age_separate_from_real_progress_age(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "status.json"
+            write_event_snapshot(path, SAMPLE, updated_at=NOW)
+            snap = read_public_snapshot(path, now_epoch=EPOCH+250)
+            self.assertEqual(snap["status"], "progress_stale")
+            self.assertTrue(snap["snapshot_stale"])
+            self.assertEqual(snap["snapshot_age_seconds"], 250)
+
+    def test_future_progress_and_status_cannot_claim_current_execution(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "status.json"
+            future = "2026-10-20T00:05:00+00:00"
+            write_event_snapshot(path, {**SAMPLE, "last_progress_at": future},
+                                 updated_at=NOW)
+            snap = read_public_snapshot(path, now_epoch=EPOCH)
+            self.assertEqual(snap["status"], "unknown")
+            self.assertFalse(snap["automatic_restart_permitted"])
+            write_event_snapshot(path, SAMPLE, updated_at=future)
+            self.assertEqual(read_public_snapshot(path, now_epoch=EPOCH)["status"], "unknown")
+
+    def test_tampered_snapshot_negative_count_fails_closed(self):
+        import json
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "status.json"
+            write_event_snapshot(path, SAMPLE, updated_at=NOW)
+            snapshot = json.loads(path.read_text())
+            snapshot["validated_total"] = -99
+            path.write_text(json.dumps(snapshot), encoding="utf-8")
+            self.assertEqual(read_public_snapshot(path, now_epoch=EPOCH)["status"], "unknown")
+
     def test_steady_idle_not_misreported_stalled(self):
         with tempfile.TemporaryDirectory() as tmp:
             path=Path(tmp)/"status.json"
