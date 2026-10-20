@@ -112,6 +112,20 @@ class CompleteQuoteReportTests(unittest.TestCase):
         self.assertNotIn("估價總金額",out["html"])
         self.assertNotIn("自動推估總價",out["html"])
 
+    def test_foreign_currency_is_preserved_not_relabelled_as_twd(self):
+        foreign = {**quote(0), "amount": "25000", "currency": "USD"}
+        result = render_authorized_quote_items([foreign], [[]])
+        self.assertIn("原始金額：25000", result["html"])
+        self.assertIn("幣別或金額待核對", result["html"])
+        self.assertNotIn("NT$25,000", result["html"])
+
+    def test_unknown_currency_and_malicious_original_amount_are_escaped(self):
+        foreign = {**quote(0), "currency": "", "amount": "<img src=x>"}
+        result = render_authorized_quote_items([foreign], [[]])
+        self.assertIn("&lt;img", result["html"])
+        self.assertNotIn("<img", result["html"])
+        self.assertIn("幣別或金額待核對", result["html"])
+
     def test_empty_report_is_complete_but_contains_no_invented_items(self):
         out=render_authorized_quote_items([],[])
         self.assertEqual(out["status"],"COMPLETE")
