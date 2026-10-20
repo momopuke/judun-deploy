@@ -30,8 +30,11 @@ class CompleteQuoteReportTests(unittest.TestCase):
         sources = [[] for _ in quotes]
         pages = []
         offset = 0
+        snapshot = None
         while True:
-            result = render_authorized_quote_items(quotes, sources, offset=offset)
+            result = render_authorized_quote_items(
+                quotes, sources, offset=offset, expected_quote_digest=snapshot)
+            snapshot = result["quote_digest"]
             pages.append(result)
             if result["next_offset"] is None:
                 break
@@ -76,6 +79,27 @@ class CompleteQuoteReportTests(unittest.TestCase):
         self.assertFalse(out["complete"])
         self.assertEqual(out["source_alerts"],[0])
         self.assertIn("不能將此報告視為證據已完整呈現",out["html"])
+
+    def test_quote_items_changing_between_pages_are_not_combined(self):
+        quotes = [quote(i) for i in range(31)]
+        sources = [[] for _ in quotes]
+        first = render_authorized_quote_items(quotes, sources)
+        self.assertEqual(first["status"], "MORE_ITEMS")
+        edited = list(quotes)
+        edited[2] = {**quotes[2], "amount": "30000"}
+        mismatch = render_authorized_quote_items(
+            edited, sources, offset=first["next_offset"],
+            expected_quote_digest=first["quote_digest"])
+        self.assertEqual(mismatch["status"], "QUOTE_SNAPSHOT_CHANGED")
+        self.assertEqual(mismatch["html"], "")
+        self.assertFalse(mismatch["complete"])
+
+    def test_quote_continuation_requires_snapshot_identity(self):
+        quotes = [quote(i) for i in range(31)]
+        sources = [[] for _ in quotes]
+        resumed = render_authorized_quote_items(
+            quotes, sources, offset=30)
+        self.assertEqual(resumed["status"], "QUOTE_SNAPSHOT_CHANGED")
 
     def test_misaligned_arrays_fail_closed(self):
         for src in ([], [[],[]]):
