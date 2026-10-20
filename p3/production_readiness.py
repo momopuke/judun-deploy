@@ -193,6 +193,7 @@ def main() -> int:
     summary = {
         "decision": result["decision"],
         "observed_build": result["public_live"]["display_version"],
+        "observed_artifact_id": result["public_live"]["artifact_id"],
         "integrity": result["public_live"]["deep_integrity"],
         "pricing_mode": result["public_live"]["payment"],
         "source_authority": result["editable_authoritative_source"],
