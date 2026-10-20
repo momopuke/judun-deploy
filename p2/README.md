@@ -50,3 +50,9 @@
 
 ## 目前結果
 獨立導航契約的 JS 單元測試、免費首頁唯讀存在性檢查已有自動化流程。`production_payment_ready_verified=false`、`verified_post_payment_see_price=false` 均是忠實狀態，不是故障推測。
+
+## 第三輪 P0 非同步導航加固（2026-10-20）
+- 增加 `showVerifiedPriceSectionAsync()`：支援等待 report mount/whenRendered，並具有限時回覆，不把仍在渲染中的價差章節宣稱為完成。
+- 超時後不再進行 focus/scroll；同步 `showVerifiedPriceSection()` 偵測到 Promise 型 mount 會明確要求使用非同步版本。
+- 若提供 `reportId` 或 `entitlementReportId`，兩者必須存在且一致，防止拿 A 案件的導覽結果去跳 B 案件。**這是用戶端一致性檢查，無法替代後端案件所有權查驗。**
+- 最新 **18 項導覽契約測試通過**：https://github.com/momopuke/judun-deploy/actions/runs/39361835577 。正式付款仍未執行 E2E。
