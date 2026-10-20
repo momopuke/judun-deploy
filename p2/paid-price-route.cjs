@@ -25,13 +25,18 @@ function showVerifiedPriceSection(input, interfaces) {
   if (!interfaces || typeof interfaces.findSection !== "function") {
     return { ok: false, reason: "MISSING_REPORT_UI" };
   }
-  const section = interfaces.findSection(target);
-  if (!section) return { ok: false, reason: "PRICE_SECTION_NOT_RENDERED" };
-  if (typeof interfaces.mount === "function") interfaces.mount(target);
-  // Do not mark paid/available in browser storage. Entitlement is server-owned.
-  if (typeof interfaces.focus === "function") interfaces.focus(section);
-  if (typeof interfaces.scroll === "function") interfaces.scroll(section);
-  return { ok: true, target };
+  try {
+    // Some report views create the price section only when its tab is mounted.
+    if (typeof interfaces.mount === "function") interfaces.mount(target);
+    const section = interfaces.findSection(target);
+    if (!section) return { ok: false, reason: "PRICE_SECTION_NOT_RENDERED" };
+    // Do not mark paid/available in browser storage. Entitlement is server-owned.
+    if (typeof interfaces.focus === "function") interfaces.focus(section);
+    if (typeof interfaces.scroll === "function") interfaces.scroll(section);
+    return { ok: true, target };
+  } catch (error) {
+    return { ok: false, reason: "REPORT_UI_RENDER_FAILED" };
+  }
 }
 
 const api = Object.freeze({ PRICE_SECTION, postUnlockTarget, showVerifiedPriceSection });
