@@ -1,0 +1,13 @@
+{
+  "schema": "judun.p3.public-function-baseline.v1",
+  "observed_live_display_version": "v1.2.114",
+  "observed_at_utc": "2026-10-20",
+  "source": "public DOM Function.prototype.toString; desktop 1440 and mobile 390 hashes identical; no private data captured",
+  "sha256": {
+    "unlockTier": "c33021dc4d196bfa9d0559c13fbf58704c6d8b37340c9afd05f2774a2c533745",
+    "checkMicroStatus": "363370473ffc0c24d3f5127fd955e9c30b0346d95e7a277d8970677c310b1587",
+    "openPreferredJudunReport": "748d8c28242033a3c7aa550c76801a3fe24311429b9c9f4d07fbc64a15324229"
+  },
+  "purpose": "Do not patch wrong versions: fail candidate live DOM inspection if public unlock functions drift; review current source first.",
+  "production_deploy_permitted": false
+}
