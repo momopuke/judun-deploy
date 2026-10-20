@@ -254,6 +254,42 @@ class CompleteQuoteReportTests(unittest.TestCase):
         self.assertEqual(result["status"], "COMPLETE")
         self.assertIn("NT$18,000.125", result["html"])
 
+    def test_all_quote_items_can_be_rendered_without_claiming_price_evidence(self):
+        quotes = [quote(0), quote(1)]
+        report = render_complete_authorized_quote_report(quotes, [[], []])
+        self.assertTrue(report["complete"])  # quote rows fully rendered
+        self.assertEqual(report["source_coverage_status"], "NO_PUBLIC_SOURCES")
+        self.assertEqual(report["quote_list_rendered"], 2)
+        self.assertEqual(report["quote_items_without_sources"], 2)
+        self.assertEqual(report["quote_items_with_source_candidates"], 0)
+        self.assertFalse(report["source_price_verification_claimed"])
+        self.assertIn("不代表價格已驗證", report["html"])
+
+    def test_mixed_source_coverage_is_disclosed_independently(self):
+        quotes = [quote(0), quote(1), quote(2)]
+        report = render_complete_authorized_quote_report(
+            quotes, [[valid_case()], [], []])
+        self.assertTrue(report["complete"])
+        self.assertEqual(report["source_coverage_status"], "PARTIAL_SOURCE_COVERAGE")
+        self.assertEqual(report["quote_items_without_sources"], 2)
+        self.assertEqual(report["quote_items_with_source_candidates"], 1)
+        self.assertIn("部分工項尚無公開來源", report["html"])
+
+    def test_source_rows_present_never_claim_all_prices_verified(self):
+        report = render_complete_authorized_quote_report(
+            [quote(0)], [[valid_case()]])
+        self.assertEqual(report["source_coverage_status"], "SOURCE_CANDIDATES_PRESENT")
+        self.assertFalse(report["source_price_verification_claimed"])
+        self.assertIn("仍須查看原始證據與正式 QA", report["html"])
+
+    def test_misaligned_source_coverage_is_not_silently_complete(self):
+        report = render_complete_authorized_quote_report(
+            [quote(0), quote(1)], [[]])
+        self.assertEqual(report["source_coverage_status"], "SOURCE_MAPPING_INVALID")
+        self.assertEqual(report["quote_items_without_sources"], 2)
+        self.assertFalse(report["complete"])
+        self.assertIn("全部來源配對暫停", report["html"])
+
     def test_empty_report_is_complete_but_contains_no_invented_items(self):
         out=render_authorized_quote_items([],[])
         self.assertEqual(out["status"],"COMPLETE")
