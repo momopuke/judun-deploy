@@ -46,7 +46,7 @@ AD_SIGNALS = ("點我頭像", "看我主頁", "加LINE詢價", "私訊報價", "
 class GateDecision:
     status: str                     # REJECT, HOLD, REFERENCE_ONLY, READY_FOR_MATCHING, COMPARABLE
     reasons: tuple[str, ...]
-    eligible_for_formal_import: bool
+    eligible_for_formal_import: bool  # Always false before existing human/QA admission
     usable_for_exact_price_comparison: bool
     transaction_confirmed: bool = False
 
@@ -55,6 +55,7 @@ class GateDecision:
             "status": self.status,
             "reasons": list(self.reasons),
             "eligible_for_formal_import": self.eligible_for_formal_import,
+            "eligible_for_formal_qa": self.status in ("REFERENCE_ONLY", "READY_FOR_MATCHING", "COMPARABLE"),
             "usable_for_exact_price_comparison": self.usable_for_exact_price_comparison,
             "transaction_confirmed": self.transaction_confirmed,
         }
@@ -116,7 +117,7 @@ def evaluate(record: dict) -> GateDecision:
     def d(status, *reasons):
         return GateDecision(
             status, tuple(reasons),
-            eligible_for_formal_import=status in ("READY_FOR_MATCHING", "COMPARABLE", "REFERENCE_ONLY"),
+            eligible_for_formal_import=False,  # Strictly never bypass formal QA
             usable_for_exact_price_comparison=status == "COMPARABLE",
             transaction_confirmed=False,
         )
@@ -204,10 +205,27 @@ def compare_with_target(source: dict, customer_quote: dict) -> GateDecision:
             return GateDecision("REFERENCE_ONLY", ("PAIR_FIELD_MISSING:" + key,), True, False)
         if _canonical(source[key]) != _canonical(customer_quote[key]):
             return GateDecision("REFERENCE_ONLY", ("PAIR_SPEC_OR_REGION_MISMATCH:" + key,), True, False)
+    # Same item text alone does not establish that quoted amounts share a basis.
+    # A full job price (e.g. 25 坪的總價) is NOT directly comparable to 每坪單價.
+    basis = source.get("price_basis")
+    if basis not in ("unit_price", "total_price") or customer_quote.get("price_basis") != basis:
+        return GateDecision("REFERENCE_ONLY", ("PRICE_BASIS_MISSING_OR_MISMATCH",), False, False)
+    src_tax, quote_tax = source.get("tax_included"), customer_quote.get("tax_included")
+    if type(src_tax) is not bool or type(quote_tax) is not bool or src_tax != quote_tax:
+        return GateDecision("REFERENCE_ONLY", ("TAX_TREATMENT_MISSING_OR_MISMATCH",), False, False)
+    if basis == "total_price":
+        try:
+            src_qty = Decimal(str(source.get("quantity", "")))
+            dst_qty = Decimal(str(customer_quote.get("quantity", "")))
+        except (InvalidOperation, ValueError):
+            return GateDecision("REFERENCE_ONLY", ("QUANTITY_UNVERIFIED",), False, False)
+        if not src_qty.is_finite() or not dst_qty.is_finite() or src_qty <= 0 or dst_qty <= 0 or src_qty != dst_qty:
+            return GateDecision("REFERENCE_ONLY", ("TOTAL_PRICE_QUANTITY_MISMATCH",), False, False)
+
     if (str(customer_quote.get("currency") or "").upper() not in
             ("TWD", "NTD", "NT$", "新臺幣", "新台幣")):
         return GateDecision("HOLD", ("CUSTOMER_CURRENCY_UNVERIFIED",), False, False)
     if parse_twd_amount(customer_quote.get("amount")) is None:
         return GateDecision("HOLD", ("CUSTOMER_PRICE_UNVERIFIED",), False, False)
     return GateDecision("COMPARABLE", ("STRICT_PAIR_FIELDS_MATCH_PAYMENT_UNVERIFIED",),
-                        True, True, False)
+                        False, True, False)
