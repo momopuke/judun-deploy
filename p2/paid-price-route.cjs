@@ -59,21 +59,27 @@ async function showVerifiedPriceSectionAsync(input, interfaces, timeoutMs = 3000
   const wait = Number.isFinite(timeoutMs) && timeoutMs >= 100 &&
       timeoutMs <= 8000 ? timeoutMs : 3000;
   let timer;
+  let expired = false;
   try {
     const complete = async () => {
       if (typeof interfaces.mount === "function") await interfaces.mount(target);
+      if (expired) return { ok: false, reason: "REPORT_UI_TIMEOUT" };
       if (typeof interfaces.whenRendered === "function") await interfaces.whenRendered(target);
+      if (expired) return { ok: false, reason: "REPORT_UI_TIMEOUT" };
       const section = interfaces.findSection(target);
       if (!section) return { ok: false, reason: "PRICE_SECTION_NOT_RENDERED" };
       if (typeof interfaces.focus === "function") await interfaces.focus(section);
+      if (expired) return { ok: false, reason: "REPORT_UI_TIMEOUT" };
       if (typeof interfaces.scroll === "function") await interfaces.scroll(section);
       return { ok: true, target };
     };
     return await Promise.race([
       complete(),
       new Promise((resolve) => {
-        timer = setTimeout(() =>
-          resolve({ ok: false, reason: "REPORT_UI_TIMEOUT" }), wait);
+        timer = setTimeout(() => {
+          expired = true;
+          resolve({ ok: false, reason: "REPORT_UI_TIMEOUT" });
+        }, wait);
       })
     ]);
   } catch (_error) {
