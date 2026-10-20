@@ -61,3 +61,16 @@ if (!outcome.ok) {
 - `node --test p3/report-integration.test.cjs`：真實 UI 的安全接線行為模擬，不會呼叫正式付款。
 - `node p3/site-contract-inventory.cjs`：Playwright 公開端點**唯讀**讀取既有章節及函式線索，不會點解鎖、上傳、輸入個資或存取權限介面。
 - `python3 p3/production_readiness.py`：只讀現網 health 與品牌／付費測試模式，會阻擋缺少真正原始碼與簽署環境的正式發布。
+
+## 可直接供正式版整合的瀏覽器成品（非正式發布）
+
+原有 `p3/report-integration.cjs` 是 CommonJS，**不能直接以瀏覽器 `<script>` 載入**。現已增加明確的瀏覽器進入點 `p3/report-browser-entry.cjs`，由 CI 使用 esbuild 打包：
+
+```sh
+npx esbuild p3/report-browser-entry.cjs --bundle --platform=browser --format=iife --target=es2020 --minify --outfile=p3/results/judun-p3-price-navigation.browser.js
+```
+
+產出的單一腳本在**受控正式報告渲染程式完成對接後**，以 `window.JudunP3AuthorizedPriceNavigation.continueToPriceAfterVerifiedUnlock(...)` 呼叫；在未經後端授權確認前不得呼叫。CI 另使用 Chromium 在桌機與手機的**隔離 HTML 報告假資料頁面**，實測 bundle 能載入、拒絕未授權及跨案件導覽、允許真實 DOM 價差區塊顯示和焦點定位，沒有任意上傳/付款/發送網路請求。產物以 `NOT-DEPLOYED` 命名存入 GitHub Actions，**不是正式網站檔案**。
+
+為避免使用者於載入期間切換報告導致焦點落在過期案件，報告接線器在 mount、ready、find、focus、scroll **每階段**都核對當前已授權 `reportId` 與原報告容器仍然相同；切換後拒絕完成，不能跨案件導覽。正式版仍必須使用獨立後端授權校驗，不得把此 UI 比對當成權限控制。
+
