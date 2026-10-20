@@ -37,7 +37,14 @@ def sha(data: bytes) -> str:
 
 
 def computed_tree_sha(files: list) -> str:
-    rows = '\n'.join(f"{x['path']}\0{x['sha256']}\0{x['size']}" for x in sorted(files, key=lambda x: x['path']))
+    # Match the historical authoritative BUILD_PAYLOAD.ps1 byte-for-byte:
+    # ordinal path sort; PATH NUL DECIMAL_SIZE NUL LOWERCASE_SHA256 LF,
+    # including one final LF even for the last entry. This is NOT
+    # path/NUL/hash/NUL/size and cannot omit the trailing newline.
+    rows = ''.join(
+        f"{x['path']}\0{x['size']}\0{x['sha256']}\n"
+        for x in sorted(files, key=lambda x: x['path'])
+    )
     return sha(rows.encode('utf-8'))
 
 
