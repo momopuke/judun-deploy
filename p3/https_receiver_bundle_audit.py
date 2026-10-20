@@ -59,12 +59,33 @@ def safe_path(path: object) -> str:
     return path
 
 
+def _unique_control_pairs(pairs: list[tuple[str, object]]) -> dict:
+    # A duplicate JSON key may be interpreted differently by the HTTPS
+    # receiver, shell scripts or a later parser. Never guess which value wins.
+    result = {}
+    for name, value in pairs:
+        if name in result:
+            fail("DUPLICATE_CONTROL_JSON_KEY")
+        result[name] = value
+    return result
+
+
+def _reject_nonfinite_json(value: str) -> None:
+    fail("NONFINITE_CONTROL_JSON_NUMBER")
+
+
 def read_json(z: ZipFile, name: str) -> dict:
     if z.getinfo(name).file_size > MAX_JSON:
         fail("OVERSIZED_CONTROL_JSON")
     try:
-        data = json.loads(z.read(name))
-    except (UnicodeError, ValueError):
+        data = json.loads(
+            z.read(name),
+            object_pairs_hook=_unique_control_pairs,
+            parse_constant=_reject_nonfinite_json,
+        )
+    except (UnicodeError, ValueError) as exc:
+        if str(exc).startswith("HTTPS_V3_"):
+            raise
         fail("INVALID_CONTROL_JSON")
     if not isinstance(data, dict):
         fail("INVALID_CONTROL_SHAPE")
