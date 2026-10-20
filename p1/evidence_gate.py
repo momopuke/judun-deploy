@@ -132,15 +132,33 @@ def evaluate(record: dict) -> GateDecision:
     body = str(record.get("body") or "")
     category = str(record.get("category") or "")
     item_name = str(record.get("item_name") or "")
-    subject = " ".join((title, body[:3500], category, item_name))
-    has_topic = any(term in subject for term in RENOVATION_TERMS)
-    unrelated = any(term in subject for term in UNRELATED_TERMS)
-    if not has_topic:
-        return d("REJECT", "NOT_RENOVATION_TOPIC")
-    if unrelated:
+    # Parser-supplied category/item labels MUST NOT rescue an unrelated page.
+    # Require topical evidence in the source title or captured page excerpt.
+    raw_subject = " ".join((title, body[:3500]))
+    has_source_topic = any(term in raw_subject for term in RENOVATION_TERMS)
+    has_unrelated_topic = any(term in raw_subject for term in UNRELATED_TERMS)
+    if not has_source_topic:
+        return d("REJECT", "SOURCE_TEXT_NOT_RENOVATION")
+    if has_unrelated_topic:
         return d("HOLD", "MIXED_UNRELATED_CONTEXT_REVIEW")
-    if any(term in subject for term in AD_SIGNALS) and not record.get("amount"):
+    if any(term in raw_subject for term in AD_SIGNALS) and not record.get("amount"):
         return d("HOLD", "PROMOTIONAL_CONTENT_NO_VERIFIABLE_PRICE")
+
+    # The collector must supply the final landing URL when a redirect occurred.
+    # Its own network fetcher MUST separately check every hop against SSRF
+    # protections; this pure function does not fetch external URLs.
+    redirected = record.get("redirected")
+    final_url = record.get("resolved_url")
+    if redirected is True and not final_url:
+        return d("HOLD", "REDIRECT_TARGET_NOT_DOCUMENTED")
+    if final_url:
+        if not public_source_url(final_url):
+            return d("REJECT", "REDIRECT_TO_BLOCKED_OR_NONPUBLIC_URL")
+        from urllib.parse import urlsplit as _urlsplit
+        initial_host = (_urlsplit(url).hostname or "").rstrip(".").lower()
+        final_host = (_urlsplit(str(final_url)).hostname or "").rstrip(".").lower()
+        if initial_host != final_host and record.get("redirect_chain_verified") is not True:
+            return d("HOLD", "CROSS_DOMAIN_REDIRECT_UNVERIFIED")
 
     locality = str(record.get("locality") or record.get("region") or "")
     if not any(term in locality for term in TAIWAN_TERMS):
