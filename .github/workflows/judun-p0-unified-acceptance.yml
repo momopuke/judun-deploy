@@ -126,6 +126,8 @@ jobs:
             "$RUNNER_TEMP_DIR/judun-p3-v12114-patched.html"
       - name: Check live-public-home in TEMPORARY browser only at five viewports
         run: node p0/preview-test.cjs
+      - name: Review exact live completion callback body before E2E fixture
+        run: node p3/review-live-status-flow.cjs
       - name: Review published unlock success branch source (read-only)
         run: node p3/review-live-unlock.cjs
       - name: Discover real live homepage/report integration points (read-only)
