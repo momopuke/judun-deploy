@@ -10,7 +10,8 @@ the response status is COMPLETE. This avoids silently truncating line items.
 from __future__ import annotations
 
 from html import escape
-from decimal import Decimal
+import hashlib
+import json
 
 from evidence_gate import parse_twd_amount
 from paged_evidence_report import render_paged_public_price_sources
@@ -27,17 +28,42 @@ def _label(value: object, fallback: str, limit: int = 160) -> str:
     return escape(value.strip() if len(value) <= limit else fallback + "（內容過長，待人工確認）")
 
 
+_QUOTE_FIELDS = ("category", "item_name", "unit", "amount", "quantity",
+                 "spec", "currency", "price_basis", "tax_included", "locality")
+
+
+def quote_snapshot_digest(quote_rows: list) -> str:
+    """Bind continuation to an immutable ordered collection of customer lines."""
+    if not isinstance(quote_rows, list) or len(quote_rows) > MAX_QUOTE_ITEMS:
+        raise ValueError("invalid quote snapshot")
+    digest = hashlib.sha256(b"judun.quote-items.v1")
+    for quote in quote_rows:
+        if isinstance(quote, dict):
+            fields = {name: quote.get(name) for name in _QUOTE_FIELDS}
+            try:
+                raw = json.dumps(fields, ensure_ascii=False, sort_keys=True,
+                                 separators=(",", ":"), allow_nan=False).encode("utf-8")
+            except (TypeError, ValueError):
+                raw = b"INVALID_QUOTE_FIELDS"
+        else:
+            raw = b"INVALID_QUOTE_ROW"
+        digest.update(len(raw).to_bytes(8, "big") + raw)
+    return digest.hexdigest()
+
+
 def render_authorized_quote_items(
     quote_rows: list,
     source_rows_by_item: list,
     *,
     offset: int = 0,
     approved_record_lookup=None,
+    expected_quote_digest: str | None = None,
 ) -> dict:
     """Render all original quote lines across pages; no speculative totals."""
     empty = {
         "status": "INVALID_INPUT", "html": "", "next_offset": None,
         "complete": False, "items_rendered": 0, "source_alerts": [],
+        "quote_digest": None,
     }
     if (not isinstance(quote_rows, list)
             or not isinstance(source_rows_by_item, list)
@@ -45,6 +71,12 @@ def render_authorized_quote_items(
             or len(quote_rows) > MAX_QUOTE_ITEMS
             or type(offset) is not int or offset < 0 or offset > len(quote_rows)):
         return empty
+
+    digest = quote_snapshot_digest(quote_rows)
+    if ((offset > 0 and expected_quote_digest != digest)
+            or (expected_quote_digest is not None and expected_quote_digest != digest)):
+        return {**empty, "status": "QUOTE_SNAPSHOT_CHANGED",
+                "quote_digest": digest}
 
     finish = min(len(quote_rows), offset + ITEMS_PER_PAGE)
     source_alerts = []
@@ -117,4 +149,5 @@ def render_authorized_quote_items(
         "complete": complete,
         "items_rendered": finish - offset,
         "source_alerts": source_alerts,
+        "quote_digest": digest,
     }
