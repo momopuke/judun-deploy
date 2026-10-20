@@ -49,7 +49,7 @@ function showVerifiedPriceSection(input, interfaces) {
     if (section && typeof section.then === "function") {
       return { ok: false, reason: "ASYNC_FIND_REQUIRES_ASYNC_API" };
     }
-    if (!section) return { ok: false, reason: "PRICE_SECTION_NOT_RENDERED" };
+    if (!section || section.id !== target) return { ok: false, reason: "PRICE_SECTION_NOT_RENDERED" };
     // Never claim successful navigation while a focus/scroll Promise is still
     // pending. Integrations with any async UI work MUST use the async helper.
     if (typeof interfaces.focus === "function") {
@@ -110,7 +110,7 @@ async function showVerifiedPriceSectionAsync(input, interfaces, timeoutMs = 3000
       const section = await interfaces.findSection(target, opts);
       stopped = ensureCurrent();
       if (stopped) return stopped;
-      if (!section) return { ok: false, reason: "PRICE_SECTION_NOT_RENDERED" };
+      if (!section || section.id !== target) return { ok: false, reason: "PRICE_SECTION_NOT_RENDERED" };
       if (typeof interfaces.focus === "function") await interfaces.focus(section, opts);
       stopped = ensureCurrent();
       if (stopped) return stopped;
