@@ -112,7 +112,10 @@ def parse_twd_amount(value: object) -> Decimal | None:
     """Parse explicit numeric price, supporting 萬 suffix but never guessing."""
     if isinstance(value, bool) or value is None:
         return None
-    s = str(value).replace(",", "").replace("，", "").replace(" ", "").strip()
+    raw = str(value)
+    if len(raw) > 64:
+        return None
+    s = raw.replace(",", "").replace("，", "").replace(" ", "").strip()
     match = re.fullmatch(r"(?:NT\$|NTD|TWD|新臺幣|新台幣|元)?\s*(\d+(?:\.\d+)?)\s*(萬|萬元|元)?", s, re.I)
     if not match:
         return None
