@@ -89,6 +89,13 @@ def build_public_evidence_view(
         "formal_evidence_id": None,
     }
 
+    # An estimate, interval or "starting from" number is not an exact point.
+    # Do not accidentally print the parser-selected range endpoint as a price.
+    if "SOURCE_PRICE_RANGE_OR_ESTIMATE_NOT_EXACT" in gate.reasons:
+        view["label"] = "公開估價範圍參考"
+        view["explanation"] = "來源使用區間、起價或約略估價；不把其中一個數字當成精確單價，也不計算價差。"
+        view["reference_amount_twd"] = None
+
     pair = compare_with_target(source, customer_quote) if isinstance(customer_quote, dict) else None
     if pair is None or pair.status != "COMPARABLE":
         if gate.status == "READY_FOR_MATCHING":
@@ -148,15 +155,30 @@ def render_public_evidence_html(view: dict, title: str = "公開報價依據") -
     label = escape(str(view.get("label") or ""), quote=True)
     explanation = escape(str(view.get("explanation") or ""), quote=True)
     amount = parse_twd_amount(view.get("reference_amount_twd"))
-    if amount is None:
+    if amount is None and view.get("tier") == "COMPARABLE":
         return ""
     html = (
         '<article class="judun-public-evidence" data-evidence-tier="' +
         escape(view["tier"], quote=True) + '">'
         '<h3>' + heading + '</h3>'
         '<p><strong>' + label + '</strong></p>'
-        '<p>公開來源價格：NT$' + escape(f"{amount:,.2f}".removesuffix(".00")) + '</p>'
-        '<p>' + explanation + '</p>'
+        ('<p>公開來源價格：NT
+    )
+    if view["tier"] == "COMPARABLE":
+        customer = parse_twd_amount(view.get("customer_amount_twd"))
+        diff = view.get("difference_twd")
+        percent = view.get("difference_percent")
+        if customer is None or not isinstance(diff, str) or not isinstance(percent, str):
+            return ""
+        html += (
+            '<p>屋主報價：NT$' + escape(f"{customer:,.2f}".removesuffix(".00")) +
+            '；與公開來源差額：NT$' + escape(diff) +
+            '（' + escape(percent) + '%，以公開來源價格為基準）</p>'
+        )
+    return html + '<p>' + link + '</p></article>'
+ + escape(f"{amount:,.2f}".removesuffix(".00")) + '</p>'
+         if amount is not None else '')
+        + '<p>' + explanation + '</p>'
     )
     if view["tier"] == "COMPARABLE":
         customer = parse_twd_amount(view.get("customer_amount_twd"))
