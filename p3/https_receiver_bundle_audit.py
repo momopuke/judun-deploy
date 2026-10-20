@@ -118,16 +118,19 @@ def audit_embedded_runtime(z: ZipFile, lock: dict, runtime_identity: list) -> di
     if (b"__JUDUN_RUNTIME_ZIP_B64__" in script or
             b"R3.3 embedded data-expansion runtime" not in script):
         fail("MISSING_RUNTIME_EMBED_MARKER")
-    start_tag = b"<<'JUDUN_RUNTIME_B64'\n"
-    end_tag = b"\nJUDUN_RUNTIME_B64"
-    start = script.find(start_tag)
-    if start < 0:
-        fail("MISSING_RUNTIME_BASE64")
-    start += len(start_tag)
-    end = script.find(end_tag, start)
-    if end < 0 or script.find(start_tag, start) >= 0:
+    start_tags = (b"<<'JUDUN_RUNTIME_B64'\n", b"<<'JUDUN_RUNTIME_B64'\r\n")
+    starts = [(script.find(token), len(token)) for token in start_tags]
+    starts = [(pos, width) for pos, width in starts if pos >= 0]
+    if len(starts) != 1:
+        fail("MISSING_OR_AMBIGUOUS_RUNTIME_BASE64")
+    start_pos, start_width = starts[0]
+    start = start_pos + start_width
+    end_tags = (b"\nJUDUN_RUNTIME_B64", b"\r\nJUDUN_RUNTIME_B64")
+    ends = [script.find(token, start) for token in end_tags]
+    ends = [pos for pos in ends if pos >= 0]
+    if len(ends) != 1 or any(script.find(token, start) >= 0 for token in start_tags):
         fail("AMBIGUOUS_RUNTIME_BASE64")
-    encoded = script[start:end].replace(b"\r", b"").replace(b"\n", b"")
+    encoded = script[start:ends[0]].replace(b"\r", b"").replace(b"\n", b"")
     if len(encoded) > (MAX_EMBEDDED_BUNDLE * 4 // 3 + 8):
         fail("EMBEDDED_BUNDLE_TOO_LARGE")
     try:
