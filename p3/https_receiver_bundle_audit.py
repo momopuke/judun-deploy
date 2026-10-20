@@ -125,12 +125,13 @@ def audit_embedded_runtime(z: ZipFile, lock: dict, runtime_identity: list) -> di
         fail("MISSING_OR_AMBIGUOUS_RUNTIME_BASE64")
     start_pos, start_width = starts[0]
     start = start_pos + start_width
-    end_tags = (b"\nJUDUN_RUNTIME_B64", b"\r\nJUDUN_RUNTIME_B64")
-    ends = [script.find(token, start) for token in end_tags]
-    ends = [pos for pos in ends if pos >= 0]
-    if len(ends) != 1 or any(script.find(token, start) >= 0 for token in start_tags):
+    # The LF is present in both LF and CRLF; strip the optional CR below.
+    end_token = b"\nJUDUN_RUNTIME_B64"
+    end = script.find(end_token, start)
+    if (end < 0 or script.find(end_token, end + len(end_token)) >= 0
+            or any(script.find(token, start) >= 0 for token in start_tags)):
         fail("AMBIGUOUS_RUNTIME_BASE64")
-    encoded = script[start:ends[0]].replace(b"\r", b"").replace(b"\n", b"")
+    encoded = script[start:end].replace(b"\r", b"").replace(b"\n", b"")
     if len(encoded) > (MAX_EMBEDDED_BUNDLE * 4 // 3 + 8):
         fail("EMBEDDED_BUNDLE_TOO_LARGE")
     try:
