@@ -57,6 +57,10 @@ def adapt_price_record(candidate: dict, draft: dict) -> dict:
         amount_str = ""
     result = {
         "url": candidate.get("canonical_url") or candidate.get("url") or "",
+        # Optional new collector fields; archived v1.2.82 did not record these.
+        "redirected": candidate.get("redirected") is True,
+        "resolved_url": candidate.get("resolved_url") or candidate.get("final_url") or "",
+        "redirect_chain_verified": candidate.get("redirect_chain_verified") is True,
         "title": candidate.get("title") or "",
         "body": raw,
         "category": candidate.get("category") or "",
