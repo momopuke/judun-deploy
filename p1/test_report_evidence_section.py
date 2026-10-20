@@ -162,6 +162,27 @@ class ReportEvidenceSectionTests(unittest.TestCase):
         self.assertEqual(full["displayed"], 29)
         self.assertFalse(full["truncated"])
         self.assertIn("quote-28", full["html"])
+        self.assertIn('<details class="judun-related-price-sources" open>', full["html"])
+        self.assertNotIn('<details class="judun-related-price-sources" open>', compact["html"])
+
+    def test_exclusion_audit_is_aggregated_and_has_no_personal_content(self):
+        unrelated = {**valid_case(), "category": "其他工程"}
+        wrong_item = {**valid_case(), "item_name": "不同工項"}
+        no_price = {**valid_case(), "body": "台灣室內裝修說明，未公開報價"}
+        malformed = {"category": "油漆工程", "item_name": "牆面油漆",
+                     "quantity": object()}
+        result = render_report_public_price_sources(
+            [valid_case(), unrelated, wrong_item, no_price, malformed, None], target())
+        self.assertEqual(result["excluded"], 5)
+        self.assertEqual(result["excluded_breakdown"], {
+            "CATEGORY_MISMATCH": 1,
+            "INVALID_ROW": 1,
+            "ITEM_MISMATCH": 1,
+            "SOURCE_REJECTED_OR_UNVERIFIED": 1,
+            "UNREADABLE_EVIDENCE": 1,
+        })
+        self.assertNotIn("台灣室內裝修說明", str(result["excluded_breakdown"]))
+        self.assertEqual(result["reference_only"], 1)
 
     def test_missing_scope_and_unknown_mode_fail_closed(self):
         for item, kwargs in (({**target(), "item_name": ""}, {}),
