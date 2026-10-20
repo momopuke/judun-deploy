@@ -4,7 +4,7 @@ from pathlib import Path
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from evidence_gate import evaluate, compare_with_target, parse_twd_amount, public_source_url, html_source_link
+from evidence_gate import evaluate, compare_with_target, parse_twd_amount, public_source_url, html_source_link, html_evidence_source_link
 
 def valid_case():
     return {
@@ -271,6 +271,40 @@ class EvidenceGateTests(unittest.TestCase):
                        dict(valid_case(),currency="USD"),
                        dict(valid_case(),title="完全無關",body="",category="",item_name="")):
             self.assertFalse(evaluate(record).eligible_for_formal_import)
+
+    def test_numeric_loopback_aliases_cannot_be_used_as_sources(self):
+        for address in ("http://127.1/private", "http://0177.0.0.1/private",
+                        "http://0x7f.0x0.0.1/private",
+                        "http://127-0-0-1.sslip.io/private",
+                        "http://127.0.0.1.nip.io/private",
+                        "http://backend.local/secret",
+                        "http://registry.internal/secret",
+                        "https://example.com:99999/path"):
+            with self.subTest(address=address):
+                self.assertFalse(public_source_url(address))
+        # Do not block globally routable encoded service URLs by default.
+        self.assertTrue(public_source_url("https://142-93-91-214.sslip.io/"))
+
+    def test_audited_citation_uses_verified_landing_url(self):
+        entry=valid_case()
+        final="https://renovation.example.org/verified/quote"
+        src=dict(entry, redirected=True, resolved_url=final,
+                 redirect_chain_verified=True,
+                 redirect_chain_urls=[entry["url"],final])
+        actual=html_evidence_source_link(src)
+        self.assertIn(final,actual)
+        self.assertNotIn(entry["url"],actual)
+        self.assertIn('target="_blank"',actual)
+        with self.assertRaises(ValueError):
+            html_evidence_source_link(dict(entry, redirected=True,
+                      resolved_url="https://twfuns.com/excluded"))
+        with self.assertRaises(ValueError):
+            html_evidence_source_link(dict(entry, redirected=True,
+                      resolved_url=final)) # missing verified chain
+
+    def test_audited_citation_preserves_direct_source(self):
+        entry=valid_case()
+        self.assertIn(entry["url"],html_evidence_source_link(entry))
 
     def test_invalid_record_rejected(self):
         self.assertEqual(evaluate(None).status, "REJECT")
