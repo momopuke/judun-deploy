@@ -83,12 +83,25 @@ async function continueToPriceAfterVerifiedUnlock(completion, adapter, timeoutMs
     return {ok:false,reason:"MISSING_REPORT_UI"};
   }
   const routeReportId = adapter.currentReportId;
+  const reportRoot = adapter.root;
+  // The user can switch cases while the async report is still rendering.
+  // Never focus/scroll an old report after its authorized route has changed.
+  const stillCurrent = opts => (
+    adapter.currentReportId === routeReportId &&
+    adapter.root === reportRoot &&
+    (!opts || !opts.signal.aborted)
+  );
   const io = {
-    mount: (target,opts) => adapter.renderAuthorizedReport(target, {
-      reportId:routeReportId, signal:opts.signal
-    }),
-    findSection: (target) => priceSectionVisible(adapter.root, target),
-    focus: element => {
+    mount: (target,opts) => {
+      if (!stillCurrent(opts)) throw Error("REPORT_CONTEXT_CHANGED");
+      return adapter.renderAuthorizedReport(target, {
+        reportId:routeReportId, signal:opts.signal
+      });
+    },
+    findSection: (target,opts) => stillCurrent(opts) ?
+      priceSectionVisible(reportRoot, target) : null,
+    focus: (element,opts) => {
+      if (!stillCurrent(opts)) throw Error("REPORT_CONTEXT_CHANGED");
       if (typeof element.focus !== "function") throw Error("NOT_FOCUSABLE");
       // Section elements need temporary programmatic focus to let keyboard
       // and screen-reader users arrive at the actual price comparison.
@@ -96,15 +109,19 @@ async function continueToPriceAfterVerifiedUnlock(completion, adapter, timeoutMs
           !element.hasAttribute("tabindex")) element.tabIndex=-1;
       element.focus({preventScroll:true});
     },
-    scroll: element => {
+    scroll: (element,opts) => {
+      if (!stillCurrent(opts)) throw Error("REPORT_CONTEXT_CHANGED");
       if (typeof element.scrollIntoView !== "function") throw Error("NOT_SCROLLABLE");
       element.scrollIntoView({behavior:"auto",block:"start"});
     }
   };
   if (typeof adapter.whenRendered === "function") {
-    io.whenRendered = (target,opts) => adapter.whenRendered(target,{
-      reportId:routeReportId,signal:opts.signal
-    });
+    io.whenRendered = (target,opts) => {
+      if (!stillCurrent(opts)) throw Error("REPORT_CONTEXT_CHANGED");
+      return adapter.whenRendered(target,{
+        reportId:routeReportId,signal:opts.signal
+      });
+    };
   }
   return showVerifiedPriceSectionAsync(result, io, timeoutMs);
 }
