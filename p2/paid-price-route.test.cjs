@@ -172,6 +172,26 @@ test("async report rendering rejection returns controlled error", async () => {
   });
   assert.deepEqual(result, {ok:false,reason:"REPORT_UI_RENDER_FAILED"});
 });
+test("async completion rechecks trusted report context after renderer and scroll", async () => {
+  for (const flipAt of ["mount","scroll"]) {
+    let current=true, focusCount=0, scrollCount=0;
+    const result=await showVerifiedPriceSectionAsync(unlocked("basic"),{
+      isCurrent:()=>current,
+      mount:async()=>{
+        if(flipAt==="mount") current=false;
+      },
+      findSection:()=>({id:PRICE_SECTION}),
+      focus:()=>{focusCount++;},
+      scroll:async()=>{
+        scrollCount++;
+        if(flipAt==="scroll") current=false;
+      }
+    },1000);
+    assert.deepEqual(result,{ok:false,reason:"REPORT_CONTEXT_CHANGED"},flipAt);
+    assert.equal(focusCount,flipAt==="mount"?0:1,flipAt);
+    assert.equal(scrollCount,flipAt==="mount"?0:1,flipAt);
+  }
+});
 test("async navigation bounded timeout does not scroll late", async () => {
   let unblock;
   let focused=false, scrolled=false;
