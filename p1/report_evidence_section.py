@@ -2,8 +2,9 @@
 
 Candidate only. This module is NOT wired to the current public website,
 payment endpoints, actual customer report routes, PDF renderer or formal DB.
-CALLER MUST already authorize the requesting user and case/report ownership,
-and must supply a server-side approved_record_lookup (never browser input).
+CALLER MUST authorize the requesting user and case/report ownership first.
+Any approved_record_lookup MUST be server-side only (never browser input).
+Without that trusted callback, references can be shown but NOT price gaps.
 
 Safe characteristics: no DB writes, no network, bounded source count, exact
 source dedupe, escaped HTML and no forced changes to approved CSS/branding.
