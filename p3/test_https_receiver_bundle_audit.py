@@ -209,5 +209,54 @@ class OriginalHttpsReceiverPackageTests(unittest.TestCase):
                 audit(path)
 
 
+    def test_embedded_runtime_mutations_do_not_bypass_outer_manifest(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "review.zip"
+
+            def resync_outer(members):
+                outer = json.loads(members[MANIFEST_PATH])
+                outer["files"] = [row(n, content) for n, content in members.items()
+                                  if n != MANIFEST_PATH]
+                outer["source_tree_sha256"] = computed_tree_sha(outer["files"])
+                members[MANIFEST_PATH] = json.dumps(outer).encode()
+                save(path, members)
+
+            members = make_members()
+            members.pop("system_files/deploy_paid_test.sh")
+            resync_outer(members)
+            with self.assertRaisesRegex(ValueError, "MISSING_EMBEDDED_DEPLOY_SCRIPT"):
+                audit(path)
+
+            members = make_members()
+            script = members["system_files/deploy_paid_test.sh"]
+            members["system_files/deploy_paid_test.sh"] = script.replace(
+                b"R3.3 embedded", b"R3.2 embedded")
+            resync_outer(members)
+            with self.assertRaisesRegex(ValueError, "MISSING_RUNTIME_EMBED_MARKER"):
+                audit(path)
+
+            members = make_members()
+            lock = json.loads(members["RUNTIME_RELEASE_LOCK.json"])
+            lock["runtime_bundle_bytes"] += 1
+            members["RUNTIME_RELEASE_LOCK.json"] = json.dumps(lock).encode()
+            resync_outer(members)
+            with self.assertRaisesRegex(ValueError, "EMBEDDED_RUNTIME_LOCK_DIGEST_MISMATCH"):
+                audit(path)
+
+    def test_original_windows_crlf_embedded_marker_is_allowed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "review.zip"
+            members = make_members()
+            name = "system_files/deploy_paid_test.sh"
+            members[name] = members[name].replace(b"\n", b"\r\n")
+            manifest = json.loads(members[MANIFEST_PATH])
+            manifest["files"] = [row(n, v) for n, v in members.items() if n != MANIFEST_PATH]
+            manifest["source_tree_sha256"] = computed_tree_sha(manifest["files"])
+            members[MANIFEST_PATH] = json.dumps(manifest).encode()
+            save(path, members)
+            result = audit(path)
+            self.assertTrue(result["embedded_runtime_sha256_verified"])
+
+
 if __name__ == "__main__":
     unittest.main()
