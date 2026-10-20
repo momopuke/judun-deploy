@@ -177,3 +177,55 @@ def render_authorized_quote_items(
         "page_source_alerts": page_alerts,
         "quote_digest": digest,
     }
+
+
+def render_complete_authorized_quote_report(
+    quote_rows: list,
+    source_rows_by_item: list,
+    *,
+    approved_record_lookup=None,
+) -> dict:
+    """Build a complete server-side report from every original quote row.
+
+    The adapter owns all continuations, so it cannot accidentally label the
+    last page COMPLETE while a previous page required source review. The caller
+    must render the returned HTML in its existing authorized report template.
+    No DB write, PDF conversion, payment request, or publication occurs here.
+    """
+    invalid = {
+        "status": "INVALID_INPUT", "html": "", "complete": False,
+        "quote_items": 0, "pages": 0, "source_alerts": [],
+    }
+    if (not isinstance(quote_rows, list)
+            or not isinstance(source_rows_by_item, list)
+            or len(quote_rows) > MAX_QUOTE_ITEMS):
+        return invalid
+    all_pages = []
+    cumulative_alerts = []
+    digest = None
+    offset = 0
+    while True:
+        page = render_authorized_quote_items(
+            quote_rows,
+            source_rows_by_item,
+            offset=offset,
+            approved_record_lookup=approved_record_lookup,
+            expected_quote_digest=digest,
+            prior_source_alerts=cumulative_alerts,
+        )
+        if page["status"] not in ("COMPLETE", "MORE_ITEMS", "SOURCE_REVIEW_REQUIRED"):
+            return {**invalid, "status": page["status"]}
+        all_pages.append(page["html"])
+        cumulative_alerts = page["source_alerts"]
+        digest = page["quote_digest"]
+        if page["next_offset"] is None:
+            complete = page["complete"]
+            return {
+                "status": "COMPLETE" if complete else "SOURCE_REVIEW_REQUIRED",
+                "html": "".join(all_pages),
+                "complete": complete,
+                "quote_items": len(quote_rows),
+                "pages": len(all_pages),
+                "source_alerts": cumulative_alerts,
+            }
+        offset = page["next_offset"]
