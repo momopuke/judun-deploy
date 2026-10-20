@@ -329,6 +329,56 @@ def _canonical(value: object) -> str:
     return re.sub(r"\s+", "", unicodedata.normalize("NFKC", value)).casefold()
 
 
+def source_price_basis_supported(source: dict) -> bool:
+    """Confirm the matched price itself mentions its unit or total basis.
+
+    Parser-assigned price_basis and unit cannot be sufficient: an article's
+    whole-project price must not be mistaken for NT$ per ping. This checks
+    text NEAR the same numeric occurrence, not keywords somewhere on the page.
+    It remains deliberately conservative until a richer verified quote span
+    is available from the production crawler.
+    """
+    amount = parse_twd_amount(source.get("amount"))
+    basis = source.get("price_basis")
+    unit = source.get("unit")
+    if amount is None or basis not in ("unit_price", "total_price"):
+        return False
+    if not isinstance(unit, str) or unit not in UNITS:
+        return False
+    escaped_unit = re.escape(unit)
+    for text in (str(source.get("title") or "")[:500],
+                 str(source.get("body") or "")[:3500]):
+        for found in _SOURCE_PRICE_PATTERN.finditer(text):
+            matched = None
+            for key, suffix in (("currency_amount", "currency_unit"),
+                                ("unit_amount", "unit_suffix"),
+                                ("label_amount", "label_suffix")):
+                numeric = found.group(key)
+                if numeric is not None:
+                    matched = parse_twd_amount(numeric + (found.group(suffix) or ""))
+                    break
+            if matched != amount:
+                continue
+            prefix = text[max(0, found.start() - 20):found.start()]
+            suffix_text = text[found.end():found.end() + 18]
+            if basis == "total_price":
+                if re.search(r"(?:總價|總額|整項|全案|整案|工程總費用)\\s*(?:[:：為是]|約)?\\s*$", prefix):
+                    return True
+            else:
+                before = bool(re.search(
+                    r"(?:每|一)\\s*" + escaped_unit +
+                    r"\\s*(?:的)?\\s*(?:單價|報價|價格|費用)?\\s*(?:[:：為是])?\\s*$",
+                    prefix,
+                ))
+                after = bool(re.match(
+                    r"^\\s*(?:元)?\\s*(?:[／/]|每)\\s*" + escaped_unit +
+                    r"(?![\\w])", suffix_text,
+                ))
+                if before or after:
+                    return True
+    return False
+
+
 def compare_with_target(source: dict, customer_quote: dict) -> GateDecision:
     """Only return COMPARABLE for known-identical construction scope.
 
@@ -351,6 +401,8 @@ def compare_with_target(source: dict, customer_quote: dict) -> GateDecision:
     basis = source.get("price_basis")
     if basis not in ("unit_price", "total_price") or customer_quote.get("price_basis") != basis:
         return GateDecision("REFERENCE_ONLY", ("PRICE_BASIS_MISSING_OR_MISMATCH",), False, False)
+    if not source_price_basis_supported(source):
+        return GateDecision("REFERENCE_ONLY", ("SOURCE_PRICE_UNIT_BASIS_NOT_PROVEN",), False, False)
     src_tax, quote_tax = source.get("tax_included"), customer_quote.get("tax_included")
     if type(src_tax) is not bool or type(quote_tax) is not bool or src_tax != quote_tax:
         return GateDecision("REFERENCE_ONLY", ("TAX_TREATMENT_MISSING_OR_MISMATCH",), False, False)
