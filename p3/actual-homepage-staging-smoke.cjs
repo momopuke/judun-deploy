@@ -1,5 +1,5 @@
 /* P3: browser regression of the EXACT publicly observed full v1.2.114
- * homepage before/after the one-statement patch.
+ * homepage before/after exactly two surgical client-side statements.
  * Both versions are served from an isolated .invalid origin and ALL other
  * network requests are aborted. No payment/upload, no live mutation.
  */
@@ -14,8 +14,12 @@ const before=fs.readFileSync(beforeFile,"utf8");
 const after=fs.readFileSync(afterFile,"utf8");
 const oldLine="const preferred = tier === 'promax' ? 'report-five-themes' : 'report-price-items';";
 const newLine="const preferred = 'report-price-items';";
+const oldCompleted="if (String(data.status || '').includes('完成')) {";
+const newCompleted="if (String(data.status || '').includes('完成') && !/(?:未完成|未能完成|完成失敗|失敗|取消|中止)/.test(String(data.status || '')) && (!tierMonitor || !task || task.state === 'completed')) {";
 assert.equal(before.split(oldLine).length-1,1,"original must contain exactly one old line");
-assert.equal(after,before.replace(oldLine,newLine),"a non-target part of actual homepage changed");
+assert.equal(before.split(oldCompleted).length-1,1,"one completion gate expected");
+assert.equal(after,before.replace(oldLine,newLine).replace(oldCompleted,newCompleted),
+  "a non-target part of actual homepage changed");
 const digest=data=>crypto.createHash("sha256").update(data).digest("hex");
 
 async function check(browser,html,viewport) {
@@ -90,7 +94,8 @@ async function check(browser,html,viewport) {
       assert.equal(b.outcomes.basic,"report-price-items");
       assert.equal(a.outcomes.promax,"report-five-themes","original ProMax branch not confirmed");
       assert.equal(b.outcomes.promax,"report-price-items","patched ProMax still points to five themes");
-      assert.equal(a.completionFn,b.completionFn,"server status callback changed");
+      assert.equal(b.completionFn,a.completionFn.replace(oldCompleted,newCompleted),
+        "completion callback changed outside required safety gate");
       assert.equal(a.preferredFn,b.preferredFn,"highlight callback changed");
       assert.equal(b.unlockFn,a.unlockFn.replace(oldLine,newLine),
         "unlockTier body changed outside intended preference assignment");
@@ -103,7 +108,8 @@ async function check(browser,html,viewport) {
         patched_promax:b.outcomes.promax,
         basic_unchanged:true,
         existing_upload_controls_preserved:true,
-        completion_and_highlight_function_unchanged:true,
+        completion_guard_hardened_only:true,
+        highlight_redirect_function_unchanged:true,
         blocked_network_attempts:original.blockedCount+patched.blockedCount,
         no_real_payment_or_upload:true,
         not_deployed:true
