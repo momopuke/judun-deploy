@@ -40,6 +40,14 @@ function priceSectionVisible(root, target) {
   // implement it as well. Do not claim navigation into hidden report content.
   if (typeof element.getClientRects === "function" &&
       element.getClientRects().length === 0) return null;
+  // visibility:hidden preserves client rects. An invisible panel must not
+  // be marked as delivered even if its layout box is still present.
+  const win=element.ownerDocument?.defaultView;
+  if (win && typeof win.getComputedStyle === "function") {
+    const style=win.getComputedStyle(element);
+    if (style && (style.display === "none" ||
+        style.visibility === "hidden" || style.visibility === "collapse")) return null;
+  }
   return element;
 }
 
