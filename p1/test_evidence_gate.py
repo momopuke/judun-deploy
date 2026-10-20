@@ -367,6 +367,27 @@ class EvidenceGateTests(unittest.TestCase):
         target["amount"] = "NT$20,000"
         self.assertEqual(compare_with_target(source, target).status, "REFERENCE_ONLY")
 
+    def test_parser_oil_paint_label_cannot_rescue_electrical_price(self):
+        source = {**valid_case(),
+                  "body": "台北室內裝修水電工程，管路重新配置，公開報價 NT$18,000／坪。"}
+        quote = {key: source[key] for key in
+                 ("category", "item_name", "unit", "spec", "locality",
+                  "currency", "price_basis", "tax_included")}
+        quote["amount"] = "NT$20,000"
+        verdict = compare_with_target(source, quote)
+        self.assertEqual(verdict.status, "REFERENCE_ONLY")
+        self.assertIn("SOURCE_PRICE_WORK_ITEM_NOT_PROVEN", verdict.reasons)
+
+    def test_price_work_item_must_be_near_same_amount_not_elsewhere(self):
+        source = {**valid_case(),
+                  "body": "油漆工程介紹。" + ("其他資訊" * 90) +
+                          "台北水電工程，公開報價 NT$18,000／坪。"}
+        quote = {key: source[key] for key in
+                 ("category", "item_name", "unit", "spec", "locality",
+                  "currency", "price_basis", "tax_included")}
+        quote["amount"] = "NT$20,000"
+        self.assertEqual(compare_with_target(source, quote).status, "REFERENCE_ONLY")
+
     def test_explicit_same_occurrence_per_unit_price_is_comparable(self):
         source = {**valid_case(),
                   "body": "台北裝修油漆工程，每坪報價 NT$18,000。"}
