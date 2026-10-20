@@ -1,7 +1,8 @@
 """P3 one-statement, fail-closed patch for the PUBLIC v1.2.114 unlock entry.
 
-This repairs only the stale ProMax preferred-section value. It DOES NOT
-change payment eligibility, entitlement verification, report rendering,
+This repairs two small client-side issues: a stale ProMax preferred-section
+value and completion-string false positives. It DOES NOT
+change payment eligibility, server entitlement verification, report rendering,
 production files or signed releases.
 
 Usage:
@@ -27,6 +28,10 @@ import time
 PUBLIC_URL = "https://judun.142-93-91-214.sslip.io/"
 OLD = "const preferred = tier === 'promax' ? 'report-five-themes' : 'report-price-items';"
 NEW = "const preferred = 'report-price-items';"
+OLD_COMPLETION = "if (String(data.status || '').includes('完成')) {"
+NEW_COMPLETION = ("if (String(data.status || '').includes('完成') "
+                  "&& !/(?:未完成|未能完成|完成失敗|失敗|取消|中止)/.test(String(data.status || '')) "
+                  "&& (!tierMonitor || !task || task.state === 'completed')) {")
 BOUNDED_BYTES = 3_000_000
 # v1.2.114 exact public HTML verified on 2026-10-20; fail closed on drift.
 OBSERVED_PUBLIC_HTML_SHA256 = "092f952d45b44e1ca5f526d610864a34893f861cc4ee3f587f8fc808ffcbbad8"
@@ -47,13 +52,18 @@ def apply_one_statement(data: bytes) -> tuple[bytes, dict, str]:
     # substring replacements, script injection, regex rewrite or fallback.
     if original.count(OLD) != 1:
         raise ValueError("EXACT_UNLOCK_STATEMENT_NOT_UNIQUE")
+    if original.count(OLD_COMPLETION) != 1:
+        raise ValueError("EXACT_COMPLETION_STATUS_STATEMENT_NOT_UNIQUE")
     if "window.unlockTier" not in original:
         raise ValueError("LIVE_UNLOCK_API_UNRECOGNIZED")
-    changed = original.replace(OLD, NEW, 1)
-    if changed.replace(NEW, OLD, 1) != original:
-        raise ValueError("NOT_A_SINGLE_REVERSIBLE_STATEMENT_CHANGE")
-    # Only the intended statement changed (no HTML/CSS/asset/brand edits).
-    if original.replace(OLD, "<SENTINEL>", 1) != changed.replace(NEW, "<SENTINEL>", 1):
+    changed = original.replace(OLD, NEW, 1).replace(OLD_COMPLETION, NEW_COMPLETION, 1)
+    if (changed.replace(NEW, OLD, 1).replace(NEW_COMPLETION, OLD_COMPLETION, 1)
+            != original):
+        raise ValueError("NOT_EXACTLY_TWO_REVERSIBLE_STATEMENT_CHANGES")
+    # Only the intended statements changed (no HTML/CSS/asset/brand edits).
+    sentinel_original = original.replace(OLD, "<SENTINEL_A>", 1).replace(OLD_COMPLETION, "<SENTINEL_B>", 1)
+    sentinel_changed = changed.replace(NEW, "<SENTINEL_A>", 1).replace(NEW_COMPLETION, "<SENTINEL_B>", 1)
+    if sentinel_original != sentinel_changed:
         raise ValueError("UNINTENDED_CONTENT_MODIFICATION")
     original_bytes, new_bytes = original.encode("utf-8"), changed.encode("utf-8")
     assert original_bytes == data
@@ -68,13 +78,14 @@ def apply_one_statement(data: bytes) -> tuple[bytes, dict, str]:
         raise ValueError("UNSAFE_PATCH_LINE_TOO_LONG")
     result = {
         "schema": "judun.p3.paid-price-source-patch.v1",
-        "target": "unlockTier: stale ProMax preferred section only",
+        "target": "unlockTier preferred section and negative completion status guard",
         "original_sha256": sha(original_bytes),
         "patched_sha256": sha(new_bytes),
-        "statement_replacements": 1,
+        "statement_replacements": 2,
         "original_length": len(original_bytes),
         "patched_length": len(new_bytes),
-        "no_payment_or_entitlement_code_changed": True,
+        "server_payment_or_entitlement_code_changed": False,
+        "completion_status_gate_hardened": True,
         "no_html_css_or_assets_changed": True,
         "production_deployed": False,
         "actual_payment_e2e_passed": False,
