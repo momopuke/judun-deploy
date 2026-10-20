@@ -31,9 +31,9 @@ def row(path: str, data: bytes) -> dict:
 
 
 def make_members() -> dict[str, bytes]:
-    files = {"app.py": b"# synthetic application fixture; never used on VPS\\n"}
+    files = {"app.py": b"# synthetic application fixture; never used on VPS\n"}
     for path in sorted(REQUIRED_EMBEDDED_FILES):
-        files[path] = (b"synthetic-source:" + path.encode("ascii") + b"\\n")
+        files[path] = (b"synthetic-source:" + path.encode("ascii") + b"\n")
     runtime = [row(name, data) for name, data in files.items()]
     manifest_inner = {
         "version": VERSION,
@@ -50,9 +50,9 @@ def make_members() -> dict[str, bytes]:
         embedded.writestr("DEPLOY_MANIFEST.json", json.dumps(manifest_inner).encode())
     blob = memory.getvalue()
     deploy_script = (
-        b"#!/bin/bash\\n# R3.3 embedded data-expansion runtime\\n"
-        + b"cat <<'JUDUN_RUNTIME_B64'\\n"
-        + base64.b64encode(blob) + b"\\nJUDUN_RUNTIME_B64\\n"
+        b"#!/bin/bash\n# R3.3 embedded data-expansion runtime\n"
+        + b"cat <<'JUDUN_RUNTIME_B64'\n"
+        + base64.b64encode(blob) + b"\nJUDUN_RUNTIME_B64\n"
     )
     runtime_lock = {
         "artifact_id": TARGET,
