@@ -61,6 +61,7 @@ def adapt_price_record(candidate: dict, draft: dict) -> dict:
         "redirected": candidate.get("redirected") is True,
         "resolved_url": candidate.get("resolved_url") or candidate.get("final_url") or "",
         "redirect_chain_verified": candidate.get("redirect_chain_verified") is True,
+        "redirect_chain_urls": candidate.get("redirect_chain_urls"),
         "title": candidate.get("title") or "",
         "body": raw,
         "category": candidate.get("category") or "",
