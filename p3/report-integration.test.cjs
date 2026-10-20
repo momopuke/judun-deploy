@@ -135,6 +135,24 @@ test("asynchronous report mount and ready callback complete before focusing sect
   assert.deepEqual(calls.map(x=>x[0]),["mount","ready"]);
   assert.deepEqual(uiCalls,[["focus",true],["scroll","start"]]);
 });
+test("switching cases during async mount does not focus or scroll stale report",async()=>{
+  for(const switchContext of ["reportId","root"]){
+    const {el,calls:uiCalls}=fakeSection();
+    let release;
+    const delayed=new Promise(resolve=>{release=resolve});
+    const {adapter,calls}=makeAdapter({section:el,mount:()=>delayed});
+    const pending=continueToPriceAfterVerifiedUnlock(serverReady(),adapter,1000);
+    await Promise.resolve();
+    if(switchContext==="reportId") adapter.currentReportId="different-authorized-report";
+    else adapter.root={getElementById:()=>el};
+    release();
+    const outcome=await pending;
+    assert.equal(outcome.ok,false,switchContext);
+    assert.equal(outcome.reason,"PRICE_SECTION_NOT_RENDERED",switchContext);
+    assert.deepEqual(uiCalls,[],switchContext);
+    assert.equal(calls.filter(call=>call[0]==="mount").length,1);
+  }
+});
 test("timeout never calls focus and must pass an abort signal to real report mount",async()=>{
   let signal;
   const {el,calls}=fakeSection();
