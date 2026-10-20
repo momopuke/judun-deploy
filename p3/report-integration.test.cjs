@@ -187,6 +187,25 @@ test("duplicate verified completion callbacks share one active render and focus"
   assert.deepEqual(two,one);
   assert.deepEqual(uiCalls, [["focus",true],["scroll","start"]]);
 });
+test("synchronous completion re-entry from mount does not trigger a second mount",async()=>{
+  const {el,calls:uiCalls}=fakeSection();
+  const {adapter}=makeAdapter({section:el});
+  let mounted=0;
+  let reentry;
+  adapter.renderAuthorizedReport=()=>{
+    mounted++;
+    if(mounted===1){
+      reentry=continueToPriceAfterVerifiedUnlock(serverReady(),adapter,1000);
+    }
+  };
+  const first=continueToPriceAfterVerifiedUnlock(serverReady(),adapter,1000);
+  const result=await first;
+  assert.deepEqual(result,{ok:true,target:"report-price-items"});
+  assert.ok(reentry);
+  assert.deepEqual(await reentry,result);
+  assert.equal(mounted,1);
+  assert.deepEqual(uiCalls, [["focus",true],["scroll","start"]]);
+});
 test("repeated notification cannot reuse active navigation for unverified entitlement",async()=>{
   const {el}=fakeSection();
   let release;
