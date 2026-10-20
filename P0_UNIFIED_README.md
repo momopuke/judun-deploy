@@ -161,3 +161,10 @@ GitHub Actions 加入 `pull_request` 觸發，讓同一候選 PR 的變更可以
 P0 首頁、P1 公開證據、P2 解鎖導覽已完成候選；**當前按核准路線只推進 P3 正式整合**，不無意義重做已核准的首頁視覺。新增 `p3/production_readiness.py`、`site-contract-inventory.cjs` 和 `report-integration.cjs`，從 v1.2.114 真實公開站唯讀確認現有 `unlockTier`、`checkMicroStatus`、`openPreferredJudunReport` 與 `report-five-themes` / `report-price-items` 導覽分支，為必要的原版程式修改建立接線邊界及程式 SHA-256 指紋；不曾使用正式付費帳號或模擬已付款。
 
 依 [p3/README.md](p3/README.md)，日後在原受信任後端**確實驗證帳號、report ID、完成權益、報告已準備**後，Basic/ProMax 均直接掛載 **看價差**；原五大行動及精華版改由使用者主動選擇。P3 adapter 不會自行付款、解鎖、重新提交或建立任意報告。正式站仍顯示付款測試模式，**未部署**。權威 v1.2.114 可編輯原始碼及原有受控簽署部署權限仍是上線必要條件；不可繞過現有 Ed25519 簽名。
+
+## 2026-10-21｜既有簽章 AutoDeploy 接線驗證中
+
+- 已在原本 GitHub `main` 的加密發布通道準備 `v1.2.115-p3-paid-price-nav-safety-20261021` 的簽章小修補；只允許已核對的 `JUDUN-1.2.114-AA38F0567A4D` 作為基準，於 VPS 上逐檔驗證正式 manifest，版本不符／原始敘述漂移時拒絕套用。
+- 這不是 PR #9 全部 P0/P1/P2 的上線聲明；只針對付款後預設看價差、否定完成字詞防誤判的原版 `GLOBAL_JS` 做最小更新。舊 95 分首頁、正式資料庫及付費測試模式不得改動。
+- **發布清單提交不等於正式部署成功**。應以 live `/health/build` 顯示 `v1.2.115`、target artifact/build instance 和 `/health/artifact?deep=true` 0 mismatch 為唯一成功判準；若仍是 v1.2.114，需先查原 agent 是否追蹤現行 `main` 分支，並避免無限重試造成服務重啟。不得宣稱已部署。
+- 原始碼、簽章私鑰及正式 QA DB 一律不放入公開 PR。完整 P1/P2 仍需在正式 backend 接線和實際付款/PDF E2E 後另行升版。
