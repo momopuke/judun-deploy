@@ -216,6 +216,36 @@ class EvidenceGateTests(unittest.TestCase):
                 case=dict(valid_case(),body=excerpt,amount=amount)
                 self.assertEqual(evaluate(case).status,"READY_FOR_MATCHING")
 
+    def test_quoted_price_ranges_are_reference_only_not_exact(self):
+        cases=[
+            ("裝修油漆工程，單價：1,500～1,800 元／坪。","1500"),
+            ("裝修油漆工程，單價：1,500～1,800 元／坪。","1800"),
+            ("裝修油漆工程，價格 1,500-1,800 元。","1500"),
+            ("裝修油漆工程，NT$1,500 起。","1500"),
+            ("裝修油漆工程，報價約 1500 元。","1500"),
+            ("裝修油漆工程，大約 NT$1,500。","1500"),
+            ("裝修油漆工程，最低 NT$1,500。","1500"),
+        ]
+        for excerpt,amount in cases:
+            with self.subTest(excerpt=excerpt,amount=amount):
+                d=evaluate(dict(valid_case(),body=excerpt,amount=amount))
+                self.assertEqual(d.status,"REFERENCE_ONLY",d)
+                self.assertFalse(d.usable_for_exact_price_comparison)
+
+    def test_year_after_price_label_is_not_a_quoted_price(self):
+        case=dict(valid_case(), body="台北室內裝修，價格 2026 年度行情說明。", amount="2026")
+        self.assertEqual(evaluate(case).status,"HOLD")
+
+    def test_exact_explicit_quote_still_comparable_candidate(self):
+        for excerpt,amount in [
+            ("台北裝修油漆工程，單價：1,500 元／坪。","1500"),
+            ("台北裝修油漆工程，NT$18,000／坪。","18000"),
+            ("台北裝修工程，費用 1.5 萬元。","15000"),
+        ]:
+            with self.subTest(excerpt=excerpt):
+                d=evaluate(dict(valid_case(),body=excerpt,amount=amount))
+                self.assertEqual(d.status,"READY_FOR_MATCHING",d)
+
     def test_price_cannot_be_guessed_from_other_text(self):
         self.assertEqual(evaluate(dict(valid_case(), amount=None)).status, "HOLD")
 
