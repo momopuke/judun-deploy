@@ -233,6 +233,30 @@ class SnapshotTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             read_public_snapshot("/tmp/nonexistent.json", stale_after=True)
 
+    def test_sequential_older_event_cannot_erase_newer_snapshot(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "status.json"
+            later = "2026-10-20T00:04:00+00:00"
+            write_event_snapshot(path, {**SAMPLE,"rounds_completed":19},
+                                 updated_at=later)
+            prior = path.read_bytes()
+            with self.assertRaisesRegex(ValueError,"regressed"):
+                write_event_snapshot(path, {**SAMPLE,"rounds_completed":7},
+                                     updated_at=NOW)
+            self.assertEqual(path.read_bytes(), prior)
+            self.assertEqual(read_public_snapshot(path,now_epoch=EPOCH+250)["rounds_completed"],19)
+
+    def test_invalid_prior_clock_can_be_replaced_with_valid_snapshot(self):
+        import json
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "status.json"
+            write_event_snapshot(path, SAMPLE, updated_at=NOW)
+            old = json.loads(path.read_text())
+            old["updated_at"]="invalid"
+            path.write_text(json.dumps(old),encoding="utf-8")
+            write_event_snapshot(path, SAMPLE,updated_at=NOW)
+            self.assertEqual(read_public_snapshot(path,now_epoch=EPOCH+10)["status"],"running")
+
     def test_only_complete_committed_snapshot_readable(self):
         with tempfile.TemporaryDirectory() as tmp:
             path=Path(tmp)/"status.json"
