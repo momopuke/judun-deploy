@@ -32,6 +32,22 @@ async function inspect(page,viewport) {
     const globalFunctions=Object.fromEntries(
       checkedFunctions.map(name=>[name,typeof window[name]==="function"])
     );
+    // Inspect PUBLIC client function source without invoking it. Only emit
+    // allowlisted route names as booleans, never function bodies or credentials.
+    const staticNavigationHints={};
+    for (const name of checkedFunctions){
+      const fn=window[name];
+      const body=typeof fn==="function" ? Function.prototype.toString.call(fn) : "";
+      const safe=body.length<=200000;
+      staticNavigationHints[name]={
+        inspectable:safe&&!!body,
+        containsPriceItems:safe&&body.includes("report-price-items"),
+        containsFiveThemes:safe&&body.includes("report-five-themes"),
+        callsPreferredReport:safe&&body.includes("openPreferredJudunReport"),
+        referencesHighlightUrl:safe&&body.includes("highlight_url"),
+        referencesPriceNavigationHelper:safe&&body.includes("JudunPaidNavigation")
+      };
+    }
     const destinations={};
     for(const [key,selector] of Object.entries({
       "primary-cta":"button.v128-primary-cta",
@@ -55,6 +71,7 @@ async function inspect(page,viewport) {
     return {
       controls,
       globalFunctions,
+      staticNavigationHints,
       destinations,
       brandHeroPresent:!!brand,
       hasOriginalHeading:!!brand?.querySelector("h1")?.textContent?.includes("用專業"),
