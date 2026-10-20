@@ -73,6 +73,22 @@ def public_json(path: str) -> dict:
         return {"status": "INVALID_JSON"}
 
 
+def assess_published_channel(channel: dict, live_artifact: str | None) -> str:
+    """A counterfactual channel identity check; NOT proof agent ran.
+
+    A stale stable channel can never apply to a later live artifact under
+    original AutoDeploy's fail-closed base-artifact equality check.
+    """
+    if not live_artifact:
+        return "LIVE_IDENTITY_NOT_VERIFIED"
+    if channel.get("target_artifact_id") == live_artifact:
+        return "TARGET_ALREADY_LIVE_IF_AGENT_ACTIVE"
+    if channel.get("base_artifact_id") == live_artifact:
+        return "BASE_MATCH_IF_AGENT_ACTIVE"
+    return "BASE_MISMATCH_IF_AGENT_ACTIVE"
+
+
+
 def audit() -> dict:
     channel = json.loads((PROJECT_ROOT / "channel/stable.json").read_text("utf-8"))
     historical = json.loads(
@@ -156,6 +172,12 @@ def audit() -> dict:
         },
         "signed_channel": {
             "expected_display_version": channel.get("expected_display_version"),
+            "base_artifact_id": channel.get("base_artifact_id"),
+            "target_artifact_id": channel.get("target_artifact_id"),
+            "counterfactual_agent_base_check": assess_published_channel(
+                channel, live_artifact
+            ),
+            "agent_actual_service_status": "UNKNOWN",
             "release_id": channel.get("release_id"),
             "note": "Stable channel version need not equal currently deployed production; do not roll back.",
             "matches_observed_live_version": (
