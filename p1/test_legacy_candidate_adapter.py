@@ -89,6 +89,25 @@ class ArchivedCandidateAdapterTests(unittest.TestCase):
         self.assertFalse(audit["records"][0]["usable_for_exact_price_comparison"])
         self.assertFalse(audit["safe_to_auto_import"])
 
+    def test_legacy_adapter_carries_blocked_final_url_to_gate(self):
+        entry=old_candidate()
+        entry["redirected"]=True
+        entry["final_url"]="https://twfuns.com/hidden"
+        self.assertEqual(audit_legacy_candidate(entry)["records"][0]["status"],"REJECT")
+
+    def test_legacy_adapter_holds_unverified_external_redirect(self):
+        entry=old_candidate()
+        entry["redirected"]=True
+        entry["final_url"]="https://other-public.example.org/renovation/price"
+        self.assertEqual(audit_legacy_candidate(entry)["records"][0]["status"],"HOLD")
+        entry["redirect_chain_verified"]=True
+        self.assertEqual(audit_legacy_candidate(entry)["records"][0]["status"],"REFERENCE_ONLY")
+
+    def test_legacy_adapter_requires_known_redirect_target(self):
+        entry=old_candidate()
+        entry["redirected"]=True
+        self.assertEqual(audit_legacy_candidate(entry)["records"][0]["status"],"HOLD")
+
     def test_no_parsed_records_never_auto_imports(self):
         entry=old_candidate()
         entry["draft_records"]=[]
