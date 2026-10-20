@@ -143,11 +143,10 @@ class SnapshotTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "status.json"
             future = "2026-10-20T00:05:00+00:00"
-            write_event_snapshot(path, {**SAMPLE, "last_progress_at": future},
-                                 updated_at=NOW)
-            snap = read_public_snapshot(path, now_epoch=EPOCH)
-            self.assertEqual(snap["status"], "unknown")
-            self.assertFalse(snap["automatic_restart_permitted"])
+            with self.assertRaisesRegex(ValueError, "progress timestamp newer"):
+                write_event_snapshot(path, {**SAMPLE, "last_progress_at": future},
+                                     updated_at=NOW)
+            self.assertFalse(path.exists())
             write_event_snapshot(path, SAMPLE, updated_at=future)
             self.assertEqual(read_public_snapshot(path, now_epoch=EPOCH)["status"], "unknown")
 
@@ -213,10 +212,10 @@ class SnapshotTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "status.json"
             stamp = "2026-10-20T00:03:00+00:00"
-            write_event_snapshot(path, {**SAMPLE, "last_progress_at":stamp},
-                                 updated_at=NOW)
-            outcome = read_public_snapshot(path, now_epoch=EPOCH+220)
-            self.assertEqual(outcome["status"],"unknown")
+            with self.assertRaisesRegex(ValueError, "progress timestamp newer"):
+                write_event_snapshot(path, {**SAMPLE, "last_progress_at":stamp},
+                                     updated_at=NOW)
+            self.assertFalse(path.exists())
 
     def test_invalid_observation_clock_never_crashes_health_reader(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -299,6 +298,29 @@ class SnapshotTests(unittest.TestCase):
             state=read_public_snapshot(path,now_epoch=EPOCH+5)
             self.assertEqual(state["rounds_completed"],2)
             self.assertFalse(list(Path(tmp).glob("*.tmp")))
+
+    def test_poisoned_future_write_cannot_block_good_updates(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "status.json"
+            with self.assertRaisesRegex(ValueError, "future"):
+                write_event_snapshot(path, SAMPLE,
+                                     updated_at="2040-01-01T00:00:00+00:00")
+            self.assertFalse(path.exists())
+            write_event_snapshot(path, SAMPLE, updated_at=NOW)
+            self.assertEqual(read_public_snapshot(path, now_epoch=EPOCH+5)["status"],
+                             "running")
+
+    def test_progress_timestamp_cannot_go_backwards_during_new_heartbeat(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "status.json"
+            write_event_snapshot(path, SAMPLE, updated_at=NOW)
+            original = path.read_bytes()
+            older = "2026-10-19T23:59:00+00:00"
+            with self.assertRaisesRegex(ValueError, "progress timestamp regressed"):
+                write_event_snapshot(path, {**SAMPLE, "last_progress_at": older},
+                                     updated_at="2026-10-20T00:01:00+00:00")
+            self.assertEqual(original, path.read_bytes())
+
 
 if __name__ == "__main__":
     unittest.main()
