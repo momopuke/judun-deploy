@@ -491,6 +491,41 @@ def source_price_scope_same_clause(source: dict) -> bool:
     return False
 
 
+def source_price_tax_supported(source: dict) -> bool:
+    """Verify the advertised tax treatment beside the same public amount.
+
+    A parser-supplied tax_included=True/False is not source proof. If the
+    quotation does not state how tax is handled, refuse exact numeric gaps.
+    """
+    amount = parse_twd_amount(source.get("amount"))
+    tax = source.get("tax_included")
+    body = source.get("body")
+    if amount is None or type(tax) is not bool or not isinstance(body, str):
+        return False
+    for clause in re.split(r"[。；;\\r\\n]+", body[:3500]):
+        for found in _SOURCE_PRICE_PATTERN.finditer(clause):
+            matching = None
+            for key, suffix in (("currency_amount", "currency_unit"),
+                                ("unit_amount", "unit_suffix"),
+                                ("label_amount", "label_suffix")):
+                val = found.group(key)
+                if val is not None:
+                    matching = parse_twd_amount(val + (found.group(suffix) or ""))
+                    break
+            if matching != amount:
+                continue
+            around = clause[max(0, found.start() - 90):found.end() + 60]
+            excludes_tax = bool(re.search(r"(?:不含稅|未含稅|未稅|稅外加)", around))
+            includes_tax = bool(re.search(r"(?<!不)(?<!未)含稅|稅已含", around))
+            if includes_tax and excludes_tax:
+                continue
+            if tax is True and includes_tax:
+                return True
+            if tax is False and excludes_tax:
+                return True
+    return False
+
+
 def compare_with_target(source: dict, customer_quote: dict) -> GateDecision:
     """Only return COMPARABLE for known-identical construction scope.
 
@@ -524,6 +559,8 @@ def compare_with_target(source: dict, customer_quote: dict) -> GateDecision:
     src_tax, quote_tax = source.get("tax_included"), customer_quote.get("tax_included")
     if type(src_tax) is not bool or type(quote_tax) is not bool or src_tax != quote_tax:
         return GateDecision("REFERENCE_ONLY", ("TAX_TREATMENT_MISSING_OR_MISMATCH",), False, False)
+    if not source_price_tax_supported(source):
+        return GateDecision("REFERENCE_ONLY", ("SOURCE_TAX_TREATMENT_NOT_PROVEN",), False, False)
     if basis == "total_price":
         try:
             src_qty = Decimal(str(source.get("quantity", "")))
