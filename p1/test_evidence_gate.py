@@ -61,6 +61,51 @@ class EvidenceGateTests(unittest.TestCase):
         r = dict(valid_case(), title="虛擬貨幣投資報酬率", body="", category="", item_name="")
         self.assertEqual(evaluate(r).status, "REJECT")
 
+    def test_model_supplied_category_cannot_make_unrelated_page_relevant(self):
+        candidate = dict(valid_case(), title="學校招生簡章與報名費",
+                         body="本年度招生及報名公告，繳費請見表單",
+                         category="油漆工程", item_name="牆面油漆")
+        result = evaluate(candidate)
+        self.assertEqual(result.status, "REJECT")
+        self.assertEqual(result.reasons, ("SOURCE_TEXT_NOT_RENOVATION",))
+        self.assertFalse(result.as_dict()["eligible_for_formal_qa"])
+
+    def test_source_page_without_relevant_content_rejected_even_with_matching_specs(self):
+        candidate = dict(valid_case(), title="2026 手機促銷單價",
+                         body="優惠活動與價格列表",
+                         category="室內裝修", item_name="牆面油漆")
+        self.assertEqual(evaluate(candidate).status, "REJECT")
+
+    def test_redirect_to_blocked_domain_rejected(self):
+        x = dict(valid_case(), redirected=True,
+                 resolved_url="https://www.twfuns.com/landing/123")
+        self.assertEqual(evaluate(x).status, "REJECT")
+        self.assertIn("REDIRECT_TO_BLOCKED_OR_NONPUBLIC_URL", evaluate(x).reasons)
+
+    def test_redirect_to_internal_or_loopback_url_rejected(self):
+        for target in ("http://127.0.0.1:8000/admin",
+                       "http://192.168.0.1/private",
+                       "javascript:alert(1)"):
+            with self.subTest(target=target):
+                x = dict(valid_case(), redirected=True, resolved_url=target)
+                self.assertEqual(evaluate(x).status, "REJECT")
+
+    def test_redirect_without_final_url_held(self):
+        self.assertEqual(evaluate(dict(valid_case(), redirected=True)).status, "HOLD")
+
+    def test_cross_domain_redirect_requires_chain_review(self):
+        x = dict(valid_case(), redirected=True,
+                 resolved_url="https://public-renovation.example.org/taiwan/prices")
+        self.assertEqual(evaluate(x).status, "HOLD")
+        y = dict(x, redirect_chain_verified=True)
+        self.assertEqual(evaluate(y).status, "READY_FOR_MATCHING")
+        self.assertFalse(evaluate(y).eligible_for_formal_import)
+
+    def test_same_domain_redirect_can_remain_eligible_for_qa(self):
+        x = dict(valid_case(), redirected=True,
+                 resolved_url="https://example.com.tw/renovation/new-url")
+        self.assertEqual(evaluate(x).status, "READY_FOR_MATCHING")
+
     def test_mixed_medical_and_renovation_requires_review(self):
         r = dict(valid_case(), title="裝修工程與醫療器材共同採購")
         self.assertEqual(evaluate(r).status, "HOLD")
