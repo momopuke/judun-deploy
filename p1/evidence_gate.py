@@ -89,7 +89,7 @@ def public_source_url(value: object, blocked_labels=BLOCKED_DOMAIN_LABELS) -> bo
         except ValueError:
             # Alternate numeric IPv4 notation (127.1, 0177.0.0.1, 0x7f.1)
             # can resolve to loopback despite ipaddress rejecting the syntax.
-            if re.fullmatch(r"(?:0x[0-9a-f]+|[0-9]+)(?:\\.(?:0x[0-9a-f]+|[0-9]+)){1,3}", host):
+            if re.fullmatch(r"(?:0x[0-9a-f]+|[0-9]+)(?:\.(?:0x[0-9a-f]+|[0-9]+)){1,3}", host):
                 return False
             # Well-known wildcard DNS hosts may encode a private IP in their
             # labels. Literal rejection helps, but collector DNS checks are
