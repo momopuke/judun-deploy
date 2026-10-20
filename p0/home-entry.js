@@ -78,7 +78,7 @@
     list.className = "judun-entry-select__items";
     const items = [
       {title:"我有裝修報價單", note:"上傳免費檢查價格與風險", href:"#"+targetId, primary:true},
-      {title:"還沒拿到報價", note:"先整理裝修需求 · 媒合籌備中", href:"/matching/"},
+      {title:"還沒拿到報價", note:"先準備工項、規格與預算", href:"#judun-quote-prep"},
       {title:"已談完要比較", note:"上傳新版報價，查看變動", href:"#home-recheck"},
       {title:"調閱舊報告", note:"接續之前的分析", href:"#home-retrieve"}
     ];
@@ -113,6 +113,51 @@
     }
     heroActions.insertAdjacentElement("afterend", nav);
 
+    // An actionable preparation guide replaces the premature referral to a
+    // still-preparing matching service. Keep it folded unless requested.
+    const prep = document.createElement("section");
+    prep.id = "judun-quote-prep";
+    prep.className = "judun-quote-prep";
+    prep.hidden = true;
+    prep.setAttribute("aria-label", "取得裝修報價前的準備");
+    prep.setAttribute("tabindex", "-1");
+    const prepHeading = document.createElement("h2");
+    prepHeading.textContent = "還沒拿到報價？先準備好這三件事";
+    const prepSteps = document.createElement("ol");
+    for (const sentence of [
+      "整理房屋坪數、施工區域與預算上限",
+      "列出預計施作的工項及材料品牌、規格",
+      "請廠商逐項列明單位、數量、單價及含稅條件"
+    ]) {
+      const li = document.createElement("li");
+      li.textContent = sentence;
+      prepSteps.appendChild(li);
+    }
+    const prepActions = document.createElement("div");
+    prepActions.className = "judun-quote-prep__actions";
+    const preview = document.createElement("a");
+    preview.href = "#home-report-preview";
+    preview.textContent = "先看健檢報告範例 ↗";
+    const close = document.createElement("button");
+    close.type = "button";
+    close.textContent = "收起準備指引";
+    close.addEventListener("click", () => {
+      prep.hidden = true;
+      const trigger = nav.querySelector('a[href="#judun-quote-prep"]');
+      if (trigger) {
+        trigger.setAttribute("aria-expanded", "false");
+        trigger.focus();
+      }
+    });
+    prepActions.append(preview, close);
+    prep.append(prepHeading, prepSteps, prepActions);
+    nav.insertAdjacentElement("afterend", prep);
+    const prepTrigger = nav.querySelector('a[href="#judun-quote-prep"]');
+    if (prepTrigger) {
+      prepTrigger.setAttribute("aria-expanded", "false");
+      prepTrigger.setAttribute("aria-controls", prep.id);
+    }
+
     // Visible focus feedback on in-page link navigation without changing upload behavior.
     nav.addEventListener("click", (event) => {
       const link = event.target.closest('a[href^="#"]');
@@ -121,6 +166,11 @@
       const target = document.getElementById(id);
       if (!target) return;
       event.preventDefault();
+      if (id === "judun-quote-prep") {
+        target.hidden = false;
+        const trigger = nav.querySelector('a[href="#judun-quote-prep"]');
+        if (trigger) trigger.setAttribute("aria-expanded", "true");
+      }
       target.scrollIntoView({behavior:"smooth", block:"start"});
       history.replaceState(history.state, "", "#"+encodeURIComponent(id));
       target.classList.add("judun-p0-focus-target");
