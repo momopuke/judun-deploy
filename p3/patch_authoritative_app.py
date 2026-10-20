@@ -16,6 +16,7 @@ alters deployment, changes a database, or signs/releases an artifact.
 from __future__ import annotations
 
 import argparse
+import ast
 import hashlib
 import json
 import os
@@ -65,22 +66,37 @@ def apply_app_patch(raw: bytes, expected_sha256: str) -> tuple[bytes, dict]:
         "function checkMicroStatus(" not in original or
         "window.unlockTier" not in original):
         raise ValueError("SOURCE_NOT_EXPECTED_JUDUN_FASTAPI_APP")
-    # The legacy authoritative app embeds the client script inside GLOBAL_JS.
-    # A random valid Python file mentioning these names is not enough.
-    js_decl = 'GLOBAL_JS = r"""'
-    js_start = original.find(js_decl)
-    if js_start < 0 or original.count(js_decl) != 1:
-        raise ValueError("EXPECTED_GLOBAL_JS_SOURCE_BLOCK_MISSING")
-    js_end = original.find('"""', js_start + len(js_decl))
-    if js_end < 0 or not (js_start < original.index(OLD) < js_end and
-                          js_start < original.index(OLD_COMPLETION) < js_end):
-        raise ValueError("PATCH_TARGET_OUTSIDE_GLOBAL_JS_SOURCE_BLOCK")
+    # Check Python syntax AND AST ownership. Substring-based triple-quote
+    # scanning can be fooled by comments or an unrelated Python string.
     try:
+        module = ast.parse(original, filename="<authoritative-app-before>")
         compile(original, "<authoritative-app-before>", "exec")
     except SyntaxError as exc:
         raise ValueError("AUTHORITATIVE_PYTHON_INVALID_BEFORE_PATCH") from exc
-    _check_match_context(original, OLD, "window.unlockTier")
-    _check_match_context(original, OLD_COMPLETION, "function checkMicroStatus(")
+    assignments = [
+        stmt for stmt in module.body
+        if (isinstance(stmt, ast.Assign)
+            and any(isinstance(t, ast.Name) and t.id == "GLOBAL_JS"
+                    for t in stmt.targets))
+        or (isinstance(stmt, ast.AnnAssign)
+            and isinstance(stmt.target, ast.Name)
+            and stmt.target.id == "GLOBAL_JS")
+    ]
+    if len(assignments) != 1:
+        raise ValueError("EXPECTED_SINGLE_MODULE_GLOBAL_JS_ASSIGNMENT")
+    literal = assignments[0].value
+    if not (isinstance(literal, ast.Constant)
+            and isinstance(literal.value, str)):
+        raise ValueError("GLOBAL_JS_MUST_BE_LITERAL")
+    js = literal.value
+    # Require both exact statements in the one module-level JS literal;
+    # reject a decoy string elsewhere even if the source hashes correctly.
+    if (js.count(OLD) != 1 or js.count(OLD_COMPLETION) != 1
+            or "window.unlockTier" not in js
+            or "function checkMicroStatus(" not in js):
+        raise ValueError("PATCH_TARGET_OUTSIDE_AUTHORITATIVE_GLOBAL_JS")
+    _check_match_context(js, OLD, "window.unlockTier")
+    _check_match_context(js, OLD_COMPLETION, "function checkMicroStatus(")
     after = original.replace(OLD, NEW, 1).replace(
         OLD_COMPLETION, NEW_COMPLETION, 1
     )
@@ -105,6 +121,7 @@ def apply_app_patch(raw: bytes, expected_sha256: str) -> tuple[bytes, dict]:
         "candidate_bytes": len(encoded),
         "replacements": 2,
         "python_syntax": "PASS_BEFORE_AND_AFTER",
+        "global_js_ast_verified": True,
         "fastapi_route_preserved": True,
         "production_deployed": False,
         "requires_original_signing_and_e2e": True,
