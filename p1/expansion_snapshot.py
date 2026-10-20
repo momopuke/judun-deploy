@@ -40,11 +40,9 @@ def write_event_snapshot(path: str | Path, data: dict, *, updated_at: str | None
         raise ValueError("invalid expansion state")
     stamp = updated_at or utc_now()
     progress = data.get("last_progress_at")
-    # A status heartbeat is NOT a proven increase of completed work. If the
-    # controller cannot identify its last real progress event, preserve that
-    # uncertainty instead of manufacturing a fresh progress timestamp.
-    if progress is None and status != "running":
-        progress = stamp
+    # Neither a heartbeat NOR a non-running terminal-state event proves a
+    # fresh completed-work checkpoint. Never synthesize progress timestamps.
+    # The trusted controller must provide the last genuine progress event.
     _parse_time(stamp)
     if progress is not None:
         _parse_time(progress)
