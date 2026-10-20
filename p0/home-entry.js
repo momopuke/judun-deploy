@@ -151,6 +151,17 @@
     });
     prepActions.append(preview, close);
     prep.append(prepHeading, prepSteps, prepActions);
+    // Escape closes the optional guide and returns focus to the card.
+    prep.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      prep.hidden = true;
+      const trigger = nav.querySelector('a[href="#judun-quote-prep"]');
+      if (trigger) {
+        trigger.setAttribute("aria-expanded", "false");
+        trigger.focus();
+      }
+    });
     nav.insertAdjacentElement("afterend", prep);
     const prepTrigger = nav.querySelector('a[href="#judun-quote-prep"]');
     if (prepTrigger) {
@@ -171,7 +182,16 @@
         const trigger = nav.querySelector('a[href="#judun-quote-prep"]');
         if (trigger) trigger.setAttribute("aria-expanded", "true");
       }
-      target.scrollIntoView({behavior:"smooth", block:"start"});
+      const reducedMotion = !!(window.matchMedia &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+      target.scrollIntoView({behavior: reducedMotion ? "auto" : "smooth", block:"start"});
+      // We prevent the browser's normal fragment behavior. Restore the
+      // corresponding keyboard and assistive-technology focus management.
+      if (!target.hasAttribute("tabindex") &&
+          !/^(INPUT|BUTTON|TEXTAREA|SELECT|A)$/.test(target.tagName)) {
+        target.setAttribute("tabindex", "-1");
+      }
+      if (typeof target.focus === "function") target.focus({preventScroll: true});
       history.replaceState(history.state, "", "#"+encodeURIComponent(id));
       target.classList.add("judun-p0-focus-target");
       window.setTimeout(() => target.classList.remove("judun-p0-focus-target"), 2000);
