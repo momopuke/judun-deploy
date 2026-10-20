@@ -97,6 +97,25 @@ class SourcePatchTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 write_staging(source, root/"candidate.bin", patched)
 
+    def test_only_module_level_literal_global_js_is_patchable(self):
+        raw = sample_app()
+        candidates = {
+            "duplicate_global_assignment":
+                raw + b"\nGLOBAL_JS = 'unrelated'\n",
+            "nested_global_assignment":
+                raw.replace(b"GLOBAL_JS = r\"\"\"",
+                            b"def decoy():\n    GLOBAL_JS = r\"\"\"", 1),
+            "computed_global_js":
+                raw.replace(b"GLOBAL_JS = r\"\"\"",
+                            b"GLOBAL_JS = str(r\"\"\"", 1).replace(
+                                b"</html>\"\"\"", b"</html>\"\"\")", 1),
+        }
+        for name, source in candidates.items():
+            with self.subTest(case=name):
+                compile(source, "<fixture>", "exec")
+                with self.assertRaises(ValueError):
+                    apply_app_patch(source, hashlib.sha256(source).hexdigest())
+
     def test_does_not_cross_js_function_boundary(self):
         raw = sample_app()
         s = raw.decode().replace("window.unlockTier = function(btn, jobId, tier) {",
