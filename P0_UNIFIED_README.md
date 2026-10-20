@@ -168,3 +168,10 @@ P0 首頁、P1 公開證據、P2 解鎖導覽已完成候選；**當前按核准
 - 這不是 PR #9 全部 P0/P1/P2 的上線聲明；只針對付款後預設看價差、否定完成字詞防誤判的原版 `GLOBAL_JS` 做最小更新。舊 95 分首頁、正式資料庫及付費測試模式不得改動。
 - **發布清單提交不等於正式部署成功**。應以 live `/health/build` 顯示 `v1.2.115`、target artifact/build instance 和 `/health/artifact?deep=true` 0 mismatch 為唯一成功判準；若仍是 v1.2.114，需先查原 agent 是否追蹤現行 `main` 分支，並避免無限重試造成服務重啟。不得宣稱已部署。
 - 原始碼、簽章私鑰及正式 QA DB 一律不放入公開 PR。完整 P1/P2 仍需在正式 backend 接線和實際付款/PDF E2E 後另行升版。
+
+### 2026-10-21 實際 AutoDeploy 結果與安全還原（取代上段待部署狀態）
+
+- 找回歷史 v1.2.87 線上簽章部署紀錄、舊發布工具及受信任簽署材料，已在隔離環境通過簽署/驗簽與舊版結構相容測試。公開 v1.2.114 的 live artifact 是 `JUDUN-1.2.114-AA38F0567A4D`。
+- 在原 GitHub `main` 發布過**加密簽章限定基準的 v1.2.115 微修補**；由獨立 GitHub Runner 二次唯讀驗證，正式站仍為 v1.2.114／上述原 artifact／deep SHA PASS，**沒有證據顯示 VPS 曾完成部署**。
+- 因目前無法查看 VPS agent 日誌及它實際監聽的 branch/ref，已將 `main/channel/stable.json` 與其 Ed25519 簽章**逐位元還原到發布前**、刪除未啟用的加密更新檔，避免 agent 在可能失敗時持續重啟；原網站完全保留。簽章 delta 的**不含私鑰**原始碼與合成測試保存在 `p3/production_delta_patch.py` 和 `p3/test_production_delta_patch.py`。
+- **真正阻擋**：此工作環境的 DigitalOcean API 沒有 VPS shell 或 agent journal、HTTPS receiver 無可執行的已驗證上傳通道；亦無法解密 VPS 上的現行權威完整 source。簽署材料可用**不等於** agent 當前已接好或正式付款/PDF E2E 通過。不得假稱 v1.2.115 上線，也不能再次無界啟動可能重試的正式 channel。
