@@ -422,6 +422,35 @@ def source_price_work_item_supported(source: dict) -> bool:
     return False
 
 
+def source_price_spec_supported(source: dict) -> bool:
+    """Verify the declared construction specification appears near that price.
+
+    Parser-inferred specifications are not themselves publicly quoted scope.
+    Exact Unicode/whitespace-normalized matching is conservative: variants
+    without attributable source text remain reference-only for human review.
+    """
+    spec = _canonical(source.get("spec"))
+    amount = parse_twd_amount(source.get("amount"))
+    if not spec or amount is None or len(spec) > 300:
+        return False
+    for text in (str(source.get("title") or "")[:500],
+                 str(source.get("body") or "")[:3500]):
+        for found in _SOURCE_PRICE_PATTERN.finditer(text):
+            parsed = None
+            for key, suffix in (("currency_amount", "currency_unit"),
+                                ("unit_amount", "unit_suffix"),
+                                ("label_amount", "label_suffix")):
+                numeric = found.group(key)
+                if numeric is not None:
+                    parsed = parse_twd_amount(numeric + (found.group(suffix) or ""))
+                    break
+            if parsed == amount:
+                context = text[max(0, found.start() - 220):found.end() + 60]
+                if spec in _canonical(context):
+                    return True
+    return False
+
+
 def compare_with_target(source: dict, customer_quote: dict) -> GateDecision:
     """Only return COMPARABLE for known-identical construction scope.
 
@@ -448,6 +477,8 @@ def compare_with_target(source: dict, customer_quote: dict) -> GateDecision:
         return GateDecision("REFERENCE_ONLY", ("SOURCE_PRICE_UNIT_BASIS_NOT_PROVEN",), False, False)
     if not source_price_work_item_supported(source):
         return GateDecision("REFERENCE_ONLY", ("SOURCE_PRICE_WORK_ITEM_NOT_PROVEN",), False, False)
+    if not source_price_spec_supported(source):
+        return GateDecision("REFERENCE_ONLY", ("SOURCE_PRICE_SPEC_NOT_PROVEN",), False, False)
     src_tax, quote_tax = source.get("tax_included"), customer_quote.get("tax_included")
     if type(src_tax) is not bool or type(quote_tax) is not bool or src_tax != quote_tax:
         return GateDecision("REFERENCE_ONLY", ("TAX_TREATMENT_MISSING_OR_MISMATCH",), False, False)
