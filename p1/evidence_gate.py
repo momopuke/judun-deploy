@@ -167,15 +167,15 @@ def source_price_precision(title: str, excerpt: str, amount: Decimal) -> str:
                 head = text[max(0, found.start() - 6):found.start()]
                 tail = text[found.end():found.end() + 15]
                 # Adjacent unambiguous date/floor-area tokens are not prices.
-                if re.match(r"^\\s*(?:年(?:度|份)?|坪|㎡|平方(?:公尺|米)?|日|月|號)", tail):
+                if re.match(r"^\s*(?:年(?:度|份)?|坪|㎡|平方(?:公尺|米)?|日|月|號)", tail):
                     continue
                 # Pricing ranges, starting prices, and approximations may be
                 # useful for market context but must not support an exact gap.
                 is_approximate = (
-                    bool(re.search(r"(?:約|大約|概估|起價|起跳|最低|從|至少|大概|約莫)\\s*$", head))
+                    bool(re.search(r"(?:約|大約|概估|起價|起跳|最低|從|至少|大概|約莫)\s*$", head))
                     or "約" in found.group(0)
-                    or bool(re.match(r"^\\s*(?:[-~～〜－–—]|至|到|起|以上|以下|上下|左右|不等)", tail))
-                    or bool(re.search(r"(?:[-~～〜－–—]|至|到)\\s*$", head))
+                    or bool(re.match(r"^\s*(?:[-~～〜－–—]|至|到|起|以上|以下|上下|左右|不等)", tail))
+                    or bool(re.search(r"(?:[-~～〜－–—]|至|到)\s*$", head))
                 )
                 if is_approximate:
                     approximate_seen = True
