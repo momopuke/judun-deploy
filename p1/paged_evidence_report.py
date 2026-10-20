@@ -9,6 +9,8 @@ approval. A caller must keep the SAME immutable snapshot across paginated calls.
 """
 from __future__ import annotations
 
+import hashlib
+
 from evidence_display import fingerprint_approval_source
 from report_evidence_section import (
     MAX_SOURCE_ROWS,
@@ -19,6 +21,24 @@ MAX_PAGES_PER_CALL = 5
 MAX_ITEMS_IN_COLLECTION = 10000
 
 
+def public_source_snapshot_digest(source_rows: list) -> str:
+    """Stable ordered checksum of the public source snapshot being paged."""
+    if not isinstance(source_rows, list) or len(source_rows) > MAX_ITEMS_IN_COLLECTION:
+        raise ValueError("invalid source snapshot")
+    h = hashlib.sha256()
+    h.update(b"judun.full-public-sources.v1\\n")
+    for source in source_rows:
+        if isinstance(source, dict):
+            try:
+                marker = fingerprint_approval_source(source)
+            except (ValueError, TypeError):
+                marker = "INVALID_EVIDENCE"
+        else:
+            marker = "INVALID_ROW"
+        h.update(marker.encode("ascii") + b"\\n")
+    return h.hexdigest()
+
+
 def render_paged_public_price_sources(
     source_rows: list,
     customer_quote: dict,
@@ -26,6 +46,7 @@ def render_paged_public_price_sources(
     offset: int = 0,
     pages_per_call: int = 3,
     approved_record_lookup=None,
+    expected_snapshot_digest: str | None = None,
 ) -> dict:
     """Render up to pages_per_call x 200 sources, exposing a continuation offset.
 
@@ -36,7 +57,7 @@ def render_paged_public_price_sources(
         "status": "INVALID_INPUT", "pages": [], "next_offset": None,
         "processed": 0, "comparable": 0, "reference_only": 0,
         "excluded": 0, "duplicates_skipped": 0, "displayed": 0,
-        "complete": False,
+        "complete": False, "snapshot_digest": None,
     }
     if (not isinstance(source_rows, list)
             or not isinstance(customer_quote, dict)
@@ -45,6 +66,19 @@ def render_paged_public_price_sources(
             or type(pages_per_call) is not int
             or not 1 <= pages_per_call <= MAX_PAGES_PER_CALL):
         return invalid
+
+    digest = public_source_snapshot_digest(source_rows)
+    if offset != 0 and (not isinstance(expected_snapshot_digest, str)
+                        or expected_snapshot_digest != digest):
+        return {
+            **invalid, "status": "SOURCE_SNAPSHOT_CHANGED",
+            "snapshot_digest": digest,
+        }
+    if expected_snapshot_digest is not None and expected_snapshot_digest != digest:
+        return {
+            **invalid, "status": "SOURCE_SNAPSHOT_CHANGED",
+            "snapshot_digest": digest,
+        }
 
     # Repeat past fingerprint inspection without rendering, so a continued
     # request cannot emit a formerly displayed identical record a second time.
@@ -103,4 +137,5 @@ def render_paged_public_price_sources(
         "processed": next_end - offset,
         **totals,
         "complete": complete,
+        "snapshot_digest": digest,
     }
