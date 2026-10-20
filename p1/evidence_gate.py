@@ -362,17 +362,17 @@ def source_price_basis_supported(source: dict) -> bool:
             prefix = text[max(0, found.start() - 20):found.start()]
             suffix_text = text[found.end():found.end() + 18]
             if basis == "total_price":
-                if re.search(r"(?:總價|總額|整項|全案|整案|工程總費用)\\s*(?:[:：為是]|約)?\\s*$", prefix):
+                if re.search(r"(?:總價|總額|整項|全案|整案|工程總費用)\s*(?:[:：為是]|約)?\s*$", prefix):
                     return True
             else:
                 before = bool(re.search(
-                    r"(?:每|一)\\s*" + escaped_unit +
-                    r"\\s*(?:的)?\\s*(?:單價|報價|價格|費用)?\\s*(?:[:：為是])?\\s*$",
+                    r"(?:每|一)\s*" + escaped_unit +
+                    r"\s*(?:的)?\s*(?:單價|報價|價格|費用)?\s*(?:[:：為是])?\s*$",
                     prefix,
                 ))
                 after = bool(re.match(
-                    r"^\\s*(?:元)?\\s*(?:[／/]|每)\\s*" + escaped_unit +
-                    r"(?![\\w])", suffix_text,
+                    r"^\s*(?:元)?\s*(?:[／/]|每)\s*" + escaped_unit +
+                    r"(?![\w])", suffix_text,
                 ))
                 if before or after:
                     return True
