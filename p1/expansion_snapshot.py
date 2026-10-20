@@ -13,6 +13,8 @@ import os
 import tempfile
 import time
 
+from snapshot_write_lock import exclusive_status_lock
+
 MAX_BYTES = 8192
 STATUS_VALUES = {"running", "idle", "paused", "failed", "completed"}
 # Public status deliberately uses a closed set of generic phase labels.
@@ -62,51 +64,55 @@ def write_event_snapshot(path: str | Path, data: dict, *, updated_at: str | None
     if len(raw) > MAX_BYTES:
         raise ValueError("oversized status snapshot")
     target = Path(path)
-    # Reject sequential clock rollback from an older controller event.
-    # Atomic replacement alone prevents partial bytes, not stale overwrites.
-    # The live controller still needs a single-writer/serialized-event policy
-    # for concurrent workers; this preflight is not a distributed lock.
-    try:
-        with target.open("rb") as previous_file:
-            previous_bytes = previous_file.read(MAX_BYTES + 1)
-        if len(previous_bytes) <= MAX_BYTES:
-            previous = json.loads(previous_bytes.decode("utf-8"))
-            if isinstance(previous, dict) and previous.get("schema") == SCHEMA:
-                try:
-                    previous_time = _parse_time(previous.get("updated_at"))
-                except (TypeError, ValueError):
-                    previous_time = None
-                if previous_time is not None:
-                    if _parse_time(stamp) < previous_time:
-                        raise ValueError("snapshot timestamp regressed")
-                    # These counters are cumulative within one controller
-                    # lineage. An older round must never erase committed
-                    # totals, even if it carries a newer heartbeat timestamp.
-                    # A genuine epoch reset must use a new trusted snapshot
-                    # lineage rather than silently decreasing these totals.
-                    for count_key in ALLOWED_COUNTS:
-                        prior_count = previous.get(count_key)
-                        if (type(prior_count) is int and prior_count >= 0
-                                and payload[count_key] < prior_count):
-                            raise ValueError("cumulative count regressed: " + count_key)
-    except FileNotFoundError:
-        pass
-    except (UnicodeError, json.JSONDecodeError, TypeError, KeyError):
-        # The prior file is corrupt; permit replacing it with a validated
-        # small new snapshot. Other file read failures remain visible.
-        pass
-    target.parent.mkdir(parents=True, exist_ok=True)
-    temp_name = None
-    try:
-        with tempfile.NamedTemporaryFile(mode="wb", dir=str(target.parent), prefix=".expansion.", suffix=".tmp", delete=False) as f:
-            temp_name = f.name
-            f.write(raw)
-            f.flush()
-            os.fsync(f.fileno())
-        os.replace(temp_name, target)
-    finally:
-        if temp_name and os.path.exists(temp_name):
-            os.unlink(temp_name)
+    # The same advisory lock must cover BOTH read/compare and atomic replace.
+    # On the Linux VPS this also serializes concurrent controller processes.
+    with exclusive_status_lock(target):
+        # Reject sequential clock rollback from an older controller event.
+        # Atomic replacement alone prevents partial bytes, not stale overwrites.
+        # The live controller still needs a single-writer/serialized-event policy
+        # for concurrent workers; this preflight is not a distributed lock.
+        try:
+            with target.open("rb") as previous_file:
+                previous_bytes = previous_file.read(MAX_BYTES + 1)
+            if len(previous_bytes) <= MAX_BYTES:
+                previous = json.loads(previous_bytes.decode("utf-8"))
+                if isinstance(previous, dict) and previous.get("schema") == SCHEMA:
+                    try:
+                        previous_time = _parse_time(previous.get("updated_at"))
+                    except (TypeError, ValueError):
+                        previous_time = None
+                    if previous_time is not None:
+                        if _parse_time(stamp) < previous_time:
+                            raise ValueError("snapshot timestamp regressed")
+                        # These counters are cumulative within one controller
+                        # lineage. An older round must never erase committed
+                        # totals, even if it carries a newer heartbeat timestamp.
+                        # A genuine epoch reset must use a new trusted snapshot
+                        # lineage rather than silently decreasing these totals.
+                        for count_key in ALLOWED_COUNTS:
+                            prior_count = previous.get(count_key)
+                            if (type(prior_count) is int and prior_count >= 0
+                                    and payload[count_key] < prior_count):
+                                raise ValueError("cumulative count regressed: " + count_key)
+        except FileNotFoundError:
+            pass
+        except (UnicodeError, json.JSONDecodeError, TypeError, KeyError):
+            # The prior file is corrupt; permit replacing it with a validated
+            # small new snapshot. Other file read failures remain visible.
+            pass
+        target.parent.mkdir(parents=True, exist_ok=True)
+        temp_name = None
+        try:
+            with tempfile.NamedTemporaryFile(mode="wb", dir=str(target.parent), prefix=".expansion.", suffix=".tmp", delete=False) as f:
+                temp_name = f.name
+                f.write(raw)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(temp_name, target)
+        finally:
+            if temp_name and os.path.exists(temp_name):
+                os.unlink(temp_name)
+
     return payload
 
 
