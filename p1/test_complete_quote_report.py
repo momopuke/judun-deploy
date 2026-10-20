@@ -346,5 +346,30 @@ class CompleteQuoteReportTests(unittest.TestCase):
         self.assertEqual(out["items_rendered"],0)
         self.assertEqual(out["html"].count('class="judun-quote-line"'),0)
 
+    def test_invalid_quote_rows_are_uniquely_bound_to_snapshot(self):
+        from complete_quote_report import quote_snapshot_digest
+        rows = [quote(0), None]
+        digest = quote_snapshot_digest(rows)
+        rows[1] = {"category": "油漆工程", "amount": "NT$23,000"}
+        self.assertNotEqual(quote_snapshot_digest(rows), digest)
+        rows[1] = 123
+        self.assertNotEqual(quote_snapshot_digest(rows), digest)
+
+    def test_unverifiable_quote_row_never_claims_complete(self):
+        rows = [quote(0), object()]
+        out = render_complete_authorized_quote_report(rows, [[], []])
+        self.assertEqual(out["status"], "QUOTE_SNAPSHOT_UNVERIFIABLE")
+        self.assertFalse(out["complete"])
+        self.assertEqual(out["html"], "")
+
+    def test_oversized_invalid_evidence_preserves_quote_without_comparing(self):
+        source = {**valid_case(), "body": "a" * 80000}
+        out = render_complete_authorized_quote_report([quote(0)], [[source]])
+        self.assertEqual(out["status"], "SOURCE_REVIEW_REQUIRED")
+        self.assertIn("第 1 項", out["html"])
+        self.assertTrue(out["source_alerts"])
+        self.assertNotIn('data-evidence-tier="COMPARABLE"', out["html"])
+
+
 if __name__=="__main__":
     unittest.main()
