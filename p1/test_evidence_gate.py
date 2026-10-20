@@ -20,6 +20,8 @@ def valid_case():
         "spec": "批土兩道、乳膠漆三道",
         "price_phase": "公開報價",
         "evidence_type": "PRIMARY_CASE",
+        "price_basis": "unit_price",
+        "tax_included": True,
     }
 
 class EvidenceGateTests(unittest.TestCase):
@@ -31,7 +33,7 @@ class EvidenceGateTests(unittest.TestCase):
 
     def test_strict_matching_pair_is_structurally_comparable(self):
         s=valid_case()
-        target={k:s[k] for k in ("category", "item_name", "unit", "spec", "locality", "currency")}
+        target={k:s[k] for k in ("category", "item_name", "unit", "spec", "locality", "currency", "price_basis", "tax_included")}
         target["amount"]="NT$20,000"
         r=compare_with_target(s,target)
         self.assertEqual(r.status,"COMPARABLE")
@@ -40,7 +42,7 @@ class EvidenceGateTests(unittest.TestCase):
 
     def test_different_specs_not_marked_comparable(self):
         s=valid_case()
-        target={k:s[k] for k in ("category", "item_name", "unit", "spec", "locality", "currency")}
+        target={k:s[k] for k in ("category", "item_name", "unit", "spec", "locality", "currency", "price_basis", "tax_included")}
         target["amount"]="20000"
         for k,v in (("spec","乳膠漆一道"),("unit","式"),("locality","高雄市"),("item_name","牆面泥作"),("category","防水工程")):
             with self.subTest(key=k):
@@ -48,7 +50,7 @@ class EvidenceGateTests(unittest.TestCase):
 
     def test_missing_customer_price_not_comparable(self):
         s=valid_case()
-        target={k:s[k] for k in ("category", "item_name", "unit", "spec", "locality", "currency")}
+        target={k:s[k] for k in ("category", "item_name", "unit", "spec", "locality", "currency", "price_basis", "tax_included")}
         self.assertEqual(compare_with_target(s,target).status,"HOLD")
 
     def test_unrelated_pharmaceutical_price_is_rejected(self):
@@ -105,7 +107,8 @@ class EvidenceGateTests(unittest.TestCase):
     def test_missing_spec_reduced_to_reference(self):
         r = evaluate(dict(valid_case(), spec=""))
         self.assertEqual(r.status, "REFERENCE_ONLY")
-        self.assertTrue(r.eligible_for_formal_import)
+        self.assertFalse(r.eligible_for_formal_import)
+        self.assertTrue(r.as_dict()["eligible_for_formal_qa"])
         self.assertFalse(r.usable_for_exact_price_comparison)
 
     def test_benchmark_types_cannot_be_cases(self):
@@ -133,6 +136,51 @@ class EvidenceGateTests(unittest.TestCase):
         self.assertIn("公開&lt;價格&gt;", link)
         with self.assertRaises(ValueError):
             html_source_link("javascript:alert(1)")
+
+
+    def test_same_text_but_different_unit_or_total_basis_rejected(self):
+        source = valid_case()
+        target = {k:source[k] for k in ("category", "item_name", "unit", "spec", "locality",
+                                      "currency", "price_basis", "tax_included")}
+        target["amount"] = "20000"
+        for source_basis, dest_basis in (("unit_price", "total_price"),
+                                         ("total_price", "unit_price"),
+                                         (None, "unit_price"), ("unit_price", None),
+                                         ("other", "other")):
+            with self.subTest(source_basis=source_basis, dest_basis=dest_basis):
+                result = compare_with_target({**source, "price_basis":source_basis},
+                                             {**target, "price_basis":dest_basis})
+                self.assertEqual(result.status,"REFERENCE_ONLY")
+                self.assertFalse(result.usable_for_exact_price_comparison)
+                self.assertFalse(result.eligible_for_formal_import)
+
+    def test_total_amount_requires_identical_quantity(self):
+        source = {**valid_case(), "price_basis":"total_price", "quantity":25}
+        target = {k:source[k] for k in ("category", "item_name", "unit", "spec", "locality",
+                                      "currency", "price_basis", "tax_included")}
+        target["amount"] = "20000"
+        for q in (None, 20, "NaN", 0, -1):
+            with self.subTest(q=q):
+                r = compare_with_target(source, {**target, "quantity":q})
+                self.assertEqual(r.status,"REFERENCE_ONLY")
+        self.assertEqual(compare_with_target(source,{**target, "quantity":"25.00"}).status,
+                         "COMPARABLE")
+
+    def test_tax_inclusion_must_match_explicitly(self):
+        source=valid_case()
+        target={k:source[k] for k in ("category","item_name","unit","spec","locality",
+                                      "currency","price_basis","tax_included")}
+        target["amount"]="20000"
+        for tax in (None, False, "true", 1):
+            with self.subTest(tax=tax):
+                self.assertEqual(compare_with_target(source,{**target,"tax_included":tax}).status,
+                                 "REFERENCE_ONLY")
+
+    def test_no_gate_decision_approves_formal_import_before_existing_qa(self):
+        for record in (valid_case(), dict(valid_case(),spec=""),
+                       dict(valid_case(),currency="USD"),
+                       dict(valid_case(),title="完全無關",body="",category="",item_name="")):
+            self.assertFalse(evaluate(record).eligible_for_formal_import)
 
     def test_invalid_record_rejected(self):
         self.assertEqual(evaluate(None).status, "REJECT")
