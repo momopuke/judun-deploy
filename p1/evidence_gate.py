@@ -202,9 +202,9 @@ def compare_with_target(source: dict, customer_quote: dict) -> GateDecision:
     required = ("category", "item_name", "unit", "spec", "locality")
     for key in required:
         if not _canonical(source.get(key)) or not _canonical(customer_quote.get(key)):
-            return GateDecision("REFERENCE_ONLY", ("PAIR_FIELD_MISSING:" + key,), True, False)
+            return GateDecision("REFERENCE_ONLY", ("PAIR_FIELD_MISSING:" + key,), False, False)
         if _canonical(source[key]) != _canonical(customer_quote[key]):
-            return GateDecision("REFERENCE_ONLY", ("PAIR_SPEC_OR_REGION_MISMATCH:" + key,), True, False)
+            return GateDecision("REFERENCE_ONLY", ("PAIR_SPEC_OR_REGION_MISMATCH:" + key,), False, False)
     # Same item text alone does not establish that quoted amounts share a basis.
     # A full job price (e.g. 25 坪的總價) is NOT directly comparable to 每坪單價.
     basis = source.get("price_basis")
