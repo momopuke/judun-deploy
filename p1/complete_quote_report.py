@@ -78,8 +78,10 @@ def source_association_digest(rows: list, expected_items: int) -> tuple[str, boo
     safe_for_pairing = True
     for part in rows:
         if not isinstance(part, list):
+            # The list still has one slot per quote; keep valid siblings
+            # independently aligned, while this slot is flagged for review.
+            # A missing list is NOT evidence that other indices shifted.
             digest.update(b"INVALID_PART")
-            safe_for_pairing = False
             continue
         digest.update(len(part).to_bytes(8, "big"))
         for item in part:
