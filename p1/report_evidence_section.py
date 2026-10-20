@@ -43,7 +43,7 @@ def render_report_public_price_sources(source_rows: list, customer_quote: dict,
     empty = {
         "html": "", "comparable": 0, "reference_only": 0,
         "excluded": 0, "displayed": 0, "truncated": False,
-        "status": "INVALID_INPUT",
+        "excluded_breakdown": {}, "status": "INVALID_INPUT",
     }
     if (not isinstance(source_rows, list) or not isinstance(customer_quote, dict)
             or len(source_rows) > MAX_SOURCE_ROWS or view_mode not in ("compact", "full")
@@ -56,21 +56,29 @@ def render_report_public_price_sources(source_rows: list, customer_quote: dict,
     candidate_views = []
     seen = set()
     excluded = 0
+    reason_counts = {}
+    def count_excluded(code: str):
+        nonlocal excluded
+        excluded += 1
+        reason_counts[code] = reason_counts.get(code, 0) + 1
+
     for source in source_rows:
         if not isinstance(source, dict):
-            excluded += 1
+            count_excluded("INVALID_ROW")
             continue
         # This section describes ONE client work item; a different work item
         # on an otherwise legitimate renovation page is NOT relevant here.
         # Disclose unrelated records neither as references nor as price gaps.
-        if (not _same_item(source.get("category"), customer_quote.get("category"))
-                or not _same_item(source.get("item_name"), customer_quote.get("item_name"))):
-            excluded += 1
+        if not _same_item(source.get("category"), customer_quote.get("category")):
+            count_excluded("CATEGORY_MISMATCH")
+            continue
+        if not _same_item(source.get("item_name"), customer_quote.get("item_name")):
+            count_excluded("ITEM_MISMATCH")
             continue
         try:
             fingerprint = fingerprint_approval_source(source)
         except (ValueError, TypeError):
-            excluded += 1
+            count_excluded("UNREADABLE_EVIDENCE")
             continue
         if fingerprint in seen:
             # Exact duplicate, NOT multiple case prices on the same URL.
@@ -80,7 +88,7 @@ def render_report_public_price_sources(source_rows: list, customer_quote: dict,
             source, customer_quote, approved_record_lookup=approved_record_lookup
         )
         if not view["visible"]:
-            excluded += 1
+            count_excluded("SOURCE_REJECTED_OR_UNVERIFIED")
             continue
         candidate_views.append((view, str(source.get("item_name") or "公開報價依據")))
 
@@ -124,7 +132,8 @@ def render_report_public_price_sources(source_rows: list, customer_quote: dict,
     references = [html for tier, html in rendered if tier == "REFERENCE_ONLY"]
     if references:
         summary += (
-            '<details class="judun-related-price-sources">'
+            '<details class="judun-related-price-sources"' +
+            (' open' if view_mode == 'full' else '') + '>'
             '<summary>展開相關公開參考來源（' + str(len(references)) + ' 筆）</summary>'
             + ''.join(references) + '</details>'
         )
@@ -134,6 +143,7 @@ def render_report_public_price_sources(source_rows: list, customer_quote: dict,
         "comparable": comparable_count,
         "reference_only": reference_count,
         "excluded": excluded,
+        "excluded_breakdown": dict(sorted(reason_counts.items())),
         "displayed": displayed,
         "truncated": truncated,
         "status": "OK",
