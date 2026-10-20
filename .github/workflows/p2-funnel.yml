@@ -1,0 +1,27 @@
+name: JUDUN P0 conversion funnel safety
+on:
+  push:
+    paths:
+      - "p2/**"
+      - ".github/workflows/p2-funnel.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify paid unlock requires backend confirmation and opens price section
+        run: node --test p2/paid-price-route.test.cjs
+      - name: Observe public free entry without transactions
+        run: python3 p2/audit_public_funnel.py
+      - name: Preserve sanitized conversion observations
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: judun-conversion-funnel-public-observation
+          path: p2/results/*.json
+          if-no-files-found: ignore
+          retention-days: 14
