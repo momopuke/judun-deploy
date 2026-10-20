@@ -138,3 +138,20 @@ python3 p3/patch_authoritative_app.py \
 **下一必要關卡：** 取得現行 systemd timer 狀態及代理失敗分類，確認設定是否仍追蹤 GitHub `main`。若 timer 不運作才修復原 timer；若 signature/base mismatch 應核對現行 artifact 和 GitHub 發行來源；若 HTTPS receiver 的 `v3` 不符先停用部署企圖。通過後才用原權威 v1.2.114 source、受控簽章及既有接收器發行唯一版本，再作付款/報告/PDF 真實 E2E 和 deep SHA 回讀。
 
 先前暫時發布的 v1.2.115 簽章 channel 已還原，現 GitHub `main/channel/stable.json` 是舊 v1.2.106 來源；即使 timer 運行，它也可能因為現行 live 已是 v1.2.114 而記錄 base mismatch。**不可用不一致的舊 channel 覆蓋正式站，也不可把 receiver HTTP 200 當作 agent 也正常。**
+
+
+## 2026-10-21｜更正正式部署主路線：HTTPS v3，勿和 GitHub pull-agent 混用
+
+從先前交付的正式安裝包實際查證：\`_SYSTEM/DEPLOY_HTTPS.cmd\` 是 **直接 HTTPS ZIP 上傳路線**，向原來的 v3 receiver 送出 \`application/zip\` 封裝，由受控接收器處理部署；它不依賴 \`judun-autodeploy.timer\`。另一份 \`AUTODEPLOY_AGENT.sh\` 才是每分鐘從 GitHub 讀取 Ed25519 簽章 channel + CMS payload 的**獨立路線**。不能把 pull-agent CMS 的包拿去走 HTTPS v3，也不能因 GitHub stable channel 未更新便認定 HTTPS receiver 不可部署。
+
+先前 \`p3/production_delta_patch.py\` 是為 **pull-agent 簽章路線**準備，**不是** HTTPS v3 的正式 ZIP 包。先前推送到 GitHub channel 的 v1.2.115 沒有讓現網升級，已確實撤銷及還原；不能把這當成 HTTPS v3 曾拒絕此更新的證據。下一步應以早期成功的直接 HTTPS v3 路線為優先，定時代理僅作非必要的平行診斷。
+
+### 修正官方 source-tree SHA 雜湊相容性
+
+發現 P3 初版 \`computed_tree_sha\` 與歷史 \`BUILD_PAYLOAD.ps1\` 不同。原打包器使用**檔名 Ordinal 排序、每列「path + NUL + 十進位 size + NUL + lowercase SHA256 + LF」**，包括最後一筆也必須有結尾 LF；初版誤成 \`path + NUL + SHA + NUL + size\` 且沒有最後 LF。已修正，加入獨立固定測試向量、原測試包回歸檢查，避免合成測試自己驗自己卻與正式 Windows 打包器不相容。更正後才允許下一步離線封裝審核；這不代表實際正式 v1.2.114 來源已取得。
+
+### HTTPS v3 原封裝的本機離線驗收
+
+新增 \`p3/https_receiver_bundle_audit.py\` 及 \`test_https_receiver_bundle_audit.py\`：按照歷史 Windows \`BUILD_PAYLOAD.ps1\` 實際格式，驗證 ZIP 中的 \`RELEASE.json\`、\`RUNTIME_RELEASE_LOCK.json\`、\`system_files/DEPLOY_MANIFEST.json\`，目標 artifact/instance/build signature、正式 evidence SHA 鎖定、所有 source ZIP 成員雜湊、另外的 runtime tree SHA、三版本備份與正式資料增量保護策略。禁止路徑穿越、重複路徑、符號連結、額外未列入管理清單的內容及壓縮解壓超限；**只讀本地 ZIP，沒有 HTTP、密碼或任何部署操作**。
+
+> 歷史規格是為了正確建立驗收邊界。當前 v1.2.114 的權威完整來源仍需驗證；不能直接拿舊的 v1.2.82 發行包重新打包覆蓋網站。原 HTTPS receiver 的存活與 v3 協定已由 Runner 驗證，下一個必要條件是取得同現網一致的現行可編輯來源、建立新版本完整 ZIP 並在隔離環境驗證後，才可使用原授權部署憑證直接上傳，最後檢查真實付費/報告/PDF 與 deep-SHA。**未滿足這些條件不發布。**
