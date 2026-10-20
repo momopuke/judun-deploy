@@ -83,9 +83,16 @@ class ReceiverProbeTests(unittest.TestCase):
 
     def test_receiver_readiness_never_proves_agent_ready(self):
         self.assertEqual(
-            assess({"/health": {"state": "HTTP_200"}, "/version": {"state": "HTTP_200"}}),
-            "PUBLIC_RECEIVER_RESPONDS_AGENT_UNKNOWN",
+            assess({"/health": {"state": "HTTP_200"},
+                    "/version": {"state": "HTTP_200", "receiver_v3_exact": True}}),
+            "V3_RECEIVER_RESPONDS_AGENT_UNKNOWN",
         )
+        self.assertEqual(
+            assess({"/health": {"state": "HTTP_200"}, "/version": {"state": "HTTP_200"}}),
+            "PUBLIC_RECEIVER_RESPONDS_PROTOCOL_UNVERIFIED",
+        )
+        probe = classify("/version", Opener(Response(data=b"v3\\n", url=RECEIVER + "/version")))
+        self.assertTrue(probe["receiver_v3_exact"])
         self.assertEqual(
             assess({"/health": {"state": "HTTP_200"}, "/version": {"state": "NOT_FOUND"}}),
             "RECEIVER_PARTIALLY_REACHABLE",
