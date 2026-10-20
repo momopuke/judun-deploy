@@ -56,3 +56,11 @@
 - 超時後不再進行 focus/scroll；同步 `showVerifiedPriceSection()` 偵測到 Promise 型 mount 會明確要求使用非同步版本。
 - 若提供 `reportId` 或 `entitlementReportId`，兩者必須存在且一致，防止拿 A 案件的導覽結果去跳 B 案件。**這是用戶端一致性檢查，無法替代後端案件所有權查驗。**
 - 最新 **18 項導覽契約測試通過**：https://github.com/momopuke/judun-deploy/actions/runs/39361835577 。正式付款仍未執行 E2E。
+
+
+## 2026-10-20 非同步報告逾時追加保護（候選，未部署）
+
+- `showVerifiedPriceSectionAsync` 向 `mount`、`whenRendered`、`focus`、`scroll` 第二參數傳入 `{ signal: AbortSignal }`。報告逾時或回呼例外時會觸發 abort；之後不再主動呼叫後續步驟。
+- 實際模板的非同步 UI callback **必須自行尊重 AbortSignal**，包含其內部 timer、fetch 和 DOM 更新，才能保證超時後不會留下晚到的視覺副作用。純 Promise.race 不能殺掉任意未受控函式。
+- 保留報告 ID 一致性、後端權益確認、解鎖工作已完成的前置條件。此變更不改付款路由、方案價格、原首頁，也**不是**線上付款驗收。
+- 新增 timeout-abort 與成功路徑 signal 測試，仍由原單一 PR 的 Node CI 執行。
