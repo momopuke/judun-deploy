@@ -156,6 +156,7 @@ def source_price_precision(title: str, excerpt: str, amount: Decimal) -> str:
     if not isinstance(title, str) or not isinstance(excerpt, str):
         return "ABSENT"
     approximate_seen = False
+    exact_seen = False
     for text in (title[:500], excerpt[:3500]):
         for found in _SOURCE_PRICE_PATTERN.finditer(text):
             for key, suffix in (("currency_amount", "currency_unit"),
@@ -182,9 +183,14 @@ def source_price_precision(title: str, excerpt: str, amount: Decimal) -> str:
                 )
                 if is_approximate:
                     approximate_seen = True
-                    continue
-                return "EXACT"
-    return "APPROXIMATE" if approximate_seen else "ABSENT"
+                else:
+                    exact_seen = True
+    # A second occurrence saying "starting at"/"approximately" contradicts
+    # interpreting the very same parsed amount as one settled point price.
+    # Conservatively retain it as reference, regardless of text order.
+    if approximate_seen:
+        return "APPROXIMATE"
+    return "EXACT" if exact_seen else "ABSENT"
 
 
 def source_explicitly_supports_amount(title: str, excerpt: str, amount: Decimal) -> bool:
@@ -271,9 +277,6 @@ def evaluate(record: dict) -> GateDecision:
     price_precision = source_price_precision(title, body, amount)
     if price_precision == "ABSENT":
         return d("HOLD", "PRICE_NOT_IN_CAPTURED_PUBLIC_SOURCE")
-    if price_precision == "APPROXIMATE":
-        return d("REFERENCE_ONLY", "SOURCE_PRICE_RANGE_OR_ESTIMATE_NOT_EXACT")
-
     evidence_type = str(record.get("evidence_type") or "").upper()
     if evidence_type not in TYPES:
         return d("HOLD", "EVIDENCE_TYPE_NOT_CLASSIFIED")
@@ -282,6 +285,11 @@ def evaluate(record: dict) -> GateDecision:
     phase = str(record.get("price_phase") or "")
     if not phase:
         return d("HOLD", "PRICE_PHASE_NOT_DOCUMENTED")
+
+    # Approximate sources still need provenance classification. Without a
+    # recorded evidence type and price phase, even a reference claim is unsafe.
+    if price_precision == "APPROXIMATE":
+        return d("REFERENCE_ONLY", "SOURCE_PRICE_RANGE_OR_ESTIMATE_NOT_EXACT")
 
     if evidence_type != "PRIMARY_CASE":
         return d("REFERENCE_ONLY", "BENCHMARK_NOT_AN_INDIVIDUAL_CASE")
