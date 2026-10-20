@@ -72,8 +72,11 @@ def write_event_snapshot(path: str | Path, data: dict, *, updated_at: str | None
         if len(previous_bytes) <= MAX_BYTES:
             previous = json.loads(previous_bytes.decode("utf-8"))
             if isinstance(previous, dict) and previous.get("schema") == SCHEMA:
-                previous_time = _parse_time(previous.get("updated_at"))
-                if _parse_time(stamp) < previous_time:
+                try:
+                    previous_time = _parse_time(previous.get("updated_at"))
+                except (TypeError, ValueError):
+                    previous_time = None
+                if previous_time is not None and _parse_time(stamp) < previous_time:
                     raise ValueError("snapshot timestamp regressed")
     except FileNotFoundError:
         pass
