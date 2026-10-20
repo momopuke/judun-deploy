@@ -53,7 +53,7 @@ class CompleteQuoteReportTests(unittest.TestCase):
         self.assertIn("第 2 項：待核對原始資料",out["html"])
         self.assertIn("&lt;img",out["html"])
         self.assertNotIn("<img",out["html"])
-        self.assertIn("報價金額待人工確認",out["html"])
+        self.assertIn("原始金額：no price（幣別或金額待核對）",out["html"])
         self.assertFalse(out["complete"])
         self.assertEqual(out["source_alerts"],[1])
 
