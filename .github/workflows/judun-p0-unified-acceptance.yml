@@ -7,6 +7,13 @@ on:
       - "p2/**"
       - "P0_UNIFIED_README.md"
       - ".github/workflows/judun-p0-unified-acceptance.yml"
+  pull_request:
+    paths:
+      - "p0/**"
+      - "p1/**"
+      - "p2/**"
+      - "P0_UNIFIED_README.md"
+      - ".github/workflows/judun-p0-unified-acceptance.yml"
   workflow_dispatch:
 permissions:
   contents: read
