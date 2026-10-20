@@ -12,7 +12,8 @@ import unittest
 from zipfile import ZipFile
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from offline_source_recovery import recover, sha, inspect_plaintext, HIST_CERT, HIST_KEY
+from offline_source_recovery import recover, sha, inspect_plaintext, verify_live_app_tree, HIST_CERT, HIST_KEY
+from production_delta_patch import computed_tree_sha
 
 BUILD = "JUDUN-1.2.114-AA38F0567A4D"
 
@@ -100,6 +101,34 @@ class OfflineSourceRestoreTests(unittest.TestCase):
             bad.write_text('APP_VERSION = "1.2.113"\n')
             with self.assertRaisesRegex(ValueError, "APP_RELEASE_VERSION_MISMATCH"):
                 inspect_plaintext(bad, "1.2.114")
+
+
+    def test_full_app_must_match_independent_live_release_tree(self):
+        app = b'APP_VERSION = "1.2.114"\n'
+        records = [{"path": "system_files/app.py", "size": len(app), "sha256": sha(app)}]
+        for index in range(80):
+            data = ("synthetic_" + str(index)).encode()
+            records.append({"path": "system_files/sim_%02d" % index,
+                            "size": len(data), "sha256": sha(data)})
+        tree = computed_tree_sha(records)
+        manifest = {
+            "schema": "judun.deploy-manifest.v1",
+            "version": "1.2.114",
+            "artifact_id": BUILD,
+            "files": records,
+            "source_tree_sha256": tree,
+        }
+        self.assertTrue(verify_live_app_tree(app, manifest, tree))
+        with self.assertRaisesRegex(ValueError, "APP_DOES_NOT_MATCH_LIVE_TREE"):
+            verify_live_app_tree(app + b"changed", manifest, tree)
+        with self.assertRaisesRegex(ValueError, "INDEPENDENT_SOURCE_TREE_DRIFT"):
+            verify_live_app_tree(app, manifest, "f" * 64)
+        incomplete = dict(manifest, files=records[:1])
+        with self.assertRaisesRegex(ValueError, "INCOMPLETE_INDEPENDENT_MANIFEST"):
+            verify_live_app_tree(app, incomplete, tree)
+        mismatched = dict(manifest, artifact_id="JUDUN-1.2.113-OLDER")
+        with self.assertRaisesRegex(ValueError, "INDEPENDENT_MANIFEST_IDENTITY_MISMATCH"):
+            verify_live_app_tree(app, mismatched, tree)
 
 
 if __name__ == "__main__":
