@@ -1,0 +1,84 @@
+name: JUDUN P0 unified pre-release acceptance (never deploy)
+on:
+  push:
+    paths:
+      - "p0/**"
+      - "p1/**"
+      - "p2/**"
+      - "P0_UNIFIED_README.md"
+      - ".github/workflows/judun-p0-unified-acceptance.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  release-boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Reject any accidental edits to signed production release surfaces
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import subprocess
+          changed = subprocess.check_output(
+              ["git", "diff", "--name-only", "origin/main...HEAD"], text=True
+          ).splitlines()
+          allowed = (
+              "p0/", "p1/", "p2/",
+          )
+          exact = {
+              "P0_UNIFIED_README.md",
+              ".github/workflows/judun-p0-unified-acceptance.yml",
+          }
+          forbidden = [
+              name for name in changed
+              if not name.startswith(allowed) and name not in exact
+          ]
+          if forbidden:
+              raise SystemExit("RELEASE_BOUNDARY_FAILURE: " + repr(forbidden))
+          print("SIGNED_CHANNEL_UNCHANGED", True)
+          print("APPROVED_DIFF_FILES", len(changed))
+          PY
+  quality:
+    needs: release-boundary
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute source QA, redirect chain, price-basis and expansion snapshot tests
+        run: python3 -m unittest discover -s p1 -p 'test_*.py' -v
+      - name: Execute checkout-to-price navigation and asynchronous report tests
+        run: node --test p2/paid-price-route.test.cjs
+      - name: Observe published free entry WITHOUT any payment/upload
+        run: python3 p2/audit_public_funnel.py
+      - name: Save non-sensitive audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: judun-unified-public-funnel-observation
+          path: p2/results/*.json
+          if-no-files-found: ignore
+          retention-days: 14
+  homepage-preview:
+    needs: release-boundary
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install isolated browser
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Check live-public-home in TEMPORARY browser only at five viewports
+        run: node p0/preview-test.cjs
+      - name: Store desktop, tablet and mobile QA screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: judun-unified-desktop-tablet-phone-visual-qa
+          path: p0/results/*.png
+          if-no-files-found: ignore
+          retention-days: 14
