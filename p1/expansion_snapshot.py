@@ -14,6 +14,13 @@ import time
 
 MAX_BYTES = 8192
 STATUS_VALUES = {"running", "idle", "paused", "failed", "completed"}
+# Public status deliberately uses a closed set of generic phase labels.
+# No arbitrary URL, exception, credential or internal filesystem path leaks.
+PUBLIC_PHASES = frozenset({
+    "queued", "discover", "fetch", "parse", "validate", "qa",
+    "stage", "checkpoint", "import", "finalize", "idle", "waiting",
+    "paused", "complete", "retry", "sleep", "other",
+})
 ALLOWED_COUNTS = ("rounds_completed", "validated_total", "formal_records_added_total")
 ALLOWED_TEXT = ("phase",)
 SCHEMA = "judun.expansion.public-status.v1"
@@ -28,7 +35,7 @@ def write_event_snapshot(path: str | Path, data: dict, *, updated_at: str | None
     if not isinstance(data, dict):
         raise ValueError("expected summary mapping")
     status = data.get("status")
-    if status not in STATUS_VALUES:
+    if not isinstance(status, str) or status not in STATUS_VALUES:
         raise ValueError("invalid expansion state")
     stamp = updated_at or utc_now()
     progress = data.get("last_progress_at")
@@ -49,8 +56,8 @@ def write_event_snapshot(path: str | Path, data: dict, *, updated_at: str | None
             raise ValueError("invalid count: " + key)
         payload[key] = val
     for key in ALLOWED_TEXT:
-        val = str(data.get(key) or "")[:70]
-        payload[key] = val
+        val = data.get(key)
+        payload[key] = val if isinstance(val, str) and val in PUBLIC_PHASES else "other"
     payload["checkpoint_verified"] = data.get("checkpoint_verified") is True
     raw = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
     if len(raw) > MAX_BYTES:
@@ -90,7 +97,11 @@ def read_public_snapshot(path: str | Path, *, now_epoch: float | None = None, st
         if len(raw) > MAX_BYTES:
             raise ValueError("snapshot too large")
         p = json.loads(raw.decode("utf-8"))
-        if p.get("schema") != SCHEMA or p.get("status") not in STATUS_VALUES:
+        if not isinstance(p, dict):
+            raise ValueError("invalid snapshot shape")
+        if (p.get("schema") != SCHEMA
+                or not isinstance(p.get("status"), str)
+                or p["status"] not in STATUS_VALUES):
             raise ValueError("invalid snapshot schema")
         now = now_epoch if now_epoch is not None else time.time()
         snapshot_time = _parse_time(p["updated_at"])
@@ -114,7 +125,7 @@ def read_public_snapshot(path: str | Path, *, now_epoch: float | None = None, st
             if type(number) is not int or number < 0:
                 raise ValueError("invalid snapshot count")
         phase = p.get("phase", "")
-        if not isinstance(phase, str) or len(phase) > 70:
+        if not isinstance(phase, str) or phase not in PUBLIC_PHASES:
             raise ValueError("invalid status phase")
         return {
             "status": observed,
