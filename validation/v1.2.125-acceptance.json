@@ -1,0 +1,301 @@
+{
+  "schema": "judun.production-acceptance.v1",
+  "version": "1.2.125",
+  "verified_at_utc": "2026-10-21T17:34:10.189156+00:00",
+  "site": "https://judun.142-93-91-214.sslip.io/",
+  "signed_release_commit": "be0569fafa875a035cc1240a91194ef3b833fe91",
+  "target_app_sha256": "c94c757a01cfbb947ff3ce38ba79bf80fd1cc39eead2925628ab05d90e1a5b19",
+  "live": {
+    "action": "FINAL_V125_LIVE_ACCEPTANCE",
+    "result": "PASS",
+    "checked_at_utc": "2026-10-21T17:34:10.189156+00:00",
+    "artifact_id": "JUDUN-1.2.125-C94C757A01CF",
+    "source_tree_sha256": "389121cc6f1a4cb3d712a02d9fdbf007f1eaee30b43088fe262f0e5ac7965a9f",
+    "formal_evidence_manifest_sha256": "cb2530901faf1cf044105e83e74ad099ee8c5974fda2bb34307a79257b79dc4d",
+    "files_verified": 81,
+    "mismatch_count": 0,
+    "readiness_seconds_localhost": [
+      0.0849,
+      0.0258,
+      0.0368,
+      0.0253,
+      0.0222
+    ],
+    "advisor_active": "active",
+    "timer_active": "active",
+    "timer_enabled": "enabled",
+    "agent_result": "success",
+    "original_agent_check_did_not_restart_application": true,
+    "previous_version": "1.2.124",
+    "previous_managed_files_verified": 81,
+    "only_previous_program_backup": true,
+    "expansion": {
+      "runner_alive": true,
+      "checkpoint_preserved": true,
+      "recovered_round_counted_once": true,
+      "task_id": "MANUAL-20261021-121943",
+      "status": "running",
+      "target_validated": 5000,
+      "rounds_completed": 12,
+      "validated_total": 30,
+      "formal_records_added_total": 180
+    },
+    "api_memory": "VmRSS:\t  107524 kB\nVmSwap:\t   86692 kB",
+    "memory_events": {
+      "low": "0",
+      "high": "0",
+      "max": "0",
+      "oom": "0",
+      "oom_kill": "0",
+      "oom_group_kill": "0"
+    },
+    "disk_free_bytes": 29647015936
+  },
+  "activation": {
+    "action": "ACTIVATE_AUTHORIZED_SIGNED_V125",
+    "systemctl_returncode": 0,
+    "service_result": "success",
+    "branch_restored": true,
+    "build": {
+      "version": "1.2.125",
+      "display_version": "v1.2.125",
+      "artifact_id": "JUDUN-1.2.125-C94C757A01CF",
+      "build_instance_id": "1.2.125-20261022-RETRIEVE-C94C757A01CF",
+      "source_tree_sha256": "389121cc6f1a4cb3d712a02d9fdbf007f1eaee30b43088fe262f0e5ac7965a9f"
+    },
+    "deep": {
+      "status": "ok",
+      "files_verified": 81,
+      "mismatch_count": 0,
+      "formal_evidence_sha256": "cb2530901faf1cf044105e83e74ad099ee8c5974fda2bb34307a79257b79dc4d"
+    },
+    "formal_database_unchanged": true,
+    "readiness_seconds": [
+      0.0414,
+      0.0316,
+      0.0267,
+      0.0273,
+      0.0247
+    ],
+    "readiness_all_under_2_seconds": true,
+    "timer_active": "inactive",
+    "result": "PASS"
+  },
+  "retention": {
+    "action": "RETAIN_CURRENT_AND_PREVIOUS_VERSION",
+    "current_version": "1.2.125",
+    "previous_version": "1.2.124",
+    "previous_managed_files_verified": 81,
+    "previous_tree_sha256": "d655470d06b96f5131c95d3e52e2bf47fdd38e29200d9b85b787037a74b2c3c8",
+    "old_version_backups_removed": [
+      "v1.2.123_before_v1.2.124_streaming_search"
+    ],
+    "bytes_removed": 46609447,
+    "customer_data_touched": false,
+    "result": "PASS"
+  },
+  "v125_scope": {
+    "base_version": "1.2.124",
+    "target_version": "1.2.125",
+    "changed_functions": [
+      "serve_search"
+    ],
+    "only_change": "Report retrieval timeout 18 to 90 seconds; original abort and error handling preserved",
+    "no_payment_owner_qa_data_or_pdf_template_change": true,
+    "target_app_sha256": "c94c757a01cfbb947ff3ce38ba79bf80fd1cc39eead2925628ab05d90e1a5b19"
+  },
+  "homepage": {
+    "only_version_changed_from_v124": true,
+    "sha256": "68e3b15a922af974f4591e6dd85dd69bdd9afcb3c0b7bc4162a85f0da22e997d"
+  },
+  "browser_v125": {
+    "original_authorized_case_loaded": true,
+    "price_tab_rendered": true,
+    "three_original_items_present": true,
+    "original_unknown_risk_scale_shown_as_pending_verification": true,
+    "timeout_issue_reproduced_on_v124_and_fixed_on_v125": true,
+    "screenshot_saved_private": true
+  },
+  "report_qa": {
+    "synthetic_quote": true,
+    "data_consent": false,
+    "confirmed_items": 3,
+    "original_total_price": 82200,
+    "risk_score": "3.5/10",
+    "basic_test_unlock": "completed",
+    "promax_test_unlock": "completed",
+    "analysis_items_reused": 3,
+    "advanced_guides": 5,
+    "pdfs_rendered_on_version": "1.2.124",
+    "v125_report_pdf_and_payment_function_sources_unchanged": true,
+    "pdf_visual_review": "PASS: all pages inspected; price tables and page continuations inspected at readable resolution",
+    "pdfs": [
+      {
+        "filename": "QA_v1.2.124_basic_full.pdf",
+        "pages": 14,
+        "bytes": 6042179,
+        "sha256": "d5c2c757f408fac7ef09bf8b7e91bd394aa1482aa54334bbc61277dcec4fb16e",
+        "checks": {
+          "total_82200": true,
+          "paint": true,
+          "floor": true,
+          "sockets": true,
+          "risk_3_5": true,
+          "no_old_total": true
+        },
+        "text_per_page": [
+          202,
+          362,
+          380,
+          644,
+          437,
+          660,
+          672,
+          370,
+          178,
+          430,
+          493,
+          450,
+          178,
+          121
+        ]
+      },
+      {
+        "filename": "QA_v1.2.124_basic_highlights.pdf",
+        "pages": 4,
+        "bytes": 381446,
+        "sha256": "9885b7031f27a83146518365394fb4d53d351077454a57db93881242369b076b",
+        "checks": {
+          "total_82200": true,
+          "paint": true,
+          "floor": true,
+          "sockets": true,
+          "risk_3_5": true,
+          "no_old_total": true
+        },
+        "text_per_page": [
+          490,
+          477,
+          545,
+          527
+        ]
+      },
+      {
+        "filename": "QA_v1.2.124_promax_full.pdf",
+        "pages": 22,
+        "bytes": 6427421,
+        "sha256": "467896d2ded292dd929234367bf03f20a36e74bd969dbcaad2383436e23652a6",
+        "checks": {
+          "total_82200": true,
+          "paint": true,
+          "floor": true,
+          "sockets": true,
+          "risk_3_5": true,
+          "no_old_total": true
+        },
+        "text_per_page": [
+          202,
+          362,
+          380,
+          644,
+          437,
+          660,
+          672,
+          880,
+          1061,
+          1085,
+          1001,
+          972,
+          897,
+          1073,
+          1038,
+          1084,
+          218,
+          430,
+          493,
+          450,
+          178,
+          121
+        ]
+      },
+      {
+        "filename": "QA_v1.2.124_promax_highlights.pdf",
+        "pages": 7,
+        "bytes": 419103,
+        "sha256": "97e5f4cce760160123677df5cc26cd5ea3c5ede493e7538a27a6a09ad26c8d5c",
+        "checks": {
+          "total_82200": true,
+          "paint": true,
+          "floor": true,
+          "sockets": true,
+          "risk_3_5": true,
+          "no_old_total": true
+        },
+        "text_per_page": [
+          490,
+          477,
+          247,
+          807,
+          710,
+          948,
+          368
+        ]
+      }
+    ]
+  },
+  "v124_search_actual_database": {
+    "action": "ACTUAL_V124_STREAMING_SEARCH_QA",
+    "result": "PASS",
+    "queries": [
+      {
+        "query": "室內油漆工程",
+        "cold_seconds": 11.1916,
+        "cache_seconds": 0.000322,
+        "hits": 5,
+        "original_scoring_reference_seconds": 15.651,
+        "same_full_records_scores_and_order": true
+      },
+      {
+        "query": "超耐磨木地板",
+        "cold_seconds": 12.0656,
+        "cache_seconds": 0.000274,
+        "hits": 5,
+        "original_scoring_reference_seconds": 15.0287,
+        "same_full_records_scores_and_order": true
+      },
+      {
+        "query": "插座增設",
+        "cold_seconds": 14.2663,
+        "cache_seconds": 0.000282,
+        "hits": 5,
+        "original_scoring_reference_seconds": 7.1478,
+        "same_full_records_scores_and_order": true
+      }
+    ],
+    "new_search_process_peak_rss_kb": 125648,
+    "production_source_not_imported": true,
+    "no_bulk_corpus_cache_loaded": true,
+    "formal_database_unchanged": true
+  },
+  "local_regressions": {
+    "python_p1": 230,
+    "python_p3": 155,
+    "node": 55,
+    "status": "PASS"
+  },
+  "candidate_scope": {
+    "pr": 9,
+    "state": "Draft",
+    "full_p0_p1_integrated": false,
+    "ci_is_non_deploying": true
+  },
+  "limitations": {
+    "real_payment_tested": false,
+    "payment_mode": "TEST",
+    "smtp_configured": false,
+    "real_email_delivery_tested": false,
+    "cold_search_can_take_over_18_seconds": true,
+    "timeout_change_is_not_a_claim_of_faster_search": true,
+    "formal_evidence_manifest_sha_is_not_a_hash_of_current_growing_database": true
+  }
+}
