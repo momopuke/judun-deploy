@@ -86,7 +86,8 @@ class OfflineSourceRestoreTests(unittest.TestCase):
             self.assertEqual(dest.read_bytes(), source)
             self.assertEqual(dest.stat().st_mode & 0o777, 0o600)
             with self.assertRaisesRegex(ValueError, "REFUSE_OVERWRITE_PRIVATE_STAGING"):
-                recover(enc, meta, hist, out_private=dest)
+                recover(enc, meta, hist, out_private=dest,
+                        trusted_manifest=trusted, public_tree_sha256=tree)
 
     def test_block_ciphertext_tampering_and_invalid_release_identity(self):
         with tempfile.TemporaryDirectory() as td:
