@@ -1,0 +1,227 @@
+{
+  "schema": "judun.production-acceptance.v1",
+  "version": "1.2.126",
+  "verified_at_utc": "2026-10-21T19:27:48.312523+00:00",
+  "site": "https://judun.142-93-91-214.sslip.io/",
+  "release_commit": "dfc979d346a6532b718130f9f08b012dfc6e99c7",
+  "artifact_id": "JUDUN-1.2.126-5D4BA415AA32",
+  "target_app_sha256": "5d4ba415aa3277b2c6753c8fc12bd160d9a1f2d22c9fea2766ff9ed40e2ca743",
+  "homepage_sha256": "0344222b3b42c9c6a351096c6d1431931af2d3b08ff14e673ce6fc11f211a6ed",
+  "live": {
+    "action": "FINAL_V126_RELEASE_CHECK",
+    "result": "PASS",
+    "verified_at_utc": "2026-10-21T19:27:48.312523+00:00",
+    "artifact_id": "JUDUN-1.2.126-5D4BA415AA32",
+    "source_tree_sha256": "cc382cff7bd06e4020b84952aece020c2162aeaec908dc4f30db8b9b00727068",
+    "managed_files_verified": 81,
+    "mismatch_count": 0,
+    "previous_version": "1.2.125",
+    "previous_managed_files_verified": 81,
+    "old_program_backups_removed": [],
+    "only_previous_program_backup": true,
+    "original_database_unchanged": true,
+    "expansion_status_preserved": "stopped_by_admin",
+    "advisor": "active",
+    "autodeploy_timer": "active",
+    "agent_result": "success",
+    "disk_free_bytes": 34081308672,
+    "disk_used_percent": 31.08
+  },
+  "activation": {
+    "action": "ACTIVATE_SIGNED_V126_HOME_ENTRY",
+    "result": "PASS",
+    "artifact_id": "JUDUN-1.2.126-5D4BA415AA32",
+    "source_tree_sha256": "cc382cff7bd06e4020b84952aece020c2162aeaec908dc4f30db8b9b00727068",
+    "managed_files_verified": 81,
+    "mismatch_count": 0,
+    "homepage_sha256": "0344222b3b42c9c6a351096c6d1431931af2d3b08ff14e673ce6fc11f211a6ed",
+    "original_database_unchanged": true,
+    "expansion_remains_stopped_by_admin": true,
+    "branch_main_restored": true,
+    "advisor_active": "active",
+    "autodeploy_timer": "active",
+    "agent_result": "success",
+    "readiness_seconds": [
+      0.0245,
+      0.0174,
+      0.0192
+    ]
+  },
+  "original_agent_recheck": {
+    "action": "RECHECK_V126_ORIGINAL_AGENT",
+    "main_channel_target": "JUDUN-1.2.126-5D4BA415AA32",
+    "returncode": 0,
+    "agent_result": "success",
+    "application_pid_unchanged": true
+  },
+  "source_scope": {
+    "changed_functions": [
+      "serve_home"
+    ],
+    "unchanged_functions_and_classes": 304,
+    "release_metadata_changed": true,
+    "other_managed_files_unchanged": 80,
+    "new_static_routes": false,
+    "new_upload_forms": false,
+    "payment_analysis_report_pdf_function_sources_unchanged": true
+  },
+  "homepage": {
+    "original_residential_background_heading_fonts_and_copy_preserved": true,
+    "entries": [
+      "我有裝修報價單",
+      "還沒拿到報價",
+      "已談完要比較",
+      "調閱舊報告"
+    ],
+    "matching_moved_last": true,
+    "original_file_chooser_preserved": true,
+    "consent_not_auto_checked": true,
+    "original_recheck_parameter_preserved": true,
+    "nested_report_preview_closing_tags_preserved": true,
+    "mobile_heading_and_tablet_logo_verified": true,
+    "pre_release_visual_review_all_five_viewports": true,
+    "pre_release_browser": {
+      "scope": "isolated public response; inline startup; no live deployment",
+      "results": [
+        {
+          "name": "desktop",
+          "width": 1440,
+          "height": 900,
+          "result": "PASS",
+          "overflow": 0,
+          "original_file_chooser": true,
+          "recheck_query_preserved": true,
+          "consent_not_changed": true,
+          "no_write_requests": true
+        },
+        {
+          "name": "tablet",
+          "width": 768,
+          "height": 1024,
+          "result": "PASS",
+          "overflow": 0,
+          "original_file_chooser": true,
+          "recheck_query_preserved": true,
+          "consent_not_changed": true,
+          "no_write_requests": true
+        },
+        {
+          "name": "mobile-small",
+          "width": 320,
+          "height": 680,
+          "result": "PASS",
+          "overflow": 0,
+          "original_file_chooser": true,
+          "recheck_query_preserved": true,
+          "consent_not_changed": true,
+          "no_write_requests": true
+        },
+        {
+          "name": "mobile",
+          "width": 390,
+          "height": 844,
+          "result": "PASS",
+          "overflow": 0,
+          "original_file_chooser": true,
+          "recheck_query_preserved": true,
+          "consent_not_changed": true,
+          "no_write_requests": true
+        },
+        {
+          "name": "mobile-large",
+          "width": 430,
+          "height": 932,
+          "result": "PASS",
+          "overflow": 0,
+          "original_file_chooser": true,
+          "recheck_query_preserved": true,
+          "consent_not_changed": true,
+          "no_write_requests": true
+        }
+      ]
+    },
+    "post_release_live_browser": {
+      "all_four_entries_clicked": true,
+      "preparation_open_and_close": true,
+      "upload_focus": "home-upload-panel",
+      "recheck_focus": "home-recheck",
+      "retrieve_focus": "home-retrieve",
+      "consent_checked": false
+    }
+  },
+  "local_regressions": {
+    "python_p1": 230,
+    "python_p3": 162,
+    "node": 55,
+    "result": "PASS"
+  },
+  "pre_release_ci": {
+    "head_sha": "53892d5f8e22711fa630d74cd00adcfb7148912a",
+    "run_id": 39659964046,
+    "jobs": {
+      "release-boundary": "success",
+      "quality": "success",
+      "homepage-preview": "success"
+    },
+    "visual_artifact_id": 12374255186,
+    "visual_artifact_digest": "sha256:95455848cdc558dc63800ac7f46e504d05ff0ecae809254c456e328ee3a7cff7"
+  },
+  "report_regression": {
+    "existing_synthetic_reports_checked": 2,
+    "current_tiers": [
+      "promax",
+      "promax"
+    ],
+    "completed_without_errors": true,
+    "all_have_price_section": true,
+    "new_basic_unlock_on_v126": false,
+    "new_promax_unlock_on_v126": false,
+    "prior_basic_and_promax_test_unlock_reference": "validation/v1.2.125-acceptance.json"
+  },
+  "pdf_regression": {
+    "current_version_downloads": [
+      {
+        "kind": "full",
+        "tier": "promax",
+        "bytes": 6427421,
+        "pages": 22,
+        "sha256": "467896d2ded292dd929234367bf03f20a36e74bd969dbcaad2383436e23652a6",
+        "total_82200": true,
+        "paint_and_socket_items": true,
+        "download_verified_on_version": "1.2.126"
+      },
+      {
+        "kind": "highlights",
+        "tier": "promax",
+        "bytes": 419101,
+        "pages": 7,
+        "sha256": "45df4ad5e97e171222a1feab4d08cc16401a4f79c2008f9f11ea0049a01c25fe",
+        "total_82200": true,
+        "paint_and_socket_items": true,
+        "download_verified_on_version": "1.2.126"
+      }
+    ],
+    "full_pdf_byte_identical_to_previously_reviewed_v124": true,
+    "highlights_pages_rendered_and_visually_reviewed": 7,
+    "basic_pdf_retested_on_v126": false
+  },
+  "retention": {
+    "current": "1.2.126",
+    "previous": "1.2.125",
+    "previous_managed_files_verified": 81,
+    "old_v124_program_backup_removed": true,
+    "github_encrypted_packages_retained": 2,
+    "customer_cases_reports_and_database_not_deleted": true
+  },
+  "limitations": {
+    "p1_fully_integrated": false,
+    "payment_mode": "TEST",
+    "real_payment_tested": false,
+    "smtp_configured": false,
+    "real_email_delivery_tested": false,
+    "new_model_analysis_run_on_v126": false,
+    "pre_release_browser_requests_isolated": true,
+    "formal_evidence_manifest_not_hash_of_live_growing_database": true
+  },
+  "database_verification_scope": "Formal public_evidence.db size and mtime preserved; no customer-data migration or deletion performed."
+}
