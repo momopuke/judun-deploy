@@ -57,31 +57,6 @@ jobs:
     timeout-minutes: 4
     steps:
       - uses: actions/checkout@v4
-      - name: Export original 1.2.108-114 encrypted patch chain for isolated offline provenance review
-        uses: actions/upload-artifact@v4
-        with:
-          name: judun-v12108-v12114-original-ciphertexts-only
-          path: |
-            assets/v1.2.1*.cms.b64
-            assets/v1.2.1*.json
-          if-no-files-found: error
-          retention-days: 1
-      - name: Export original signed release CMS ciphertext history for offline source lineage review
-        uses: actions/upload-artifact@v4
-        with:
-          name: judun-historical-releases-encrypted-only
-          path: |
-            releases/*.cms.b64
-            releases/*.json
-          if-no-files-found: error
-          retention-days: 1
-      - name: Export public source-independent surgical patch for real archived-app offline test
-        uses: actions/upload-artifact@v4
-        with:
-          name: judun-p3-actual-app-patcher-no-source-or-secrets
-          path: p3/production_delta_patch.py
-          if-no-files-found: error
-          retention-days: 1
       - name: P3 read-only LIVE build and integrity snapshot before legacy tests
         run: python3 p3/production_readiness.py
       - name: Attest archived v1.2.114 encrypted source and CMS public recipient (no decrypt)
