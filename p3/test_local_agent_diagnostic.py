@@ -39,8 +39,8 @@ class LocalAgentDiagnosticTests(unittest.TestCase):
 
     def test_last_observed_success_supersedes_older_failure(self):
         raw = (
-            "previous run: Encrypted payload SHA256 mismatch; token=never-export\\n"
-            "[SUCCESS] Auto-deployed and verified\\n"
+            "previous run: Encrypted payload SHA256 mismatch; token=never-export\n"
+            "[SUCCESS] Auto-deployed and verified\n"
         )
         latest = latest_agent_event(raw)
         self.assertEqual(latest, "success")
@@ -58,8 +58,8 @@ class LocalAgentDiagnosticTests(unittest.TestCase):
 
     def test_last_observed_failure_supersedes_older_success(self):
         raw = (
-            "[SUCCESS] Auto-deployed and verified\\n"
-            "another run: Encrypted payload SHA256 mismatch\\n"
+            "[SUCCESS] Auto-deployed and verified\n"
+            "another run: Encrypted payload SHA256 mismatch\n"
         )
         stats = classify_logs(raw)
         self.assertEqual(latest_agent_event(raw), "encrypted_payload_sha_mismatch")
