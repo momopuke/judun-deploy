@@ -57,6 +57,13 @@ jobs:
     timeout-minutes: 4
     steps:
       - uses: actions/checkout@v4
+      - name: Export unchanged public encrypted source for isolated offline review (no decryption)
+        uses: actions/upload-artifact@v4
+        with:
+          name: judun-v12114-ciphertext-only-private-offline-transfer
+          path: assets/v1.2.114-expansion-resilience-source-20261017.cms.b64
+          if-no-files-found: error
+          retention-days: 1
       - name: P3 read-only LIVE build and integrity snapshot before legacy tests
         run: python3 p3/production_readiness.py
       - name: Attest archived v1.2.114 encrypted source and CMS public recipient (no decrypt)
