@@ -79,6 +79,11 @@ def audit_against_current_live(bundle: Path, *, expected_target_artifact: str,
     result["read_only_public_snapshot_double_checked"] = True
     result["same_deep_manifest_fields_before_after"] = True
     result["independent_vps_disk_sha_verified"] = False
+    # Even double GET cannot prevent a deployment between our final check
+    # and a later upload; the trusted receiver must atomically recheck its
+    # current base artifact before any write.
+    result["requires_receiver_atomic_base_match_at_apply"] = True
+    result["production_upload_authorized_by_this_probe"] = False
     result["verified_live_artifact"] = live_artifact
     result["next_step"] = "AUTHORIZED_RECEIVER_UPLOAD_NOT_PERFORMED"
     return result
