@@ -68,7 +68,7 @@ jobs:
       - name: Execute source QA, redirect chain, price-basis and expansion snapshot tests
         run: python3 -m unittest discover -s p1 -p 'test_*.py' -v
       - name: Execute checkout-to-price navigation and asynchronous report tests
-        run: node --test p2/paid-price-route.test.cjs p3/report-integration.test.cjs
+        run: node --test p2/paid-price-route.test.cjs p3/report-integration.test.cjs p3/live_client_guard_audit.test.cjs
       - name: Verify exact ProMax preference and completion-status source guards
         run: python3 -m unittest discover -s p3 -p 'test_*.py' -v
       - name: Fail-closed gate for historical pinned public homepage fixture
@@ -169,6 +169,8 @@ jobs:
         run: node p0/preview-test.cjs
       - name: Review published unlock success branch source (read-only)
         run: node p3/review-live-unlock.cjs
+      - name: Verify live executable navigation guards without initiating payment
+        run: node p3/live_client_guard_audit.cjs
       - name: Discover real live homepage/report integration points (read-only)
         run: node p3/site-contract-inventory.cjs
       - name: Save P3 safe public UI inventory
