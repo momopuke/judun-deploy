@@ -230,8 +230,7 @@ def publish_atomic(manifest, signature_b64, cms_b64, parsed, pubkey, token,
 def git_blob_oid(content):
     """Compute SHA-1 Git blob object ID without uploading or exposing bytes."""
     return hashlib.sha1(
-        ("blob " + str(len(content)) + "\\0").encode("ascii").replace(b"\\0", b"\x00")
-        + content
+        ("blob " + str(len(content)) + "\0").encode("ascii") + content
     ).hexdigest()
 
 
