@@ -57,11 +57,13 @@ jobs:
     timeout-minutes: 4
     steps:
       - uses: actions/checkout@v4
-      - name: Export unchanged public encrypted source for isolated offline review (no decryption)
+      - name: Export original 1.2.108-114 encrypted patch chain for isolated offline provenance review
         uses: actions/upload-artifact@v4
         with:
-          name: judun-v12114-ciphertext-only-private-offline-transfer
-          path: assets/v1.2.114-expansion-resilience-source-20261017.cms.b64
+          name: judun-v12108-v12114-original-ciphertexts-only
+          path: |
+            assets/v1.2.1*.cms.b64
+            assets/v1.2.1*.json
           if-no-files-found: error
           retention-days: 1
       - name: P3 read-only LIVE build and integrity snapshot before legacy tests
