@@ -76,6 +76,9 @@ def audit_against_current_live(bundle: Path, *, expected_target_artifact: str,
         if final_deep.get(field) != deep.get(field):
             raise ValueError("HTTPS_V3_DEEP_SNAPSHOT_CHANGED_DURING_PREFLIGHT")
     result["live_deep_verified"] = True
+    result["read_only_public_snapshot_double_checked"] = True
+    result["same_deep_manifest_fields_before_after"] = True
+    result["independent_vps_disk_sha_verified"] = False
     result["verified_live_artifact"] = live_artifact
     result["next_step"] = "AUTHORIZED_RECEIVER_UPLOAD_NOT_PERFORMED"
     return result
