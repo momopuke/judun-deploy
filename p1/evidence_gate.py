@@ -65,6 +65,10 @@ def public_source_url(value: object, blocked_labels=BLOCKED_DOMAIN_LABELS) -> bo
     """No JavaScript links, internal addresses, credentials, or fragment-only URLs."""
     if not isinstance(value, str):
         return False
+    # Browsers normalize backslashes and C0 characters differently from
+    # urllib.parse. Never approve a URL if its destination is ambiguous.
+    if ("\\" in value or any(ord(char) < 32 or ord(char) == 127 for char in value)):
+        return False
     value = value.strip()
     if len(value) > 2048 or not value:
         return False
@@ -72,7 +76,17 @@ def public_source_url(value: object, blocked_labels=BLOCKED_DOMAIN_LABELS) -> bo
         p = urlsplit(value)
         if p.scheme not in ("https", "http") or not p.hostname or p.username or p.password:
             return False
-        host = p.hostname.rstrip(".").lower()
+        raw_host = p.hostname.rstrip(".")
+        # Percent-encoded host bytes can be decoded by browsers into blocked
+        # domains or loopback IPs (e.g. %31%32%37.0.0.1). Fail closed.
+        if "%" in raw_host:
+            return False
+        try:
+            # IDN dot separators and fullwidth ASCII must not hide a blocked
+            # domain label or an internal IP from our hostname checks.
+            host = raw_host.encode("idna").decode("ascii").lower()
+        except (UnicodeError, ValueError):
+            return False
         # Reject malformed ports and local naming aliases without DNS queries.
         try:
             port = p.port
