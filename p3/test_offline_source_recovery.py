@@ -13,7 +13,7 @@ from zipfile import ZipFile
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from offline_source_recovery import recover, sha, inspect_plaintext, verify_live_app_tree, HIST_CERT, HIST_KEY
-from production_delta_patch import computed_tree_sha
+from production_delta_patch import computed_live_tree_sha
 
 BUILD = "JUDUN-1.2.114-AA38F0567A4D"
 
@@ -73,7 +73,7 @@ class OfflineSourceRestoreTests(unittest.TestCase):
             for i in range(80):
                 data = ("fixture-file-" + str(i)).encode("ascii")
                 rows.append({"path": "runtime/ref%03d" % i, "size": len(data), "sha256": sha(data)})
-            tree = computed_tree_sha(rows)
+            tree = computed_live_tree_sha(rows)
             trusted = root / "trusted-manifest.json"
             trusted.write_text(json.dumps({
                 "schema": "judun.deploy-manifest.v1",
@@ -150,7 +150,7 @@ class OfflineSourceRestoreTests(unittest.TestCase):
                 data = ("filler" + str(index)).encode()
                 rows.append({"path": "runtime/ref%03d" % index,
                              "size": len(data), "sha256": sha(data)})
-            tree = computed_tree_sha(rows)
+            tree = computed_live_tree_sha(rows)
             live_manifest = root / "live-manifest.json"
             live_manifest.write_text(json.dumps({
                 "schema": "judun.deploy-manifest.v1",
@@ -194,7 +194,7 @@ class OfflineSourceRestoreTests(unittest.TestCase):
                 replaced = [dict(row) for row in rows]
                 replaced[0].update(change)
                 manifest = dict(originals,files=replaced,
-                                source_tree_sha256=computed_tree_sha(rows))
+                                source_tree_sha256=computed_live_tree_sha(rows))
                 with self.assertRaisesRegex(ValueError,"INVALID_INDEPENDENT_MANIFEST_FILES"):
                     verify_live_app_tree(app,manifest,manifest["source_tree_sha256"])
 
@@ -205,7 +205,7 @@ class OfflineSourceRestoreTests(unittest.TestCase):
             data = ("synthetic_" + str(index)).encode()
             records.append({"path": "system_files/sim_%02d" % index,
                             "size": len(data), "sha256": sha(data)})
-        tree = computed_tree_sha(records)
+        tree = computed_live_tree_sha(records)
         manifest = {
             "schema": "judun.deploy-manifest.v1",
             "version": "1.2.114",
