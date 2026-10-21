@@ -62,3 +62,27 @@ P1 完整接線、真實付款、寄信及真實屋主報價配對仍須另作�
 ## v126 首頁整合
 
 `home_entry_patch.py` 只更動首頁與版本資訊，保留內嵌 JavaScript 的報告預覽關閉標籤。五尺寸的頁面載入、原檔案選擇器、二次健檢參數、焦點、同意選項與 Logo 寬度通過實際瀏覽器驗收。正式四入口另經逐一點測；見 `validation/v1.2.126-acceptance.json`。
+
+## 恢復既有簽章通道直接部署（2026-10-22）
+
+新增 p3/direct_deploy_publish.py：用已通過原權威 builder 驗收的 Ed25519 簽章 manifest 及 CMS 密文封包，發布至原 GitHub main 自動部署通道。
+發布前必須驗證公開簽章、公鑰與 main 一致、封包 SHA256、當前正式 artifact、81 檔深度 SHA、source tree 摘要、既有通道基準以及新密文路徑未被使用。
+密文、簽章、channel/stable.json 以同一個 Git commit 原子更新，避免 VPS 輪詢讀到一半更新的發行。
+發布後自動核對目標版本、build instance、deep SHA 及 readiness。未達標只回報失敗，不會宣稱部署成功。
+
+執行範例（原受信任 builder／發行環境；不得把 GITHUB_TOKEN 或 signing private key 放入 repository）：
+
+```sh
+python3 p3/direct_deploy_publish.py \
+  --manifest /trusted/stable.json \
+  --signature /trusted/stable.json.sig.b64 \
+  --payload /trusted/v-next.cms.b64 \
+  --public-key keys/release_signing_public.pem \
+  --expected-base-artifact JUDUN-1.2.126-5D4BA415AA32 \
+  --expected-source-tree-sha256 cc382cff7bd06e4020b84952aece020c2162aeaec908dc4f30db8b9b00727068
+```
+
+不加 --publish 僅作唯讀預檢；通過後由授權發行環境設定 GITHUB_TOKEN，並加 --publish 才會提交到正式通道。
+輸入的 3 個檔案必須由現行 v1.2.126 權威原始碼改版、完整 E2E 與原簽章器產生；本 GitHub 候選程式或歷史 v82 原始碼不能直接被簽發。
+原 VPS 自動部署代理的簽章驗證、加密解密、回復與正式資料保護均維持原有機制。
+付款與報告 PDF 仍須按該次實際修改內容做端到端驗收；單純 deep SHA PASS 不等於全部商用功能通過。
