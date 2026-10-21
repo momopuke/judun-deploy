@@ -100,6 +100,14 @@ def plan(inventory: object, *, current_artifact: str, previous_artifact: str) ->
             or not ARTIFACT.fullmatch(previous_artifact)
             or current_artifact == previous_artifact):
         raise ValueError("RETENTION_RELEASE_IDENTITIES_UNTRUSTED")
+    # An arbitrary archive with a matching digest is not proof it is the
+    # previous release. The rollback identity must be an older release;
+    # same-version/different-build promotions require separate trusted
+    # release-lineage attestation and are not eligible for automatic review.
+    current_parts = tuple(map(int, current_artifact.split("-")[1].split(".")))
+    previous_parts = tuple(map(int, previous_artifact.split("-")[1].split(".")))
+    if previous_parts >= current_parts:
+        raise ValueError("RETENTION_PREVIOUS_RELEASE_NOT_OLDER")
     if (not isinstance(inventory, dict)
             or inventory.get("schema") != "judun.release-backup-inventory.v1"
             or not isinstance(inventory.get("entries"), list)):
