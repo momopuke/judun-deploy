@@ -1,11 +1,12 @@
 """No-VPS, no-delete regressions for release-archive retention."""
-import copy
+import hashlib
+import tempfile
 from pathlib import Path
 import sys
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from release_retention_plan import plan
+from release_retention_plan import plan, verify_release_files
 
 CURRENT = "JUDUN-1.2.122-C597F753F43B"
 PREVIOUS = "JUDUN-1.2.120-9ABCDEF0"
@@ -103,6 +104,76 @@ class ReleaseRetentionSafetyTests(unittest.TestCase):
         self.assertNotIn("private-token", str(output))
         self.assertNotIn("/secrets", str(output))
         self.assertEqual(output["unrelated_or_formal_data_entries_untouched"], 3)
+
+
+class ArchiveByteVerificationTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        self.inventory = sample()
+        for entry in self.inventory["entries"]:
+            if entry.get("kind") != "release_rollback_archive":
+                continue
+            data = ("verified-archive-content:" + entry["artifact_id"]).encode()
+            (self.root / entry["name"]).write_bytes(data)
+            entry["size_bytes"] = len(data)
+            entry["sha256"] = hashlib.sha256(data).hexdigest()
+            entry["regular_file_verified"] = False
+            entry["digest_verified"] = False
+
+    def test_current_previous_are_verified_from_real_bytes_before_plan(self):
+        verified = verify_release_files(self.root, self.inventory)
+        output = plan(verified, current_artifact=CURRENT, previous_artifact=PREVIOUS)
+        self.assertEqual(len(output["retain_release_archives"]), 2)
+        self.assertEqual(len(output["older_release_archives_for_manual_review"]), 1)
+        self.assertEqual(output["releases_auto_deleted"], 0)
+        self.assertFalse(self.inventory["entries"][0]["digest_verified"])
+
+    def test_tampered_archive_never_qualifies_for_review(self):
+        entry = self.inventory["entries"][2]
+        (self.root / entry["name"]).write_bytes(b"tampered-release")
+        with self.assertRaises(ValueError):
+            verify_release_files(self.root, self.inventory)
+
+    def test_symlink_never_read_as_release_archive(self):
+        entry = self.inventory["entries"][1]
+        target = self.root / entry["name"]
+        target.unlink()
+        target.symlink_to(self.root / self.inventory["entries"][0]["name"])
+        with self.assertRaises(ValueError):
+            verify_release_files(self.root, self.inventory)
+
+    def test_special_files_and_wrong_archive_size_block(self):
+        entry = self.inventory["entries"][1]
+        target = self.root / entry["name"]
+        target.unlink()
+        target.mkdir()
+        with self.assertRaises(ValueError):
+            verify_release_files(self.root, self.inventory)
+        target.rmdir()
+        target.write_bytes(b"X")
+        with self.assertRaises(ValueError):
+            verify_release_files(self.root, self.inventory)
+
+    def test_not_open_formal_db_or_snapshots(self):
+        unrelated = self.inventory["entries"][3]
+        unrelated["name"] = "/sensitive/protected-customer.db"
+        verified = verify_release_files(self.root, self.inventory)
+        self.assertEqual(verified["entries"][3], unrelated)
+        self.assertEqual(
+            plan(verified, current_artifact=CURRENT, previous_artifact=PREVIOUS)
+                ["unrelated_or_formal_data_entries_untouched"], 2
+        )
+
+    def test_root_symlink_and_nonexistent_directory_block(self):
+        root_link = self.root / "other-root"
+        root_link.symlink_to(self.root, target_is_directory=True)
+        with self.assertRaisesRegex(ValueError, "BACKUP_ROOT"):
+            verify_release_files(root_link, self.inventory)
+        with self.assertRaisesRegex(ValueError, "BACKUP_ROOT"):
+            verify_release_files(self.root / "missing", self.inventory)
+
 
 
 if __name__ == "__main__":
