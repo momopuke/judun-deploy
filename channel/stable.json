@@ -1,11 +1,11 @@
 {
   "schema": "judun-autodeploy-v1",
-  "release_id": "v1.2.122-quote-fact-grounding-20261021",
-  "base_artifact_id": "JUDUN-1.2.121-A1111DB99CB1",
-  "target_artifact_id": "JUDUN-1.2.122-C597F753F43B",
-  "target_build_instance_id": "1.2.122-20261021-GROUNDING-C597F753F43B",
-  "expected_display_version": "v1.2.122",
-  "payload_path": "releases/v1.2.122-quote-fact-grounding-20261021.cms.b64",
-  "payload_sha256": "b2b3c3516af5d7bc021913d8de386114f2dacb57a3789032bc63b23e42c925a1",
+  "release_id": "v1.2.123-report-claim-guard-20261022",
+  "base_artifact_id": "JUDUN-1.2.122-C597F753F43B",
+  "target_artifact_id": "JUDUN-1.2.123-C506047E2A5F",
+  "target_build_instance_id": "1.2.123-20261022-CLAIMS-C506047E2A5F",
+  "expected_display_version": "v1.2.123",
+  "payload_path": "releases/v1.2.123-report-claim-guard-20261022.cms.b64",
+  "payload_sha256": "5eb47d74f0b807fb19fbc52c20135493a59ca489df6e4331c18f0610a9a51257",
   "noop": false
 }
