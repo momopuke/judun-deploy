@@ -87,14 +87,16 @@ def latest_agent_event(raw: str) -> str:
                 latest = name
                 break
     return latest
-\n\ndef safe_local_identity(data: object) -> dict | None:
+
+
+def safe_local_identity(data: object) -> dict | None:
     """Return non-secret verified version/artifact pair only."""
     if not isinstance(data, dict):
         return None
     version = data.get("display_version") or data.get("version")
     artifact = data.get("artifact_id")
     if (not isinstance(version, str)
-            or not re.fullmatch(r"v?\\d+\\.\\d+\\.\\d+", version)
+            or not re.fullmatch(r"v?\d+\.\d+\.\d+", version)
             or not isinstance(artifact, str)
             or not re.fullmatch(r"JUDUN-[A-Za-z0-9._-]{1,100}", artifact)
             or not artifact.startswith("JUDUN-" + version.removeprefix("v") + "-")):
