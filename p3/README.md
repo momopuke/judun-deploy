@@ -1,3 +1,13 @@
+# 2026-10-21 本輪續作：深度 SHA 與真實瀏覽器函式加嚴
+
+- 原 `production_readiness.py` 容許只根據 `mismatch_count=0` 與非空驗證檔案數報 PASS；現在必須再檢查 `deep_verified is True`、真正 64 位 SHA-256 格式、`files_verified == manifest_file_count`、Deep endpoint 和 build 版本及 artifact 一致。此 PASS **僅代表公開 API 自我回報通過，不代表已獨立讀取 VPS 檔案重新 SHA256**。
+- `https_receiver_live_preflight.py` 與正式公開完整性檢查使用相同的深度門檻，避免「健康檢查不通過但部署封包預檢仍放行」的雙重標準。
+- 公開 read-only 診斷增設末尾第二次 `/health/build`，若在檢查中出現版本跳轉或 API 無法確認，不把交錯觀察的版號與 SHA 報成同一次 PASS。
+- 新增 `p3/live_client_guard_audit.cjs`：Playwright **只載入公開首頁、不輸入帳密、不點擊或觸發付款**，禁止任何非 GET/HEAD 請求，直接讀取真正 `window.unlockTier` 和 `window.checkMicroStatus` 的可執行函式字串，比對 ProMax 首次看價差與否定完成狀態防護，不僅在 HTML 全文搜尋文字。此檢查仍不是可信後端的權益或付款 E2E。
+- 保留現版及上一版的備份目標；**尚未在 VPS 執行刪除**。正式站首頁、資料、既有簽章/接收器均未修改。PR 保持 Draft，直到原機服務、Basic/ProMax、報告與 PDF 的真實驗收完成。
+
+---
+
 # 2026-10-21 晚間最新：正式 v1.2.122，歷史首頁 SHA 不可誤套現版
 
 - GitHub Actions 實際唯讀檢查觀察到正式站 **v1.2.122**，artifact `JUDUN-1.2.122-C597F753F43B`，deep integrity **PASS**；HTTPS v3 receiver 公開回應有效。這是正式站的公開健康驗證，不是 VPS systemd service、真實扣款、寄信、完整權益或報告/PDF E2E 驗收。
