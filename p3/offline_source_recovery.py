@@ -79,6 +79,7 @@ def inspect_plaintext(plain: Path, version: str) -> tuple[bytes, dict]:
     if size <= 0 or size > MAX_PLAINTEXT:
         deny("DECRYPTED_SOURCE_SIZE_INVALID")
     choices: dict[str, bytes] = {}
+    seen_members: set[str] = set()
     if tarfile.is_tarfile(plain):
         with tarfile.open(plain, "r:*") as tf:
             members = tf.getmembers()
@@ -86,6 +87,9 @@ def inspect_plaintext(plain: Path, version: str) -> tuple[bytes, dict]:
                 deny("DECRYPTED_ARCHIVE_RESOURCE_LIMIT")
             for m in members:
                 assert_safe_member(m.name)
+                if m.name in seen_members:
+                    deny("DUPLICATE_ARCHIVE_MEMBER")
+                seen_members.add(m.name)
                 if not (m.isfile() or m.isdir()):
                     deny("DECRYPTED_ARCHIVE_SPECIAL_MEMBER")
                 if m.isfile() and m.name in DEFAULT_ARCHIVE_APP_PATHS:
@@ -101,7 +105,11 @@ def inspect_plaintext(plain: Path, version: str) -> tuple[bytes, dict]:
             if len(members) > MAX_FILES or sum(m.file_size for m in members) > MAX_PLAINTEXT:
                 deny("DECRYPTED_ARCHIVE_RESOURCE_LIMIT")
             for m in members:
-                assert_safe_member(m.filename.rstrip("/"))
+                name = m.filename.rstrip("/")
+                assert_safe_member(name)
+                if name in seen_members:
+                    deny("DUPLICATE_ARCHIVE_MEMBER")
+                seen_members.add(name)
                 if stat.S_IFMT(m.external_attr >> 16) == stat.S_IFLNK:
                     deny("DECRYPTED_ARCHIVE_SPECIAL_MEMBER")
                 if m.filename in DEFAULT_ARCHIVE_APP_PATHS:
@@ -203,6 +211,8 @@ def recover(encoded: Path, verification: Path, historical_zip: Path,
         report["vps_modified"] = False
         report["deployed"] = False
         if out_private is not None:
+            if report["recovered_app_matches_live_authoritative_sha"] != "VERIFIED_VIA_INDEPENDENT_LIVE_TREE":
+                deny("PRIVATE_STAGING_REQUIRES_VERIFIED_LIVE_SOURCE")
             if out_private.is_symlink() or out_private.exists():
                 deny("REFUSE_OVERWRITE_PRIVATE_STAGING")
             path = out_private.resolve()
