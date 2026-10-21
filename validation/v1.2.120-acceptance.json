@@ -1,0 +1,79 @@
+{
+  "schema": "judun.deployment-acceptance.v1",
+  "release_version": "1.2.120",
+  "release_commit": "934a40594037a3d493dd4a6cffa2d4405545b84a",
+  "related_pr": 9,
+  "scope": "Signed production delta acceptance; the complete P0-P3 candidate PR is not merged by this record.",
+  "deployment_path": "Existing authenticated HTTPS receiver and original signed autodeploy service; DigitalOcean Console was unavailable.",
+  "vps_rebuilt": false,
+  "homepage_identical_except_version": true,
+  "formal_evidence_data_untouched": true,
+  "build": {
+    "artifact_id": "JUDUN-1.2.120-79D711A55546",
+    "build_instance_id": "1.2.120-20261021-TOTAL-79D711A55546",
+    "source_tree_sha256": "05699f7711d96800d4bcdf7c5f2cedfd3824f374ef9b3458548bd5741f1a3a46",
+    "app_sha256": "007c9edc1f8496018d5c9d91183990e2c54c7bf2fc3412a1a29d0798f13c6664",
+    "files_verified": 81,
+    "mismatch_count": 0,
+    "formal_evidence_manifest_sha256": "cb2530901faf1cf044105e83e74ad099ee8c5974fda2bb34307a79257b79dc4d",
+    "ready": "ready"
+  },
+  "autodeploy": {
+    "autodeploy_timer_active": "active",
+    "autodeploy_timer_enabled": "enabled",
+    "autodeploy_service_result": "success",
+    "original_main_branch_restored": true
+  },
+  "acceptance": {
+    "fixture": "Synthetic quote, 3 items, NT$ 82200, data_consent=false",
+    "basic_unlock": "completed through original test unlock API",
+    "promax_upgrade": "completed through original test unlock API",
+    "promax_guides": 5,
+    "browser_after_unlock": "Automatically opened price comparison chapter on v1.2.120",
+    "rendered_contract_total": 82200,
+    "previous_wrong_contract_total": 122200,
+    "wrong_total_absent_in_final_web_and_pdf": true,
+    "test_credential_exposed": false,
+    "real_money_capture_tested": false,
+    "email_delivery_tested": false
+  },
+  "pdfs": [
+    {
+      "tier": "basic",
+      "kind": "full",
+      "pages": 15,
+      "bytes": 6063608,
+      "sha256": "b0911baef339cad450c2497724c8378da14a155b9c6d8933795165be00fd82ab"
+    },
+    {
+      "tier": "basic",
+      "kind": "highlights",
+      "pages": 5,
+      "bytes": 395079,
+      "sha256": "e7b5ee0b37907d45a64c674b4b3316a2caf22bc199005ec7f91f0ac3265ed436"
+    },
+    {
+      "tier": "promax",
+      "kind": "full",
+      "pages": 24,
+      "bytes": 6519182,
+      "sha256": "2d3a016dd8847e8503b1d16e63621bd36117c4cf1103ca07ff86a3ba18af2d20"
+    },
+    {
+      "tier": "promax",
+      "kind": "highlights",
+      "pages": 7,
+      "bytes": 452936,
+      "sha256": "c2dde1e3fda161bd9b8d10879c6025f45a3cedeaf84fd67657d3bd8387a8d4c4"
+    }
+  ],
+  "ci": {
+    "url": "https://github.com/momopuke/judun-deploy/actions/runs/39577578311",
+    "conclusion": "success"
+  },
+  "limitations": [
+    "Test payment mode; no real card capture or email delivery was tested.",
+    "Initial cold evidence-index warm-up can take several minutes."
+  ],
+  "result": "PASS"
+}
