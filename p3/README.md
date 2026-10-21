@@ -1,19 +1,19 @@
 # 2026-10-21｜VPS 代理診斷與單一回復版保留工具（未執行刪除）
 
-- `p3/local_agent_diagnostic.py` 改為保留 systemd 最近 150KB 日誌尾部（不再取最早的前綴），避免過長日誌使較舊錯誤蓋過最近成功事件。本機 `/health/build` 同時要求 \`JUDUN-版本-\` 與顯示版號一致；成功紀錄僅標示「在近期樣本觀察到」，不是證明曾完整發行。
-- 新增 `p3/release_retention_plan.py`：**只針對應用程式 release rollback archives** 規劃現行版＋上一版保留；正式 DB/報價/證據備份與 DigitalOcean snapshot 均不清理、也不變更原 HTTPS v3 封包 \`formal_backup_keep_versions=3\` 的歷史資料保護策略。這兩種 retention 不是同一件事。
+- `p3/local_agent_diagnostic.py` 改為保留 systemd 最近 150KB 日誌尾部（不再取最早的前綴），避免過長日誌使較舊錯誤蓋過最近成功事件。本機 `/health/build` 同時要求 `JUDUN-版本-` 與顯示版號一致；成功紀錄僅標示「在近期樣本觀察到」，不是證明曾完整發行。
+- 新增 `p3/release_retention_plan.py`：**只針對應用程式 release rollback archives** 規劃現行版＋上一版保留；正式 DB/報價/證據備份與 DigitalOcean snapshot 均不清理、也不變更原 HTTPS v3 封包 `formal_backup_keep_versions=3` 的歷史資料保護策略。這兩種 retention 不是同一件事。
 - 在已有**由 VPS 管理員確認**的 release archive 目錄及 inventory JSON 時，工具會在指定實際 backup root 逐檔開啟 regular files、拒絕 symlink，串流重新計算 SHA-256 與檔案大小；前一版 rollback 未得到驗證、版本標記衝突或任何候選變造，都會硬性阻擋。**它永不產生刪除指令、不刪檔，僅輸出待審清單。** 不預設正式環境路徑，也不自行推斷上一版身分。
 - 例（僅在正式 VPS 已授權 Shell、且獨立確認 inventory 的情況執行；版號及路徑需換成當時真實值，**不得照抄本例中的上一版**）：
 
-\`\`\`sh
+```sh
 python3 p3/release_retention_plan.py \
   --inventory /trusted/inventory/release-backups.json \
   --backup-root /trusted/verified/release-rollback-directory \
   --current-artifact "JUDUN-CURRENT-EXACT-ARTIFACT-ID" \
   --previous-artifact "JUDUN-PREVIOUS-EXACT-ARTIFACT-ID"
-\`\`\`
+```
 
-- 輸入 schema 為 \`judun.release-backup-inventory.v1\`，含 \`entries\`；每個 \`release_rollback_archive\` 項目必須有 \`artifact_id\`、同一個目錄內的 archive basename \`name\`、\`sha256\`、\`size_bytes\`；正式 DB、snapshots 與其他類型紀錄**不參與刪除候選**。需經原實際發布者比對與測試上一版復原可用後才可另行做刪除，不能只依本清單刪除。
+- 輸入 schema 為 `judun.release-backup-inventory.v1`，含 `entries`；每個 `release_rollback_archive` 項目必須有 `artifact_id`、同一個目錄內的 archive basename `name`、`sha256`、`size_bytes`；正式 DB、snapshots 與其他類型紀錄**不參與刪除候選**。需經原實際發布者比對與測試上一版復原可用後才可另行做刪除，不能只依本清單刪除。
 - 尚未取得正式 VPS Shell，因此**目前沒有進行實際保留數量調整、真實 VPS SHA、部署或正式付費 E2E**。候選仍為 Draft。
 
 ---
