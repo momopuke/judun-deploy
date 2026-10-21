@@ -203,3 +203,67 @@ class SignedChannelPublisherTests(TestCase):
             with self.assertRaisesRegex(
                     ValueError, "DIRECT_DEPLOY_PUBLISHED_BUT_VPS_DEPLOYMENT_NOT_VERIFIED"):
                 pub.verify_target_live(info, attempts=2, interval=0)
+
+
+    def test_git_blob_oid_matches_git_and_is_sensitive_to_byte_changes(self):
+        data = b"judun-release-verification\n"
+        expected = subprocess.run(["git", "hash-object", "--stdin"],
+                                  input=data, stdout=subprocess.PIPE,
+                                  check=True).stdout.decode().strip()
+        self.assertEqual(pub.git_blob_oid(data), expected)
+        self.assertNotEqual(pub.git_blob_oid(data + b"!"), expected)
+
+    def test_interrupted_publication_recovery_requires_exact_signed_tree(self):
+        m, signature, cms = self.sample()
+        target = json.loads(m)
+        expected = {
+            target["payload_path"]: cms,
+            "channel/stable.json.sig.b64": signature,
+            "channel/stable.json": m,
+        }
+        observed = []
+        def read_only(method, endpoint, token, body=None, missing_ok=False):
+            observed.append((method, endpoint))
+            self.assertEqual(method, "GET")
+            if endpoint.startswith("/contents/keys/"):
+                return {"content": base64.b64encode(self.pubkey.read_bytes()).decode()}
+            if endpoint == "/git/ref/heads/main":
+                return {"object": {"sha": "a"*40}}
+            if endpoint.startswith("/contents/channel/stable.json"):
+                return {"content": base64.b64encode(m).decode()}
+            if endpoint == "/git/commits/" + "a"*40:
+                return {"tree": {"sha": "b"*40}}
+            if endpoint.startswith("/git/trees/"):
+                return {"truncated": False, "tree": [
+                    {"path": name, "sha": pub.git_blob_oid(raw), "type": "blob",
+                     "mode": "100644"} for name, raw in expected.items()]}
+            raise AssertionError("unexpected URL: " + endpoint)
+        with mock.patch.object(pub, "github", side_effect=read_only):
+            self.assertEqual(pub.verify_published_channel(
+                m, signature, cms, target, self.pubkey), "a"*40)
+        self.assertEqual(len(observed), 5)
+        # Any replaced CMS bytes must prevent a false-positive recovery.
+        with mock.patch.object(pub, "github", side_effect=read_only):
+            with self.assertRaisesRegex(
+                    ValueError, "DIRECT_DEPLOY_RECOVERY_SIGNED_BYTES_NOT_IN_SAME_COMMIT"):
+                pub.verify_published_channel(
+                    m, signature, base64.b64encode(b"wrong cms"), target,
+                    self.pubkey)
+
+    def test_interrupted_recovery_rejects_wrong_channel_without_git_writes(self):
+        m, signature, cms = self.sample()
+        target = json.loads(m)
+        def wrong_channel(method, endpoint, token, body=None, missing_ok=False):
+            self.assertEqual(method, "GET")
+            if endpoint.startswith("/contents/keys/"):
+                return {"content": base64.b64encode(self.pubkey.read_bytes()).decode()}
+            if endpoint == "/git/ref/heads/main":
+                return {"object": {"sha": "a"*40}}
+            if endpoint.startswith("/contents/channel/stable.json"):
+                return {"content": base64.b64encode(b"not matching").decode()}
+            raise AssertionError(endpoint)
+        with mock.patch.object(pub, "github", side_effect=wrong_channel):
+            with self.assertRaisesRegex(ValueError,
+                                       "DIRECT_DEPLOY_RECOVERY_SIGNED_CHANNEL_MISMATCH"):
+                pub.verify_published_channel(m, signature, cms, target,
+                                             self.pubkey)
