@@ -1,0 +1,9 @@
+{
+  "schema": "judun.release-package-attestation.v1",
+  "version": "1.2.124",
+  "artifact_id": "JUDUN-1.2.124-17D7AC26EAB8",
+  "encrypted_source_sha256": "e0085b24a20c2960ee72a5d2710d728dfee883de9850539e244b43d7be046203",
+  "scope": "Encrypted package and CMS recipient only; plaintext independently verified through original trusted agent.",
+  "target_app_sha256": "17d7ac26eab85daadbdbf8feb76b0d7af8f83fe471baef331b7c455634708ed8",
+  "source_tree_sha256": "d655470d06b96f5131c95d3e52e2bf47fdd38e29200d9b85b787037a74b2c3c8"
+}
