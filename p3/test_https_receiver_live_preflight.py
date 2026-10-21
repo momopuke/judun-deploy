@@ -42,7 +42,8 @@ class LiveHttpsV3PreflightTests(unittest.TestCase):
             )
             self.assertEqual(
                 [c.args[0] for c in get.call_args_list],
-                ["/health/build", "/health/artifact?deep=true"],
+                ["/health/build", "/health/artifact?deep=true",
+                 "/health/build", "/health/artifact?deep=true"],
             )
             return outcome
 
@@ -91,6 +92,67 @@ class LiveHttpsV3PreflightTests(unittest.TestCase):
             return {"status": "NOT_VERIFIED"}
         with self.assertRaisesRegex(ValueError, "FRESH_LIVE_IDENTITY_UNAVAILABLE"):
             self.run_probe(unavailable)
+
+    def test_blocks_concurrent_release_switch_during_local_zip_hash(self):
+        calls = {"build": 0}
+
+        def switched_after_first_read(path):
+            if path == "/health/build":
+                calls["build"] += 1
+                if calls["build"] == 2:
+                    return {"status": "OK", "data": {
+                        "version": "1.2.115", "artifact_id": TARGET,
+                    }}
+            return response(path)
+
+        with self.assertRaisesRegex(ValueError, "LIVE_CHANGED_DURING_PREFLIGHT"):
+            self.run_probe(switched_after_first_read)
+
+    def test_final_deep_endpoint_unavailable_fails_closed(self):
+        calls = {"deep": 0}
+
+        def deep_disappears(path):
+            if path.endswith("deep=true"):
+                calls["deep"] += 1
+                if calls["deep"] == 2:
+                    return {"status": "NOT_VERIFIED"}
+            return response(path)
+
+        with self.assertRaisesRegex(ValueError, "FINAL_DEEP_INTEGRITY_UNVERIFIED"):
+            self.run_probe(deep_disappears)
+
+    def test_same_artifact_but_changed_source_tree_hash_blocks(self):
+        calls = {"deep": 0}
+
+        def same_artifact_new_tree(path):
+            r = response(path)
+            if path.endswith("deep=true"):
+                calls["deep"] += 1
+                if calls["deep"] == 2:
+                    r["data"]["source_tree_sha256"] = "d" * 64
+            return r
+
+        with self.assertRaisesRegex(ValueError, "DEEP_SNAPSHOT_CHANGED_DURING_PREFLIGHT"):
+            self.run_probe(same_artifact_new_tree)
+
+    def test_final_deep_file_count_and_formal_snapshot_drift_block(self):
+        for field, new_value in (
+            ("formal_evidence_sha256", "d" * 64),
+            ("files_verified", 80),
+            ("manifest_file_count", 80),
+        ):
+            calls = {"deep": 0}
+
+            def changed(path):
+                r = response(path)
+                if path.endswith("deep=true"):
+                    calls["deep"] += 1
+                    if calls["deep"] == 2:
+                        r["data"][field] = new_value
+                return r
+
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                self.run_probe(changed)
 
     def test_target_mismatch_blocks_even_with_clean_live(self):
         with patch("https_receiver_live_preflight.public_json", side_effect=response):
