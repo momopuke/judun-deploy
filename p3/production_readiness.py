@@ -89,6 +89,47 @@ def assess_published_channel(channel: dict, live_artifact: str | None) -> str:
 
 
 
+HEX_SHA256 = re.compile(r"[0-9a-fA-F]{64}")
+
+
+def assess_public_deep_integrity(integrity_result: dict, *,
+                                 live_artifact: str | None,
+                                 live_version: str | None) -> str:
+    """Validate the *shape and consistency* of an unauthenticated deep probe.
+
+    A public endpoint can report its own SHA matches, but cannot independently
+    attest the contents of private production files. Do not turn this into a
+    trusted signature check or end-to-end acceptance.
+    """
+    if not live_artifact or not live_version:
+        return "LIVE_IDENTITY_NOT_VERIFIED"
+    if integrity_result.get("status") != "OK":
+        return "DEEP_RESPONSE_UNVERIFIED"
+    data = integrity_result.get("data")
+    if not isinstance(data, dict):
+        return "DEEP_RESPONSE_UNVERIFIED"
+    if (data.get("status") != "ok"
+            or data.get("artifact_id") != live_artifact
+            or data.get("deep_verified") is not True):
+        return "DEEP_IDENTITY_OR_VERIFICATION_MISMATCH"
+    reported_version = data.get("version")
+    if (not isinstance(reported_version, str)
+            or reported_version.removeprefix("v") != live_version):
+        return "DEEP_VERSION_MISMATCH"
+    count = data.get("files_verified")
+    manifest_count = data.get("manifest_file_count")
+    mismatches = data.get("mismatch_count")
+    if (type(count) is not int or count < 79
+            or type(manifest_count) is not int or manifest_count != count
+            or type(mismatches) is not int or mismatches != 0):
+        return "DEEP_FILE_COUNT_OR_MISMATCH_INVALID"
+    for name in ("formal_evidence_sha256", "source_tree_sha256"):
+        value = data.get(name)
+        if not isinstance(value, str) or not HEX_SHA256.fullmatch(value):
+            return "DEEP_SHA256_MISSING_OR_INVALID"
+    return "PASS"
+
+
 def audit() -> dict:
     channel = json.loads((PROJECT_ROOT / "channel/stable.json").read_text("utf-8"))
     historical = json.loads(
@@ -108,20 +149,9 @@ def audit() -> dict:
             live_artifact = artifact
             live_build_identity = "OBSERVED"
     integrity = public_json("/health/artifact?deep=true")
-    integrity_status = "NOT_VERIFIED"
-    if integrity["status"] == "OK":
-        data = integrity["data"]
-        if (live_artifact is not None and data.get("status") == "ok"
-                and data.get("artifact_id") == live_artifact
-                and type(data.get("mismatch_count")) is int
-                and data["mismatch_count"] == 0
-                and type(data.get("files_verified")) is int
-                and data["files_verified"] >= 79
-                and (data.get("manifest_file_count") is None
-                     or data.get("manifest_file_count") == data["files_verified"])):
-            integrity_status = "PASS"
-        else:
-            integrity_status = "MISMATCH_OR_UNVERIFIED"
+    integrity_status = assess_public_deep_integrity(
+        integrity, live_artifact=live_artifact, live_version=live_version
+    )
 
     home = public_get("/")
     homepage = {"status": "NOT_VERIFIED", "approved_visual_unchanged": "NOT_VERIFIED"}
@@ -165,6 +195,7 @@ def audit() -> dict:
             "display_version": live_version,
             "artifact_id": live_artifact,
             "deep_integrity": integrity_status,
+            "deep_integrity_scope": "PUBLIC_ENDPOINT_SELF_REPORT_NOT_INDEPENDENT_DISK_HASH",
             "homepage_entry": homepage["status"],
             "approved_visual_unchanged": "NOT_VERIFIED",
             "payment": pricing_mode,
