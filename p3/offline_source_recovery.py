@@ -143,7 +143,7 @@ def inspect_plaintext(plain: Path, version: str) -> tuple[bytes, dict]:
 
 def verify_live_app_tree(app: bytes, manifest: dict, live_source_tree_sha256: str) -> bool:
     """Require a full trusted manifest matching independently published tree."""
-    from production_delta_patch import computed_tree_sha
+    from production_delta_patch import computed_live_tree_sha
     if (manifest.get("schema") != "judun.deploy-manifest.v1"
             or manifest.get("artifact_id") != "JUDUN-1.2.114-AA38F0567A4D"
             or manifest.get("version") != "1.2.114"):
@@ -171,7 +171,7 @@ def verify_live_app_tree(app: bytes, manifest: dict, live_source_tree_sha256: st
         deny("INVALID_INDEPENDENT_MANIFEST_FILES")
     if (not isinstance(live_source_tree_sha256, str)
             or not re.fullmatch(r"[0-9a-f]{64}", live_source_tree_sha256)
-            or computed_tree_sha(records) != live_source_tree_sha256
+            or computed_live_tree_sha(records) != live_source_tree_sha256
             or manifest.get("source_tree_sha256") != live_source_tree_sha256):
         deny("INDEPENDENT_SOURCE_TREE_DRIFT")
     matches = [x for x in records if x.get("path") in
