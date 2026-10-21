@@ -151,8 +151,23 @@ def verify_live_app_tree(app: bytes, manifest: dict, live_source_tree_sha256: st
     records = manifest.get("files")
     if not isinstance(records, list) or len(records) < 79:
         deny("INCOMPLETE_INDEPENDENT_MANIFEST")
-    paths = [x.get("path") for x in records if isinstance(x, dict)]
-    if len(paths) != len(records) or len(paths) != len(set(paths)):
+    paths = []
+    for row in records:
+        if not isinstance(row, dict):
+            deny("INVALID_INDEPENDENT_MANIFEST_FILES")
+        path = row.get("path")
+        amount = row.get("size")
+        checksum = row.get("sha256")
+        if (not isinstance(path, str) or not path or path.startswith("/")
+                or "\\" in path or any(ord(ch) < 32 for ch in path)
+                or PurePosixPath(path).as_posix() != path
+                or ".." in PurePosixPath(path).parts
+                or type(amount) is not int or amount < 0
+                or not isinstance(checksum, str)
+                or re.fullmatch(r"[0-9a-f]{64}", checksum) is None):
+            deny("INVALID_INDEPENDENT_MANIFEST_FILES")
+        paths.append(path)
+    if len(paths) != len(set(paths)):
         deny("INVALID_INDEPENDENT_MANIFEST_FILES")
     if (not isinstance(live_source_tree_sha256, str)
             or not re.fullmatch(r"[0-9a-f]{64}", live_source_tree_sha256)
