@@ -11,13 +11,15 @@ const BASE='https://judun.142-93-91-214.sslip.io/';
     const request=await browser.newContext();
     const response=await request.request.get(BASE,{timeout:45000});
     assert.equal(response.status(),200);
-    const original=await response.text();
+    const original=(await response.text())
+      .replace(/<style id="judun-home-entry-style">[\s\S]*?<\/style>/,'')
+      .replace(/<script id="judun-home-entry-script">[\s\S]*?<\/script>/,'');
     const css=fs.readFileSync('p0/home-entry.css','utf8');
     const js=fs.readFileSync('p0/home-entry.js','utf8');
     assert.equal(original.split('</head>').length,2);
-    assert.equal(original.split('</body>').length,2);
-    const html=original.replace('</head>','<style id="judun-home-entry-style">'+css+'</style>\n</head>')
-      .replace('</body>','<script id="judun-home-entry-script">'+js+'</script>\n</body>');
+    assert(original.endsWith('</body></html>'));
+    const head=original.replace('</head>','<style id="judun-home-entry-style">'+css+'</style>\n</head>')
+    const html=head.slice(0,-'</body></html>'.length)+'<script id="judun-home-entry-script">'+js+'</script>\n</body></html>';
     await request.close();
     const results=[];
     for (const [name,width,height] of [['desktop',1440,900],['tablet',768,1024],['mobile-small',320,680],['mobile',390,844],['mobile-large',430,932]]) {

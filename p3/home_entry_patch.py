@@ -8,9 +8,9 @@ TARGET_VERSION = '1.2.126'
 BASE_ARTIFACT = 'JUDUN-1.2.125-C94C757A01CF'
 BASE_TREE_SHA256 = '389121cc6f1a4cb3d712a02d9fdbf007f1eaee30b43088fe262f0e5ac7965a9f'
 TARGET_SIGNATURE = 'JUDUN_1.2.126_HOME_SCENARIO_ENTRY_20261022'
-TARGET_APP_SHA256 = '2a9015ab8f45f8880b6be3f02df0ddab8ac8c0e698426c2d7db3565ed9ae3749'
-TARGET_ARTIFACT = 'JUDUN-1.2.126-2A9015AB8F45'
-TARGET_INSTANCE = '1.2.126-20261022-HOME-2A9015AB8F45'
+TARGET_APP_SHA256 = '3d39b1ea4f9e3b85aac8e5489fc20399f0cafaae405d744d3321e57cfd886a6b'
+TARGET_ARTIFACT = 'JUDUN-1.2.126-3D39B1EA4F9E'
+TARGET_INSTANCE = '1.2.126-20261022-HOME-3D39B1EA4F9E'
 FORMAL_EVIDENCE_SHA256 = 'cb2530901faf1cf044105e83e74ad099ee8c5974fda2bb34307a79257b79dc4d'
 
 def sha(raw):return hashlib.sha256(raw).hexdigest()
@@ -39,10 +39,10 @@ def transform(source, *, expected_sha256=BASE_APP_SHA256):
         raise ValueError('HOME_RETURN_DRIFT')
     css,js=entry_markup()
     after=('    home_page = get_base_html(f"{BRAND_NAME}｜{PRODUCT_NAME}", html_part + js_part)\n'
-           '    if home_page.count("</head>") != 1 or home_page.count("</body>") != 1:\n'
+           '    if home_page.count("</head>") != 1 or not home_page.endswith("</body></html>"):\n'
            '        raise RuntimeError("HOME_DOCUMENT_BOUNDARY_DRIFT")\n'
            '    home_page = home_page.replace("</head>", '+repr(css+'\n</head>')+', 1)\n'
-           '    home_page = home_page.replace("</body>", '+repr(js+'\n</body>')+', 1)\n'
+           '    home_page = home_page[:-len("</body></html>")] + '+repr(js+'\n</body></html>')+'\n'
            '    return HTMLResponse(content=home_page)')
     changed=original.replace(before,after,1)
     if changed.replace(after,before,1)!=original:raise ValueError('UNRELATED_HOME_CHANGE')

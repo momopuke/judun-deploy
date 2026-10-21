@@ -29,7 +29,7 @@ class HomeEntryPatchTests(unittest.TestCase):
         old={n.name:ast.dump(n) for n in before.body if isinstance(n,ast.FunctionDef)}
         new={n.name:ast.dump(n) for n in after.body if isinstance(n,ast.FunctionDef)}
         self.assertEqual(old['untouched'],new['untouched'])
-        ns={'BRAND_NAME':'brand','PRODUCT_NAME':'product','get_base_html':lambda t,c:'<html><head></head><body>'+c+'</body></html>','HTMLResponse':lambda **kw:kw['content']}
+        ns={'BRAND_NAME':'brand','PRODUCT_NAME':'product','get_base_html':lambda t,c:'<html><head><script>const nested=\"</body>\";</script></head><body>'+c+'</body></html>','HTMLResponse':lambda **kw:kw['content']}
         exec(compile(out,'<home-entry-fixture>','exec'),ns)
         page=ns['serve_home']()
         self.assertEqual(page.count('id="judun-home-entry-script"'),1)
@@ -37,7 +37,8 @@ class HomeEntryPatchTests(unittest.TestCase):
         self.assertIn('<main>original upload and consent</main>',page)
         self.assertIn('<script>original()</script>',page)
         self.assertLess(page.index('judun-home-entry-style'),page.index('</head>'))
-        self.assertLess(page.index('judun-home-entry-script'),page.index('</body>'))
+        self.assertLess(page.index('judun-home-entry-script'),page.rindex('</body>'))
+        self.assertIn('const nested="</body>";',page)
     def test_document_boundary_drift_fails_before_responding(self):
         ns={'BRAND_NAME':'brand','PRODUCT_NAME':'product','get_base_html':lambda *args:'<html></html>','HTMLResponse':lambda **kw:kw}
         exec(compile(apply(),'<fixture>','exec'),ns)
