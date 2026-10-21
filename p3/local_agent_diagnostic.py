@@ -104,6 +104,8 @@ def collect() -> dict:
         "agent_log_categories": {},
         "agent_last_observed_event": "NONE",
         "no_vps_changes": True,
+        "service_success_observed_in_sample": False,
+        "pull_agent_required_for_https_v3": False,
     }
     if CONFIG.is_file():
         try:
@@ -117,12 +119,18 @@ def collect() -> dict:
             capture_output=True, text=True, timeout=8, check=False,
         )
         if p.returncode == 0:
-            safe_window = p.stdout[:150000]
+            # The journal is chronological; keep the newest bounded bytes.
+            # Prefix truncation can hide the latest run if the sampled
+            # journal is unusually verbose, causing stale failures to win.
+            safe_window = p.stdout[-150000:]
             info["agent_log_categories"] = classify_logs(safe_window)
             info["agent_last_observed_event"] = latest_agent_event(safe_window)
-            info["service_ever_successful"] = (
-                info["agent_log_categories"].get("success", 0) > 0
-            )
+            # The bounded journal can only prove a success marker was
+            # observed in its sample; do not imply all-time success.
+            observed = info["agent_log_categories"].get("success", 0) > 0
+            info["service_success_observed_in_sample"] = observed
+            info["service_ever_successful"] = ("OBSERVED_IN_RECENT_SAMPLE"
+                                               if observed else "UNKNOWN")
     except (OSError, subprocess.TimeoutExpired):
         pass
     try:
@@ -133,7 +141,8 @@ def collect() -> dict:
         if (isinstance(version, str) and
             re.fullmatch(r"v?\d+\.\d+\.\d+", version) and
             isinstance(artifact, str) and
-            re.fullmatch(r"JUDUN-[A-Za-z0-9._-]{1,100}", artifact)):
+            re.fullmatch(r"JUDUN-[A-Za-z0-9._-]{1,100}", artifact) and
+            artifact.startswith("JUDUN-" + version.removeprefix("v") + "-")):
             info["local_version"] = {"display_version": version, "artifact_id": artifact}
     except (OSError, ValueError, KeyError, TypeError):
         pass
