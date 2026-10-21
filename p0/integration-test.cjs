@@ -64,8 +64,8 @@ const BASE='https://judun.142-93-91-214.sslip.io/';
       }
       await page.goto(BASE+'?recheck=QA-P0-LOCAL#home-recheck',{waitUntil:'domcontentloaded'});
       await page.waitForFunction(()=>document.documentElement.dataset.judunP0Ready==='1');
-      assert.equal(await page.locator('#parentJobIdInput').inputValue(),'QA-P0-LOCAL');
-      assert.equal(await page.locator('#isRecheckInput').isChecked(),true);
+      assert.equal(await page.locator('#homeRecheckJobId').inputValue(),'QA-P0-LOCAL');
+      assert.equal(await page.locator('#isRecheckInput').isChecked(),false);
       assert.equal(await page.locator('#dataConsentInput').isChecked(),false);
       await page.goto(BASE,{waitUntil:'domcontentloaded'});
       await page.waitForFunction(()=>document.documentElement.dataset.judunP0Ready==='1');
