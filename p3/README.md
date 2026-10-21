@@ -62,3 +62,13 @@ P1 完整接線、真實付款、寄信及真實屋主報價配對仍須另作�
 ## v126 首頁整合
 
 `home_entry_patch.py` 只更動首頁與版本資訊，保留內嵌 JavaScript 的報告預覽關閉標籤。五尺寸的頁面載入、原檔案選擇器、二次健檢參數、焦點、同意選項與 Logo 寬度通過實際瀏覽器驗收。正式四入口另經逐一點測；見 `validation/v1.2.126-acceptance.json`。
+
+## 2026-10-22：原簽章通道直接部署與中斷復原
+
+正式 main 已加入 p3/direct_deploy_publish.py。此工具不持有私鑰，也不會從公開 GitHub 重建 app.py。新的 Ed25519 簽章及 CMS 加密封包必須由原受信任 builder 依權威版本製作，包含 stable.json、stable.json.sig.b64 和 releases/<unique>.cms.b64。原 VPS 自動部署代理仍負責驗簽、原子基準確認、備份、套用與回復。
+
+命令使用同一組必填參數：--manifest、--signature、--payload、--public-key、--expected-base-artifact、--expected-source-tree-sha256。預設是唯讀預檢，不會發布。驗證通過後，受信任發布環境透過 GITHUB_TOKEN 及 --publish 授權更新 GitHub 正式通道；密文、簽章、manifest 在同一個 Git commit 原子更新。工具再讀回 branch ref / commit / Git tree，必須實際一致才視為發布成功。正式部署還須另外核對目標網站 build、deep SHA、ready。
+
+如果網路中斷，請改用 --verify-published；它不進行 Git 寫入，只核對 GitHub main 現有提交中的原始簽章檔案及目標 VPS 是否上線，避免重複發布。不要將簽章私鑰、解密金鑰、GitHub token、客戶資料放到公開儲存庫或 CI log。
+
+當前正式版仍為 v1.2.126，最後已核對 artifact JUDUN-1.2.126-5D4BA415AA32 與 source tree cc382cff7bd06e4020b84952aece020c2162aeaec908dc4f30db8b9b00727068。PR #9 的 P1 證據模組尚未完整接入權威 FastAPI 與正式 DB。正式 v1.2.127 須先具備實際權威來源、已驗收的簽章封包，不能由此工具憑空產生。
