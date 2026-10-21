@@ -132,11 +132,12 @@ def live_get(path):
 
 def github(method, path, token, body=None, missing_ok=False):
     data = None if body is None else json.dumps(body, separators=(",", ":")).encode()
-    req = Request(API + path, data=data, method=method, headers={
-        "Authorization": "Bearer " + token,
-        "Accept": "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-        "Content-Type": "application/json"})
+    headers = {"Accept": "application/vnd.github+json",
+               "X-GitHub-Api-Version": "2022-11-28",
+               "Content-Type": "application/json"}
+    if token:
+        headers["Authorization"] = "Bearer " + token
+    req = Request(API + path, data=data, method=method, headers=headers)
     try:
         with urlopen(req, timeout=30) as res:
             raw = res.read(3000001)
@@ -226,6 +227,51 @@ def publish_atomic(manifest, signature_b64, cms_b64, parsed, pubkey, token,
     return release["sha"]
 
 
+def git_blob_oid(content):
+    """Compute SHA-1 Git blob object ID without uploading or exposing bytes."""
+    return hashlib.sha1(
+        ("blob " + str(len(content)) + "\\0").encode("ascii").replace(b"\\0", b"\x00")
+        + content
+    ).hexdigest()
+
+
+def verify_published_channel(manifest, signature_b64, cms_b64, target, pubkey, token=""):
+    """Read-only recovery after a lost API response or interrupted publishing.
+
+    Never retries a Git write. Exact original signed bytes must already exist
+    on main as one commit. This does NOT assert that VPS deployment succeeded.
+    """
+    key_file = github("GET", "/contents/keys/release_signing_public.pem?ref=main", token)
+    if _github_contents(key_file) != load(pubkey, 4096):
+        deny("RECOVERY_PINNED_KEY_CHANGED")
+    ref = github("GET", "/git/ref/heads/main", token)
+    head = ref.get("object", {}).get("sha")
+    if not isinstance(head, str) or not re.fullmatch(r"[0-9a-f]{40}", head):
+        deny("RECOVERY_MAIN_REF_UNVERIFIED")
+    latest = github("GET", "/contents/channel/stable.json?ref=" + head, token)
+    if _github_contents(latest) != manifest:
+        deny("RECOVERY_SIGNED_CHANNEL_MISMATCH")
+    commit = github("GET", "/git/commits/" + head, token)
+    tree_sha = commit.get("tree", {}).get("sha")
+    if not isinstance(tree_sha, str) or not re.fullmatch(r"[0-9a-f]{40}", tree_sha):
+        deny("RECOVERY_COMMIT_TREE_MISSING")
+    tree = github("GET", "/git/trees/" + tree_sha + "?recursive=1", token)
+    if tree.get("truncated") is not False:
+        deny("RECOVERY_TREE_UNVERIFIABLE")
+    index = {item.get("path"): item for item in tree.get("tree", [])
+             if isinstance(item, dict)}
+    for path, content in (
+        (target["payload_path"], cms_b64),
+        ("channel/stable.json.sig.b64", signature_b64),
+        ("channel/stable.json", manifest),
+    ):
+        item = index.get(path, {})
+        if (item.get("sha") != git_blob_oid(content)
+                or item.get("type") != "blob" or item.get("mode") != "100644"):
+            deny("RECOVERY_SIGNED_BYTES_NOT_IN_SAME_COMMIT")
+    return head
+
+
 def verify_target_live(target, *, attempts=36, interval=10):
     """The signed channel is not a deployment until the VPS reports deep SHA."""
     for attempt in range(attempts):
@@ -261,7 +307,10 @@ def run():
         ap.add_argument("--" + name, required=True, type=Path)
     ap.add_argument("--expected-base-artifact", required=True)
     ap.add_argument("--expected-source-tree-sha256", required=True)
-    ap.add_argument("--publish", action="store_true")
+    operation = ap.add_mutually_exclusive_group()
+    operation.add_argument("--publish", action="store_true")
+    operation.add_argument("--verify-published", action="store_true",
+                           help="Read back a previously published signed channel and check the VPS")
     a = ap.parse_args()
     try:
         if not HEX64.fullmatch(a.expected_source_tree_sha256):
@@ -272,6 +321,16 @@ def run():
         parsed = parse_signed_manifest(manifest, sig, cms, a.public_key)
         if parsed["base_artifact_id"] != a.expected_base_artifact:
             deny("EXPECTED_BASE_ARTIFACT")
+        if a.verify_published:
+            verified_commit = verify_published_channel(
+                manifest, sig, cms, parsed, a.public_key,
+                os.environ.get("GITHUB_TOKEN", ""))
+            print("DIRECT_DEPLOY_SIGNED_CHANNEL_RECOVERED", verified_commit, flush=True)
+            accepted = verify_target_live(parsed)
+            print("DIRECT_DEPLOY_VPS_ARTIFACT_DEEP_SHA_PASS",
+                  json.dumps(accepted), flush=True)
+            print("PAYMENT_AND_REPORT_PDF_E2E_STILL_REQUIRED")
+            return 0
         def check():
             check_live(live_get("/health/build"),
                        live_get("/health/artifact?deep=true"),
