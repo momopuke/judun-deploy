@@ -15,7 +15,7 @@ const after=fs.readFileSync(afterFile,"utf8");
 const oldLine="const preferred = tier === 'promax' ? 'report-five-themes' : 'report-price-items';";
 const newLine="const preferred = 'report-price-items';";
 const oldCompleted="if (String(data.status || '').includes('完成')) {";
-const newCompleted="if (String(data.status || '').includes('完成') && !/(?:未完成|未能完成|完成失敗|失敗|取消|中止)/.test(String(data.status || '')) && (!tierMonitor || !task || task.state === 'completed')) {";
+const newCompleted="if (String(data.status || '').includes('完成') && !data.error && !/(?:未完成|未能完成|完成失敗|失敗|取消|中止)/.test(String(data.status || '')) && (!tierMonitor || (task && task.state === 'completed'))) {";
 assert.equal(before.split(oldLine).length-1,1,"original must contain exactly one old line");
 assert.equal(before.split(oldCompleted).length-1,1,"one completion gate expected");
 assert.equal(after,before.replace(oldLine,newLine).replace(oldCompleted,newCompleted),
