@@ -1,4 +1,4 @@
-"""Non-secret retained v1.2.123 CMS package provenance gate: verify SHA and recipient.
+"""Non-secret retained v1.2.124 CMS package provenance gate: verify SHA and recipient.
 
 No decryption, no private key, no output ciphertext/source, no network.
 """
@@ -13,8 +13,8 @@ import re
 import subprocess
 
 ROOT = Path(__file__).resolve().parent.parent
-ASSET = ROOT / "releases/v1.2.123-report-claim-guard-20261022.cms.b64"
-RECORD = ROOT / "validation/v1.2.123-release-package-attestation.json"
+ASSET = ROOT / "releases/v1.2.124-streaming-evidence-search-20261022.cms.b64"
+RECORD = ROOT / "validation/v1.2.124-release-package-attestation.json"
 CERT = ROOT / "keys/payload_encrypt_cert.pem"
 MAX_CMS = 32 * 1024 * 1024
 
@@ -81,8 +81,8 @@ def certificate_serial(cert_path: Path) -> str:
 
 def audit(asset: Path = ASSET, verification: Path = RECORD, cert: Path = CERT) -> dict:
     record = json.loads(verification.read_text("utf-8"))
-    if (record.get("version") != "1.2.123"
-            or record.get("artifact_id") != "JUDUN-1.2.123-C506047E2A5F"):
+    if (record.get("version") != "1.2.124"
+            or record.get("artifact_id") != "JUDUN-1.2.124-17D7AC26EAB8"):
         stop("UNEXPECTED_LIVE_BASELINE")
     if asset.stat().st_size > MAX_CMS * 2:
         stop("ENCODED_ASSET_TOO_LARGE")
@@ -100,7 +100,7 @@ def audit(asset: Path = ASSET, verification: Path = RECORD, cert: Path = CERT) -
         stop("CMS_RECIPIENT_CERT_DRIFT")
     return {
         "status": "CMS_SOURCE_PROVENANCE_PASS",
-        "version": "1.2.123",
+        "version": "1.2.124",
         "artifact_id": record["artifact_id"],
         "ciphertext_bytes": len(ciphertext),
         "sha256_matches_attestation": True,

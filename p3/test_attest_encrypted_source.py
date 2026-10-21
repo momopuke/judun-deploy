@@ -12,7 +12,7 @@ from test_offline_source_recovery import make_suite as make_synthetic_suite
 def make_suite(root):
     enc, meta, hist, source = make_synthetic_suite(root)
     value = json.loads(meta.read_text())
-    value.update(version="1.2.123", artifact_id="JUDUN-1.2.123-C506047E2A5F")
+    value.update(version="1.2.124", artifact_id="JUDUN-1.2.124-17D7AC26EAB8")
     meta.write_text(json.dumps(value))
     return enc, meta, hist, source
 

@@ -37,7 +37,7 @@ NEW_COMPLETION = ("if (String(data.status || '').includes('完成') "
 BOUNDED_BYTES = 3_000_000
 # v1.2.114 exact public HTML verified on 2026-10-20; fail closed on drift.
 OBSERVED_PUBLIC_HTML_SHA256 = "092f952d45b44e1ca5f526d610864a34893f861cc4ee3f587f8fc808ffcbbad8"
-CURRENT_PUBLIC_HTML_SHA256 = "22c00b3b7ea5794c09b54a19c2e809472a57af1847832e2bd9a565e04058b082"
+CURRENT_PUBLIC_HTML_SHA256 = "68e3b15a922af974f4591e6dd85dd69bdd9afcb3c0b7bc4162a85f0da22e997d"
 
 
 def sha(data: bytes) -> str:
@@ -143,7 +143,7 @@ def review_public_source(data: bytes) -> tuple[bytes, dict, str]:
         raise ValueError("DEPLOYED_FIX_SOURCE_GUARD_MISMATCH")
     return data, {
         "schema": "judun.p3.paid-price-source-patch.v1",
-        "observed_release": "1.2.124",
+        "observed_release": "1.2.125",
         "original_sha256": sha(data), "patched_sha256": sha(data),
         "statement_replacements": 0,
         "live_source_already_contains_fixes": True,
@@ -161,7 +161,7 @@ def historical_regression_source(data: bytes) -> bytes:
     review_public_source(data)
     historical = (data.decode('utf-8').replace(NEW, OLD, 1)
                   .replace(NEW_COMPLETION, OLD_COMPLETION, 1)
-                  .replace('1.2.124', '1.2.114').encode('utf-8'))
+                  .replace('1.2.125', '1.2.114').encode('utf-8'))
     if sha(historical) != OBSERVED_PUBLIC_HTML_SHA256:
         raise ValueError("HISTORICAL_FIXTURE_SHA_MISMATCH")
     return historical

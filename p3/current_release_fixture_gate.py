@@ -25,7 +25,8 @@ from production_readiness import public_get, public_json
 PINNED = {
     "1.2.114": OBSERVED_PUBLIC_HTML_SHA256,
     "1.2.120": "734850d449b8d586f75f4af7ec7436a8dae17aa74a9b57f16ceb8031e1bf41fe",
-    "1.2.124": CURRENT_PUBLIC_HTML_SHA256,
+    "1.2.124": "22c00b3b7ea5794c09b54a19c2e809472a57af1847832e2bd9a565e04058b082",
+    "1.2.125": CURRENT_PUBLIC_HTML_SHA256,
 }
 LAST_PINNED_VERSION = (1, 2, 120)
 

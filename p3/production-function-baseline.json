@@ -1,8 +1,8 @@
 {
   "schema": "judun.p3.public-function-baseline.v1",
-  "observed_live_display_version": "v1.2.124",
+  "observed_live_display_version": "v1.2.125",
   "observed_at_utc": "2026-10-21",
-  "source": "AST function source spans from exact SHA-pinned public v1.2.124 HTML; extraction independently reproduces prior v1.2.114 browser toString hashes. Current browser equality remains mandatory in CI.",
+  "source": "AST function source spans from exact SHA-pinned public v1.2.125 HTML; extraction independently reproduces prior v1.2.114 browser toString hashes. Current browser equality remains mandatory in CI.",
   "sha256": {
     "unlockTier": "701b0478f1b65d11f171ef2c38867c2f4a399c122c49233c13bd6f0e8e9c8899",
     "openPreferredJudunReport": "748d8c28242033a3c7aa550c76801a3fe24311429b9c9f4d07fbc64a15324229",
@@ -15,6 +15,6 @@
     "checkMicroStatus": "363370473ffc0c24d3f5127fd955e9c30b0346d95e7a277d8970677c310b1587",
     "openPreferredJudunReport": "748d8c28242033a3c7aa550c76801a3fe24311429b9c9f4d07fbc64a15324229"
   },
-  "public_html_sha256": "22c00b3b7ea5794c09b54a19c2e809472a57af1847832e2bd9a565e04058b082",
+  "public_html_sha256": "68e3b15a922af974f4591e6dd85dd69bdd9afcb3c0b7bc4162a85f0da22e997d",
   "prior_public_html_sha256": "092f952d45b44e1ca5f526d610864a34893f861cc4ee3f587f8fc808ffcbbad8"
 }

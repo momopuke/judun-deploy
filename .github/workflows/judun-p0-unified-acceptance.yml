@@ -59,7 +59,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: P3 read-only LIVE build and integrity snapshot before legacy tests
         run: python3 p3/production_readiness.py
-      - name: Attest retained previous v1.2.123 encrypted package and CMS recipient (no decrypt)
+      - name: Attest retained previous v1.2.124 encrypted package and CMS recipient (no decrypt)
         run: python3 p3/attest_encrypted_source.py
       - name: Inspect public deep-health field types only (no values, no deploy)
         run: python3 p3/public_deep_contract.py

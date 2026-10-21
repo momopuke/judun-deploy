@@ -1,0 +1,10 @@
+{
+  "base_version": "1.2.124",
+  "target_version": "1.2.125",
+  "changed_functions": [
+    "serve_search"
+  ],
+  "only_change": "Report retrieval timeout 18 to 90 seconds; original abort and error handling preserved",
+  "no_payment_owner_qa_data_or_pdf_template_change": true,
+  "target_app_sha256": "c94c757a01cfbb947ff3ce38ba79bf80fd1cc39eead2925628ab05d90e1a5b19"
+}
