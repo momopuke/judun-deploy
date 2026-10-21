@@ -199,8 +199,30 @@ def publish_atomic(manifest, signature_b64, cms_b64, parsed, pubkey, token,
         "message": "JUDUN signed release " + parsed["release_id"],
         "tree": tree["sha"], "parents": [head]})
     # force=false: any intervening branch movement rejects this publication.
-    github("PATCH", "/git/refs/heads/main", token,
-           {"sha": release["sha"], "force": False})
+    confirmed = github("PATCH", "/git/refs/heads/main", token,
+                       {"sha": release["sha"], "force": False})
+    if confirmed.get("object", {}).get("sha") != release["sha"]:
+        deny("PUBLISH_REF_RESPONSE_UNVERIFIED")
+    # A successful HTTP write is not enough. Re-read the canonical branch and
+    # its immutable tree; verify all three files are in the SAME commit.
+    published = github("GET", "/git/ref/heads/main", token)
+    if published.get("object", {}).get("sha") != release["sha"]:
+        deny("PUBLISH_REF_CHANGED_AFTER_UPDATE")
+    actual_commit = github("GET", "/git/commits/" + release["sha"], token)
+    if (actual_commit.get("tree", {}).get("sha") != tree["sha"]
+            or [p.get("sha") for p in actual_commit.get("parents", [])] != [head]):
+        deny("PUBLISH_COMMIT_IDENTITY_MISMATCH")
+    indexed_tree = github("GET", "/git/trees/" + tree["sha"] + "?recursive=1", token)
+    if indexed_tree.get("truncated") is not False:
+        deny("PUBLISH_TREE_UNVERIFIABLE")
+    index = {f.get("path"): f for f in indexed_tree.get("tree", [])
+             if isinstance(f, dict)}
+    for expected in tree_rows:
+        actual = index.get(expected["path"], {})
+        if (actual.get("sha") != expected["sha"]
+                or actual.get("type") != "blob"
+                or actual.get("mode") != "100644"):
+            deny("PUBLISH_CHANNEL_NOT_ATOMIC")
     return release["sha"]
 
 
