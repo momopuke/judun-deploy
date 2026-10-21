@@ -169,6 +169,35 @@ class OfflineSourceRestoreTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "MANIFEST_AND_TREE_REQUIRED_TOGETHER"):
                 recover(encrypted, verify_file, archive, trusted_manifest=live_manifest)
 
+    def test_corrupted_manifest_rows_fail_closed_without_unsafe_path_or_type_errors(self):
+        app = b'APP_VERSION = "1.2.114"\n'
+        rows = [{"path":"runtime/app.py","size":len(app),"sha256":sha(app)}]
+        for n in range(80):
+            contents = ("synthetic"+str(n)).encode()
+            rows.append({"path":"runtime/m%03d" % n,"size":len(contents),
+                         "sha256":sha(contents)})
+        originals = {"schema":"judun.deploy-manifest.v1","version":"1.2.114",
+                     "artifact_id":BUILD,"files":rows}
+        cases = [
+            {"path":["bad","array"]},
+            {"path":"runtime/../app.py"},
+            {"path":"runtime\\app.py"},
+            {"path":"runtime/app.py\nforged"},
+            {"path":"runtime/./app.py"},
+            {"size":True},
+            {"size":-1},
+            {"sha256":"NOT_SHA256"},
+            {"sha256":123},
+        ]
+        for change in cases:
+            with self.subTest(change=change):
+                replaced = [dict(row) for row in rows]
+                replaced[0].update(change)
+                manifest = dict(originals,files=replaced,
+                                source_tree_sha256=computed_tree_sha(rows))
+                with self.assertRaisesRegex(ValueError,"INVALID_INDEPENDENT_MANIFEST_FILES"):
+                    verify_live_app_tree(app,manifest,manifest["source_tree_sha256"])
+
     def test_full_app_must_match_independent_live_release_tree(self):
         app = b'APP_VERSION = "1.2.114"\n'
         records = [{"path": "system_files/app.py", "size": len(app), "sha256": sha(app)}]
