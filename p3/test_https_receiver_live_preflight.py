@@ -19,8 +19,10 @@ def response(path: str):
         }}
     if path == "/health/artifact?deep=true":
         return {"status": "OK", "data": {
-            "status": "ok", "artifact_id": BASE, "deep_verified": True,
-            "mismatch_count": 0, "formal_evidence_sha256": FORMAL,
+            "status": "ok", "artifact_id": BASE, "version": "1.2.114",
+            "deep_verified": True, "mismatch_count": 0,
+            "files_verified": 81, "manifest_file_count": 81,
+            "formal_evidence_sha256": FORMAL, "source_tree_sha256": "b" * 64,
         }}
     raise AssertionError("Unexpected URL attempted: " + path)
 
@@ -65,6 +67,24 @@ class LiveHttpsV3PreflightTests(unittest.TestCase):
                 return r
             with self.subTest(key=key), self.assertRaises(ValueError):
                 self.run_probe(bad_response)
+
+    def test_deep_snapshot_must_include_all_files_and_tree_sha(self):
+        for key, value in (
+            ("source_tree_sha256", None),
+            ("source_tree_sha256", "bad"),
+            ("files_verified", 80),
+            ("manifest_file_count", 80),
+            ("version", "1.2.113"),
+            ("deep_verified", "true"),
+        ):
+            def corrupt(path):
+                r = response(path)
+                if path.endswith("deep=true"):
+                    r["data"][key] = value
+                return r
+            with self.subTest(key=key, value=value):
+                with self.assertRaisesRegex(ValueError, "LIVE_IDENTITY_OR_INTEGRITY_DRIFT"):
+                    self.run_probe(corrupt)
 
     def test_unreachable_live_does_not_accept_local_zip(self):
         def unavailable(path):
