@@ -21,6 +21,7 @@ ALLOWED_VALUE = re.compile(r"^[A-Za-z0-9._/-]{1,160}$")
 EVENT_MARKERS = {
     "signature_failure": "Channel signature verification failed",
     "source_download_failure": "Could not download encrypted payload",
+    "encrypted_payload_sha_mismatch": "Encrypted payload SHA256 mismatch",
     "base_artifact_mismatch": "Base artifact mismatch",
     "local_app_unavailable": "Local /health/build is unavailable",
     "release_already_processed": "Release already processed",
@@ -66,6 +67,28 @@ def classify_logs(raw: str) -> dict:
             for key, token in EVENT_MARKERS.items()}
 
 
+# Examine chronological event order, not just counts. A stale signature failure
+# may precede a successful run; the converse can also happen. Output only a
+# fixed event name, never a raw journal line or its secrets.
+OBSERVED_EVENT_KEYS = (
+    "signature_failure", "source_download_failure",
+    "encrypted_payload_sha_mismatch", "base_artifact_mismatch",
+    "local_app_unavailable", "release_apply_failure",
+    "target_health_failure", "network_unavailable", "rollback",
+    "success", "release_already_processed", "lock_busy",
+)
+
+
+def latest_agent_event(raw: str) -> str:
+    latest = "NONE"
+    for line in raw.splitlines()[-250:]:
+        for name in OBSERVED_EVENT_KEYS:
+            if EVENT_MARKERS[name] in line:
+                latest = name
+                break
+    return latest
+
+
 def collect() -> dict:
     info = {
         "schema": "judun.p3.local-agent-diagnostic.v1",
@@ -79,6 +102,7 @@ def collect() -> dict:
         "config": {},
         "local_version": "NOT_VERIFIED",
         "agent_log_categories": {},
+        "agent_last_observed_event": "NONE",
         "no_vps_changes": True,
     }
     if CONFIG.is_file():
@@ -93,7 +117,9 @@ def collect() -> dict:
             capture_output=True, text=True, timeout=8, check=False,
         )
         if p.returncode == 0:
-            info["agent_log_categories"] = classify_logs(p.stdout[:150000])
+            safe_window = p.stdout[:150000]
+            info["agent_log_categories"] = classify_logs(safe_window)
+            info["agent_last_observed_event"] = latest_agent_event(safe_window)
             info["service_ever_successful"] = (
                 info["agent_log_categories"].get("success", 0) > 0
             )
@@ -121,8 +147,29 @@ def diagnose(info: dict) -> str:
     if info.get("timer_enabled") != "enabled" or info.get("timer_active") != "active":
         return "AGENT_TIMER_NOT_ENABLED_OR_INACTIVE"
     counts = info.get("agent_log_categories", {})
+    # This describes only the last recognizable event in the sampled journal
+    # window, not proof of the *current* release or source-tree integrity.
+    latest = info.get("agent_last_observed_event", "NONE")
+    most_recent = {
+        "signature_failure": "SIGNED_CHANNEL_VERIFICATION_FAILED",
+        "encrypted_payload_sha_mismatch": "RECORDED_ENCRYPTED_PAYLOAD_SHA_MISMATCH",
+        "base_artifact_mismatch": "RECORDED_BASE_ARTIFACT_MISMATCH",
+        "source_download_failure": "RECORDED_CHANNEL_OR_PAYLOAD_DOWNLOAD_FAILURE",
+        "network_unavailable": "RECORDED_CHANNEL_OR_PAYLOAD_DOWNLOAD_FAILURE",
+        "release_apply_failure": "RECORDED_DEPLOY_OR_HEALTH_FAILURE",
+        "target_health_failure": "RECORDED_DEPLOY_OR_HEALTH_FAILURE",
+        "local_app_unavailable": "RECORDED_LOCAL_APP_UNAVAILABLE",
+        "rollback": "RECORDED_ROLLBACK_LIVE_STATE_UNKNOWN",
+        "success": "RECORDED_SUCCESS_BUT_LIVE_UNVERIFIED",
+        "release_already_processed": "RECORDED_ALREADY_PROCESSED_LIVE_UNVERIFIED",
+        "lock_busy": "RECORDED_AGENT_LOCK_BUSY_LIVE_UNVERIFIED",
+    }
+    if latest in most_recent:
+        return most_recent[latest]
     if counts.get("signature_failure"):
         return "SIGNED_CHANNEL_VERIFICATION_FAILED"
+    if counts.get("encrypted_payload_sha_mismatch"):
+        return "RECORDED_ENCRYPTED_PAYLOAD_SHA_MISMATCH"
     if counts.get("base_artifact_mismatch"):
         return "RECORDED_BASE_ARTIFACT_MISMATCH"
     if counts.get("network_unavailable") or counts.get("source_download_failure"):
