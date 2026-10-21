@@ -154,6 +154,30 @@ class LiveHttpsV3PreflightTests(unittest.TestCase):
             with self.subTest(field=field), self.assertRaises(ValueError):
                 self.run_probe(changed)
 
+    def test_initial_split_brain_build_versions_are_rejected(self):
+        def contradictory(path):
+            r = response(path)
+            if path == "/health/build":
+                r["data"]["display_version"] = "v1.2.115"
+            return r
+
+        with self.assertRaisesRegex(ValueError, "FRESH_LIVE_IDENTITY_UNAVAILABLE"):
+            self.run_probe(contradictory)
+
+    def test_final_split_brain_build_versions_are_rejected(self):
+        calls = {"build": 0}
+
+        def contradictory_final(path):
+            r = response(path)
+            if path == "/health/build":
+                calls["build"] += 1
+                if calls["build"] == 2:
+                    r["data"]["display_version"] = "1.2.115"
+            return r
+
+        with self.assertRaisesRegex(ValueError, "LIVE_CHANGED_DURING_PREFLIGHT"):
+            self.run_probe(contradictory_final)
+
     def test_target_mismatch_blocks_even_with_clean_live(self):
         with patch("https_receiver_live_preflight.public_json", side_effect=response):
             with self.assertRaisesRegex(ValueError, "PACKAGE_TARGET_IDENTITY_MISMATCH"):
