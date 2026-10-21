@@ -13,6 +13,7 @@ from pathlib import Path
 from https_receiver_bundle_audit import inspect_bundle
 from production_readiness import (
     public_json, assess_public_deep_integrity, assess_snapshot_stability,
+    parse_public_build_identity,
 )
 
 
@@ -26,11 +27,11 @@ def audit_against_current_live(bundle: Path, *, expected_target_artifact: str,
     deep = deep_r.get("data")
     if not isinstance(build, dict) or not isinstance(deep, dict):
         raise ValueError("HTTPS_V3_UNTRUSTED_LIVE_RESPONSE")
-    live_artifact = build.get("artifact_id")
-    live_version = build.get("display_version") or build.get("version")
-    if not isinstance(live_version, str) or not isinstance(live_artifact, str):
+    identity = parse_public_build_identity(build_r)
+    if identity is None:
         raise ValueError("HTTPS_V3_FRESH_LIVE_IDENTITY_UNAVAILABLE")
-    live_version = live_version.removeprefix("v")
+    live_artifact = identity["artifact_id"]
+    live_version = identity["version"]
     # Shared with read-only production readiness. Do not accept a shallow
     # probe, a missing SHA, an unverified manifest count or a stale artifact.
     integrity_decision = assess_public_deep_integrity(
