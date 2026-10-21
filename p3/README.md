@@ -1,3 +1,12 @@
+# 2026-10-21｜正式發布關卡再加嚴（只讀，不部署）
+
+- HTTPS v3 的 `p3/https_receiver_live_preflight.py` 現在在**完整 ZIP 稽核前後**各取一次公開 `/health/build` 和 `/health/artifact?deep=true`，要求版本／artifact、正式證據 SHA、程式碼樹 SHA、檔案數與深度驗證全部維持相同。公開來源中途離線、版本變更、同 artifact 不同 SHA 都停止發布預檢。
+- `p3/production_readiness.py` 新增共用公開版本身份解析：當 `version` 與 `display_version` **同時存在卻不一致**，不得視為確認的正式版本；公開健康端點自報不等於 VPS 獨立逐檔 SHA，輸出中明確區分。
+- `p3/release_retention_plan.py` 額外要求指定「上一版」的語意版本小於「現行版」。同版本不同 build 的真正發布先後順序需要**獨立發布紀錄**確認，不能只憑 ZIP 名稱宣告為上一版並清理較舊回復檔。
+- 工具與測試都在 PR #9 候選分支執行；**沒有執行 HTTPS 上傳、正式資料更動、正式付款／寄信、VPS 回復或刪除任何備份**。本 PR 仍維持 Draft，請勿把 CI success 視為正式端到端通過。
+
+---
+
 # 2026-10-21｜VPS 代理診斷與單一回復版保留工具（未執行刪除）
 
 - `p3/local_agent_diagnostic.py` 改為保留 systemd 最近 150KB 日誌尾部（不再取最早的前綴），避免過長日誌使較舊錯誤蓋過最近成功事件。本機 `/health/build` 同時要求 `JUDUN-版本-` 與顯示版號一致；成功紀錄僅標示「在近期樣本觀察到」，不是證明曾完整發行。
