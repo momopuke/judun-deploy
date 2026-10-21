@@ -11,7 +11,7 @@ import json
 from pathlib import Path
 
 from https_receiver_bundle_audit import inspect_bundle
-from production_readiness import public_json
+from production_readiness import public_json, assess_public_deep_integrity
 
 
 def audit_against_current_live(bundle: Path, *, expected_target_artifact: str,
@@ -25,16 +25,18 @@ def audit_against_current_live(bundle: Path, *, expected_target_artifact: str,
     if not isinstance(build, dict) or not isinstance(deep, dict):
         raise ValueError("HTTPS_V3_UNTRUSTED_LIVE_RESPONSE")
     live_artifact = build.get("artifact_id")
-    if (not isinstance(live_artifact, str)
-            or deep.get("artifact_id") != live_artifact
-            or deep.get("deep_verified") is not True
-            or deep.get("status") != "ok"
-            or type(deep.get("mismatch_count")) is not int
-            or deep.get("mismatch_count") != 0):
+    live_version = build.get("display_version") or build.get("version")
+    if not isinstance(live_version, str) or not isinstance(live_artifact, str):
+        raise ValueError("HTTPS_V3_FRESH_LIVE_IDENTITY_UNAVAILABLE")
+    live_version = live_version.removeprefix("v")
+    # Shared with read-only production readiness. Do not accept a shallow
+    # probe, a missing SHA, an unverified manifest count or a stale artifact.
+    integrity_decision = assess_public_deep_integrity(
+        deep_r, live_artifact=live_artifact, live_version=live_version
+    )
+    if integrity_decision != "PASS" or not live_artifact.startswith(f"JUDUN-{live_version}-"):
         raise ValueError("HTTPS_V3_LIVE_IDENTITY_OR_INTEGRITY_DRIFT")
-    live_formal = deep.get("formal_evidence_sha256")
-    if not isinstance(live_formal, str):
-        raise ValueError("HTTPS_V3_LIVE_FORMAL_SNAPSHOT_UNAVAILABLE")
+    live_formal = deep["formal_evidence_sha256"]
     result = inspect_bundle(
         bundle,
         expected_base_artifact=live_artifact,
