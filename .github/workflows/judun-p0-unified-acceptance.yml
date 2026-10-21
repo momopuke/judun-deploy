@@ -167,6 +167,8 @@ jobs:
             "$RUNNER_TEMP_DIR/judun-p3-v12114-patched.html"
       - name: Check live-public-home in TEMPORARY browser only at five viewports
         run: node p0/preview-test.cjs
+      - name: Verify integrated inline homepage startup and original controls in isolated browser
+        run: node p0/integration-test.cjs
       - name: Review published unlock success branch source (read-only)
         run: node p3/review-live-unlock.cjs
       - name: Verify live executable navigation guards without initiating payment
@@ -186,6 +188,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: judun-unified-desktop-tablet-phone-visual-qa
-          path: p0/results/*.png
+          path: |
+            p0/results/*.png
+            p0/results/integration.json
           if-no-files-found: ignore
           retention-days: 14

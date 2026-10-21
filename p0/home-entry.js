@@ -23,9 +23,15 @@
       return;
     }
 
-    const uploadContainer = uploadInput.closest("section") || uploadInput.parentElement;
+    const uploadContainer = uploadInput.closest("#home-upload-panel") ||
+      uploadInput.closest("section") || uploadInput.parentElement;
     if (!uploadContainer || matching.contains(uploadInput)) {
       console.warn("[JUDUN P0] unsafe upload target; no changes applied");
+      return;
+    }
+    const heroActions = heroCta.parentElement;
+    if (!heroActions || !header.contains(heroActions)) {
+      console.warn("[JUDUN P0] hero action row missing; no changes applied");
       return;
     }
     // Keep upload label and form code intact. A new anchor targets the ORIGINAL form.
@@ -105,12 +111,6 @@
     nav.appendChild(business);
 
     // Place beneath existing hero action row, not over the residential image or heading.
-    const heroActions = heroCta.parentElement;
-    if (!heroActions || !header.contains(heroActions)) {
-      console.warn("[JUDUN P0] hero action row missing; abort role entry mount");
-      if (!oldId) uploadContainer.removeAttribute("id");
-      return;
-    }
     heroActions.insertAdjacentElement("afterend", nav);
 
     // An actionable preparation guide replaces the premature referral to a
