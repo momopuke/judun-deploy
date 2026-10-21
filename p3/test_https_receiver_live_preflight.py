@@ -50,6 +50,9 @@ class LiveHttpsV3PreflightTests(unittest.TestCase):
     def test_works_only_with_both_fresh_exact_live_checks(self):
         result = self.run_probe()
         self.assertTrue(result["live_deep_verified"])
+        self.assertTrue(result["read_only_public_snapshot_double_checked"])
+        self.assertTrue(result["same_deep_manifest_fields_before_after"])
+        self.assertFalse(result["independent_vps_disk_sha_verified"])
         self.assertEqual(result["verified_live_artifact"], BASE)
         self.assertEqual(result["next_step"], "AUTHORIZED_RECEIVER_UPLOAD_NOT_PERFORMED")
         self.assertFalse(result["actual_vps_deployment"])
