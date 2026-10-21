@@ -75,6 +75,13 @@ jobs:
             releases/*.json
           if-no-files-found: error
           retention-days: 1
+      - name: Export public source-independent surgical patch for real archived-app offline test
+        uses: actions/upload-artifact@v4
+        with:
+          name: judun-p3-actual-app-patcher-no-source-or-secrets
+          path: p3/production_delta_patch.py
+          if-no-files-found: error
+          retention-days: 1
       - name: P3 read-only LIVE build and integrity snapshot before legacy tests
         run: python3 p3/production_readiness.py
       - name: Attest archived v1.2.114 encrypted source and CMS public recipient (no decrypt)
