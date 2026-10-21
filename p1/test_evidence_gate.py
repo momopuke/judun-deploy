@@ -164,6 +164,30 @@ class EvidenceGateTests(unittest.TestCase):
         self.assertEqual(evaluate(r).status, "REJECT")
         self.assertFalse(public_source_url("https://cdn.twfuns.net/aa"))
 
+    def test_obfuscated_blocked_domains_cannot_reenter(self):
+        for url in ("https://twfuns。com/quote",
+                    "https://cdn.twfuns．net/quote",
+                    "https://tｗfuns.com/quote",
+                    "https://%74wfuns.com/quote",
+                    "https://cdn%2Etwfuns.com/quote"):
+            with self.subTest(url=url):
+                self.assertFalse(public_source_url(url))
+                self.assertEqual(evaluate(dict(valid_case(), url=url)).status, "REJECT")
+
+    def test_obfuscated_internal_hosts_and_ambiguous_urls_rejected(self):
+        for url in ("http://%31%32%37.0.0.1/private",
+                    "https://１２７．０．０．１/private",
+                    "http://127。0。0。1/private",
+                    "https://127.0.0.1\\@example.org/path",
+                    "https://example.org/price\\details",
+                    "https://example.org/price\nnew",
+                    "https://example.org/price\tnew"):
+            with self.subTest(url=url):
+                self.assertFalse(public_source_url(url))
+        # UTF-8 source paths and percent-encoding OUTSIDE the host are valid.
+        self.assertTrue(public_source_url("https://www.合法.tw/工項?ref=%30"))
+        self.assertTrue(public_source_url("https://public.example.org/%2Fprice"))
+
     def test_similar_but_distinct_hostname_not_overblocked(self):
         self.assertTrue(public_source_url("https://nottwfuns.example.org/quote"))
 
