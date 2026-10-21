@@ -31,8 +31,9 @@ OLD = "const preferred = tier === 'promax' ? 'report-five-themes' : 'report-pric
 NEW = "const preferred = 'report-price-items';"
 OLD_COMPLETION = "if (String(data.status || '').includes('完成')) {"
 NEW_COMPLETION = ("if (String(data.status || '').includes('完成') "
+                  "&& !data.error "
                   "&& !/(?:未完成|未能完成|完成失敗|失敗|取消|中止)/.test(String(data.status || '')) "
-                  "&& (!tierMonitor || !task || task.state === 'completed')) {")
+                  "&& (!tierMonitor || (task && task.state === 'completed'))) {")
 BOUNDED_BYTES = 3_000_000
 # v1.2.114 exact public HTML verified on 2026-10-20; fail closed on drift.
 OBSERVED_PUBLIC_HTML_SHA256 = "092f952d45b44e1ca5f526d610864a34893f861cc4ee3f587f8fc808ffcbbad8"
