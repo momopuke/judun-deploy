@@ -1,3 +1,13 @@
+# 2026-10-21 晚間最新：正式 v1.2.122，歷史首頁 SHA 不可誤套現版
+
+- GitHub Actions 實際唯讀檢查觀察到正式站 **v1.2.122**，artifact `JUDUN-1.2.122-C597F753F43B`，deep integrity **PASS**；HTTPS v3 receiver 公開回應有效。這是正式站的公開健康驗證，不是 VPS systemd service、真實扣款、寄信、完整權益或報告/PDF E2E 驗收。
+- `p3/local_agent_diagnostic.py` 新增日誌**最後觀察到的事件**與 encrypted payload SHA mismatch 分類，避免歷史失敗/成功事件順序被錯誤判讀。此工具須在原有 VPS 執行，只讀，不動正式檔案。
+- 已發現原 CI 用 **v1.2.114／v1.2.120 精確首頁 SHA** 進行歷史比較時，會被更新至 v1.2.122 的正式首頁擋下。新增 `p3/current_release_fixture_gate.py`：當 live release 是原本釘選版本，必須 **SHA 完全相同** 才跑歷史 fixture；如果是更新版本，仍要在真正 live HTML 找到兩個完整安全修補敘述、且不能有舊敘述，才把**歷史 fixture 測試**明確標記 SKIP。任何未知、失聯、舊版 SHA 漂移或缺少修補都硬性 BLOCK。這沒有修改原修補器的 SHA 鎖，也**不代表新版功能驗收通過**；新版公開檢查和獨立回歸仍須照跑。
+- 本 PR 維持 Draft，`p3/production_readiness.py` 的正式發布決策仍是 `BLOCKED_FOR_PRODUCTION_INTEGRATION`。只有 v1.2.122 的權威來源、備份/復原、Basic/ProMax 真實同案解鎖、報告 HTML/PDF、正式資料不變、首頁原有視覺等所有條件實測通過才允許宣告完成。
+- **正式資料不改、既有高質感首頁不重設、僅保留現行版與上一版**；這批 PR 程式只修改唯讀診斷與 CI 判斷，尚未執行 VPS 上的實際備份清理。
+
+---
+
 # 2026-10-21 最新接續狀態：正式 v1.2.120、v1.2.121 效能候選待部署
 
 本節取代下方歷史文字中「仍是 v1.2.114／沒有來源／未做 PDF」等過期狀態。
