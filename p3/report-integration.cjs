@@ -89,11 +89,15 @@ async function continueToPriceAfterVerifiedUnlock(completion, adapter, timeoutMs
   }
   const routeReportId = adapter.currentReportId;
   const reportRoot = adapter.root;
+  let activeFlight = null;
   // The user can switch cases while the async report is still rendering.
   // Never focus/scroll an old report after its authorized route has changed.
   const stillCurrent = opts => (
     adapter.currentReportId === routeReportId &&
     adapter.root === reportRoot &&
+    // Prevent A -> B -> A route changes from reviving a stale A render
+    // when the original DOM root and report ID happen to be reused.
+    (activeFlight === null || inFlightReportNavigation.get(adapter) === activeFlight) &&
     (!opts || !opts.signal.aborted)
   );
   const io = {
@@ -138,6 +142,7 @@ async function continueToPriceAfterVerifiedUnlock(completion, adapter, timeoutMs
     return existing.promise;
   }
   const flight = {reportId:routeReportId, root:reportRoot, promise:null};
+  activeFlight = flight;
   // Defer the renderer until this flight is registered. Otherwise a
   // synchronous status callback triggered inside mount() can re-enter before
   // the first navigation is visible in the WeakMap and mount twice.
