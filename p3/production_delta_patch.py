@@ -58,7 +58,7 @@ def computed_live_tree_sha(files: list) -> str:
     computes path TAB sha256 TAB size LF in sorted-path order.
     """
     records = ''.join(
-        f"{x['path']}\\t{x['sha256']}\\t{x['size']}\\n"
+        f"{x['path']}\t{x['sha256']}\t{x['size']}\n"
         for x in sorted(files, key=lambda x: x['path'])
     )
     return sha(records.encode("utf-8"))
@@ -148,7 +148,7 @@ def patch_app(original: bytes) -> bytes:
     lines = changed.splitlines(keepends=True)
     for node in changes:
         key = node.targets[0].id
-        lines[node.lineno - 1] = key + ' = ' + repr(target[key]) + '\\n'
+        lines[node.lineno - 1] = key + ' = ' + repr(target[key]) + '\n'
     changed = ''.join(lines)
     if changed.count(NEW) != 1 or changed.count(NEW_COMPLETION) != 1:
         raise ValueError('AMBIGUOUS_PATCH_RESULT')
