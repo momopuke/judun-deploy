@@ -110,7 +110,7 @@ class DeltaReleaseTests(unittest.TestCase):
             (root / "fixture_01.txt").write_bytes(b"safe fixture 1")
             with self.assertRaisesRegex(ValueError, "EXPECTED_TWO_UNIQUE_LIVE_JS_STATEMENTS"):
                 patch_app(original + ("\n# " + OLD + "\n").encode())
-            with self.assertRaisesRegex(ValueError, "VERSION_CONSTANT_MISMATCH"):
+            with self.assertRaisesRegex(ValueError, "RELEASE_METADATA_AST_DRIFT"):
                 patch_app(original.replace(b"APP_VERSION = '1.2.114'", b"APP_VERSION = '1.2.113'"))
             bad = json.loads((root / "DEPLOY_MANIFEST.json").read_text())
             bad["artifact_id"] = "JUDUN-1.2.113-OTHER"
