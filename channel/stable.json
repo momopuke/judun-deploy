@@ -1,11 +1,11 @@
 {
   "schema": "judun-autodeploy-v1",
-  "release_id": "v1.2.123-report-claim-guard-20261022",
-  "base_artifact_id": "JUDUN-1.2.122-C597F753F43B",
-  "target_artifact_id": "JUDUN-1.2.123-C506047E2A5F",
-  "target_build_instance_id": "1.2.123-20261022-CLAIMS-C506047E2A5F",
-  "expected_display_version": "v1.2.123",
-  "payload_path": "releases/v1.2.123-report-claim-guard-20261022.cms.b64",
-  "payload_sha256": "5eb47d74f0b807fb19fbc52c20135493a59ca489df6e4331c18f0610a9a51257",
+  "release_id": "v1.2.124-streaming-evidence-search-20261022",
+  "base_artifact_id": "JUDUN-1.2.123-C506047E2A5F",
+  "target_artifact_id": "JUDUN-1.2.124-17D7AC26EAB8",
+  "target_build_instance_id": "1.2.124-20261022-SEARCH-17D7AC26EAB8",
+  "expected_display_version": "v1.2.124",
+  "payload_path": "releases/v1.2.124-streaming-evidence-search-20261022.cms.b64",
+  "payload_sha256": "e0085b24a20c2960ee72a5d2710d728dfee883de9850539e244b43d7be046203",
   "noop": false
 }
