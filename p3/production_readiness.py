@@ -130,6 +130,23 @@ def assess_public_deep_integrity(integrity_result: dict, *,
     return "PASS"
 
 
+def assess_snapshot_stability(next_build: dict, *,
+                              initial_artifact: str | None,
+                              initial_version: str | None) -> str:
+    """Detect an observed release change during a multi-endpoint public audit."""
+    if not initial_artifact or not initial_version:
+        return "INITIAL_IDENTITY_UNVERIFIED"
+    if next_build.get("status") != "OK" or not isinstance(next_build.get("data"), dict):
+        return "FINAL_BUILD_UNVERIFIED"
+    data = next_build["data"]
+    version = data.get("display_version") or data.get("version")
+    if (not isinstance(version, str)
+            or version.removeprefix("v") != initial_version
+            or data.get("artifact_id") != initial_artifact):
+        return "BUILD_CHANGED_DURING_AUDIT"
+    return "CONSISTENT"
+
+
 def audit() -> dict:
     channel = json.loads((PROJECT_ROOT / "channel/stable.json").read_text("utf-8"))
     historical = json.loads(
@@ -184,6 +201,17 @@ def audit() -> dict:
         else:
             exclusion_status = "EXCLUSIONS_UNRESOLVED_OR_UNVERIFIED"
 
+    # A single initial /health/build check can race a concurrent production
+    # release while /health/artifact and homepage are being read. Bracket
+    # the observation, and fail closed on any identity or network drift.
+    snapshot_stability = assess_snapshot_stability(
+        public_json("/health/build"),
+        initial_artifact=live_artifact, initial_version=live_version,
+    )
+    if snapshot_stability != "CONSISTENT":
+        live_build_identity = "INCONSISTENT_OR_UNVERIFIED"
+        integrity_status = "RELEASE_CHANGED_OR_UNVERIFIED_DURING_AUDIT"
+
     status_result = {
         "schema": "judun.p3.production-readiness.v1",
         "observed_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -192,6 +220,7 @@ def audit() -> dict:
         "payment_or_upload_performed": False,
         "public_live": {
             "build_identity": live_build_identity,
+            "snapshot_stability": snapshot_stability,
             "display_version": live_version,
             "artifact_id": live_artifact,
             "deep_integrity": integrity_status,
