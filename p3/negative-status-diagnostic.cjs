@@ -17,6 +17,8 @@ const fixtures=[
   {name:"NEGATIVE_STATUS",status:"未完成",task:"completed",original:true,patched:false},
   {name:"NEGATIVE_PAYMENT",status:"付款尚未完成",task:"completed",original:true,patched:false},
   {name:"NEGATIVE_FAILED",status:"完成失敗",task:"completed",original:true,patched:false},
+  {name:"MISSING_PAID_TASK",status:"完成",task:null,original:true,patched:false},
+  {name:"COMPLETE_WITH_BACKEND_ERROR",status:"完成",task:"completed",error:"server reported error",original:true,patched:false},
   {name:"CONTRADICTORY_TASK",status:"完成",task:"pending",original:true,patched:false},
   {name:"RUNNING_TASK",status:"處理中",task:"running",original:false,patched:false},
   {name:"VERIFIED_COMPLETION",status:"完成",task:"completed",original:true,patched:true}
@@ -35,7 +37,9 @@ async function check(browser,source,fixture){
         statusCalls++;
         return route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({
           status:fixture.status,tier:"promax",
-          unlock_task:{state:fixture.task,stage:"processing",stage_age_seconds:0},
+          unlock_task:fixture.task===null ? null :
+            {state:fixture.task,stage:"processing",stage_age_seconds:0},
+          error:fixture.error||null,
           report:fakeReport
         })});
       }
