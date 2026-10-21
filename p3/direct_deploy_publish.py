@@ -104,6 +104,18 @@ def check_live(build, deep, base, expected_tree):
     if (not isinstance(build, dict) or not isinstance(deep, dict)
             or build.get("artifact_id") != base or deep.get("artifact_id") != base):
         deny("LIVE_BASE_ARTIFACT_MISMATCH")
+    expected_version = base.split("-")[1]
+    # Compare all published release identities, not merely the artifact ID.
+    # This refuses a build/deep split-brain during an overlapping rollout.
+    for item in (build, deep):
+        if (not isinstance(item.get("version"), str)
+                or item["version"].removeprefix("v") != expected_version
+                or item.get("source_tree_sha256") != expected_tree):
+            deny("LIVE_BUILD_DEEP_RELEASE_DRIFT")
+    instance = build.get("build_instance_id")
+    if (not isinstance(instance, str) or not instance
+            or deep.get("build_instance_id") != instance):
+        deny("LIVE_BUILD_INSTANCE_DRIFT")
     count, total = deep.get("files_verified"), deep.get("manifest_file_count")
     if (deep.get("status") != "ok" or deep.get("deep_verified") is not True
             or type(deep.get("mismatch_count")) is not int
