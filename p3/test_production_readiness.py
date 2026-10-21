@@ -4,7 +4,7 @@ import sys
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from production_readiness import assess_published_channel, assess_public_deep_integrity, assess_snapshot_stability
+from production_readiness import assess_published_channel, assess_public_deep_integrity, assess_snapshot_stability, parse_public_build_identity
 
 
 class SignedChannelBaselineTests(unittest.TestCase):
@@ -150,6 +150,47 @@ class SnapshotStabilityTests(unittest.TestCase):
             self.assess({"status": "OK", "data": {}}, artifact=None),
             "INITIAL_IDENTITY_UNVERIFIED",
         )
+
+
+
+
+class PublicBuildIdentityTests(unittest.TestCase):
+    def test_matching_version_display_and_artifact_are_accepted(self):
+        result = {"status": "OK", "data": {
+            "version": "1.2.122", "display_version": "v1.2.122",
+            "artifact_id": "JUDUN-1.2.122-C597F753F43B",
+        }}
+        self.assertEqual(parse_public_build_identity(result), {
+            "version": "1.2.122", "artifact_id": "JUDUN-1.2.122-C597F753F43B",
+        })
+
+    def test_split_brain_version_field_never_proves_identity(self):
+        result = {"status": "OK", "data": {
+            "version": "1.2.121", "display_version": "v1.2.122",
+            "artifact_id": "JUDUN-1.2.122-C597F753F43B",
+        }}
+        self.assertIsNone(parse_public_build_identity(result))
+        self.assertEqual(
+            assess_snapshot_stability(
+                result, initial_artifact="JUDUN-1.2.122-C597F753F43B",
+                initial_version="1.2.122",
+            ), "FINAL_BUILD_UNVERIFIED"
+        )
+
+    def test_rejects_malformed_build_release_pairs(self):
+        for data in (
+            {"version": "1.2.122", "artifact_id": "JUDUN-1.2.121-OLD"},
+            {"version": "1.2.122", "artifact_id": "JUDUN-1.2.122"},
+            {"version": True, "artifact_id": "JUDUN-1.2.122-TEST"},
+            {"display_version": None, "version": "1.2.122",
+             "artifact_id": "JUDUN-1.2.122-TEST"},
+            {"artifact_id": "JUDUN-1.2.122-TEST"},
+            {"version": "v1.2.122rc1", "artifact_id": "JUDUN-1.2.122-TEST"},
+        ):
+            with self.subTest(data=data):
+                self.assertIsNone(parse_public_build_identity(
+                    {"status": "OK", "data": data}
+                ))
 
 
 
