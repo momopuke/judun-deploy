@@ -27,8 +27,9 @@ OLD = "const preferred = tier === 'promax' ? 'report-five-themes' : 'report-pric
 NEW = "const preferred = 'report-price-items';"
 OLD_COMPLETION = "if (String(data.status || '').includes('完成')) {"
 NEW_COMPLETION = ("if (String(data.status || '').includes('完成') "
+                  "&& !data.error "
                   "&& !/(?:未完成|未能完成|完成失敗|失敗|取消|中止)/.test(String(data.status || '')) "
-                  "&& (!tierMonitor || !task || task.state === 'completed')) {")
+                  "&& (!tierMonitor || (task && task.state === 'completed'))) {")
 MAX_SOURCE = 16_000_000
 
 
