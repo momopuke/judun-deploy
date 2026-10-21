@@ -15,6 +15,7 @@ from pathlib import Path
 import re
 import subprocess
 import tempfile
+import time
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -203,6 +204,35 @@ def publish_atomic(manifest, signature_b64, cms_b64, parsed, pubkey, token,
     return release["sha"]
 
 
+def verify_target_live(target, *, attempts=36, interval=10):
+    """The signed channel is not a deployment until the VPS reports deep SHA."""
+    for attempt in range(attempts):
+        try:
+            build = live_get("/health/build")
+            if (build.get("artifact_id") == target["target_artifact_id"]
+                    and build.get("build_instance_id") == target["target_build_instance_id"]
+                    and build.get("display_version") == target["expected_display_version"]):
+                deep = live_get("/health/artifact?deep=true")
+                count, total = deep.get("files_verified"), deep.get("manifest_file_count")
+                if (deep.get("artifact_id") == target["target_artifact_id"]
+                        and deep.get("build_instance_id") == target["target_build_instance_id"]
+                        and deep.get("status") == "ok"
+                        and deep.get("deep_verified") is True
+                        and type(deep.get("mismatch_count")) is int
+                        and deep["mismatch_count"] == 0
+                        and type(count) is int and type(total) is int
+                        and count >= 80 and count == total
+                        and live_get("/health/ready").get("status") == "ready"):
+                    return {"artifact_id": target["target_artifact_id"],
+                            "version": target["expected_display_version"],
+                            "managed_files": count}
+        except ValueError:
+            pass
+        if attempt + 1 < attempts:
+            time.sleep(interval)
+    deny("PUBLISHED_BUT_VPS_DEPLOYMENT_NOT_VERIFIED")
+
+
 def run():
     ap = argparse.ArgumentParser(description="JUDUN one-command signed channel publisher")
     for name in ("manifest", "signature", "payload", "public-key"):
@@ -233,8 +263,10 @@ def run():
             deny("GITHUB_TOKEN_ENV_REQUIRED")
         new_sha = publish_atomic(manifest, sig, cms, parsed,
                                  a.public_key, token, check)
-        print("DIRECT_DEPLOY_SIGNED_CHANNEL_PUBLISHED", new_sha)
-        print("VPS_DEPLOYMENT_NOT_YET_VERIFIED")
+        print("DIRECT_DEPLOY_SIGNED_CHANNEL_PUBLISHED", new_sha, flush=True)
+        accepted = verify_target_live(parsed)
+        print("DIRECT_DEPLOY_VPS_ARTIFACT_DEEP_SHA_PASS", json.dumps(accepted), flush=True)
+        print("PAYMENT_AND_REPORT_PDF_E2E_STILL_REQUIRED")
         return 0
     except (ValueError, KeyError, TypeError) as exc:
         msg = str(exc)
