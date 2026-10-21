@@ -1,0 +1,25 @@
+{
+  "schema": "judun.preflight-render-review.v1",
+  "base_version": "1.2.120",
+  "candidate_version": "1.2.121",
+  "base_app_sha256": "007c9edc1f8496018d5c9d91183990e2c54c7bf2fc3412a1a29d0798f13c6664",
+  "candidate_app_sha256": "a1111db99cb1da112b4f8658257a6a1ada7c10bd3bfc6c2a8c8ac3c4cfdb7243",
+  "base_matches_independent_acceptance_record": true,
+  "modified_behavior": ["report_renderer_smoke_test", "public_quote_matches within smoke context only"],
+  "source_roundtrip_preserves_all_other_bytes": true,
+  "actual_renderer_test": {
+    "application_imported": false,
+    "external_io_dependencies_isolated": true,
+    "baseline_reproduced_evidence_lookup": true,
+    "candidate_completed_html_render": true,
+    "candidate_production_evidence_lookups": 0,
+    "normal_customer_lookup_preserved": true,
+    "vps_latency_measured": false
+  },
+  "local_regression": {"python_p1": 230, "python_p3": 74, "node": 50, "failed": 0},
+  "local_signed_package": {"cms_roundtrip_verified": true, "original_ed25519_public_key_verified": true},
+  "channel_published": false,
+  "candidate_deployed": false,
+  "candidate_live_pdf_acceptance": false,
+  "blocker": "Automatic approval review rejected original HTTPS v3 maintenance execution; specific deployment authorization required."
+}

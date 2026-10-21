@@ -1,0 +1,311 @@
+"""P3 production GO/NO-GO audit: read-only, never deploy or unlock.
+
+This probe determines only what the PUBLIC production endpoints can prove.
+The candidate repository holds encrypted releases, not editable production
+source. Passing HTTP checks cannot authorize a new release or real payments.
+"""
+from __future__ import annotations
+
+import json
+import os
+from pathlib import Path
+import re
+import sys
+from datetime import datetime, timezone
+from html.parser import HTMLParser
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+BASE = "https://judun.142-93-91-214.sslip.io"
+MAX_RESPONSE_BYTES = 1_000_000
+TIMEOUT_SECONDS = 5
+
+
+class PublicHome(HTMLParser):
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.ids = set()
+        self.duplicate_ids = 0
+        self.text_parts = []
+
+    def handle_starttag(self, tag, attributes):
+        values = dict(attributes)
+        identifier = values.get("id")
+        if identifier:
+            if identifier in self.ids:
+                self.duplicate_ids += 1
+            self.ids.add(identifier)
+
+    def handle_data(self, data):
+        if len(self.text_parts) < 12000:
+            self.text_parts.append(data)
+
+
+def public_get(path: str) -> dict:
+    """One bounded HTTPS GET; log no response bodies or private exception data."""
+    request = Request(BASE + path, headers={
+        "User-Agent": "Judun-P3-readonly-integration-audit/1",
+        "Cache-Control": "no-cache",
+    }, method="GET")
+    try:
+        with urlopen(request, timeout=TIMEOUT_SECONDS) as response:
+            raw = response.read(MAX_RESPONSE_BYTES + 1)
+            if len(raw) > MAX_RESPONSE_BYTES:
+                return {"status": "OVERSIZED_RESPONSE"}
+            if response.status != 200:
+                return {"status": "HTTP_NOT_OK", "http_status": response.status}
+            return {"status": "OK", "content": raw}
+    except (HTTPError, URLError, OSError, TimeoutError, ValueError):
+        return {"status": "NOT_VERIFIED"}
+
+
+def public_json(path: str) -> dict:
+    result = public_get(path)
+    if result["status"] != "OK":
+        return {"status": result["status"]}
+    try:
+        data = json.loads(result["content"].decode("utf-8"))
+        if not isinstance(data, dict):
+            return {"status": "INVALID_SHAPE"}
+        return {"status": "OK", "data": data}
+    except (UnicodeError, ValueError):
+        return {"status": "INVALID_JSON"}
+
+
+def assess_published_channel(channel: dict, live_artifact: str | None) -> str:
+    """A counterfactual channel identity check; NOT proof agent ran.
+
+    A stale stable channel can never apply to a later live artifact under
+    original AutoDeploy's fail-closed base-artifact equality check.
+    """
+    if not live_artifact:
+        return "LIVE_IDENTITY_NOT_VERIFIED"
+    if channel.get("target_artifact_id") == live_artifact:
+        return "TARGET_ALREADY_LIVE_IF_AGENT_ACTIVE"
+    if channel.get("base_artifact_id") == live_artifact:
+        return "BASE_MATCH_IF_AGENT_ACTIVE"
+    return "BASE_MISMATCH_IF_AGENT_ACTIVE"
+
+
+
+HEX_SHA256 = re.compile(r"[0-9a-fA-F]{64}")
+
+PUBLIC_BUILD_VERSION = re.compile(r"v?\d+\.\d+\.\d+")
+PUBLIC_BUILD_ARTIFACT = re.compile(r"JUDUN-\d+\.\d+\.\d+-[A-Za-z0-9._-]{1,100}")
+
+
+def parse_public_build_identity(result: dict) -> dict | None:
+    """Reject split-brain version fields before treating a build as one release.
+
+    Public status is still self-reported; this is structural consistency only.
+    """
+    if result.get("status") != "OK" or not isinstance(result.get("data"), dict):
+        return None
+    data = result["data"]
+    versions = [data[key] for key in ("display_version", "version") if key in data]
+    if (not versions or any(not isinstance(v, str)
+                            or not PUBLIC_BUILD_VERSION.fullmatch(v) for v in versions)):
+        return None
+    normalized = [v.removeprefix("v") for v in versions]
+    if len(set(normalized)) != 1:
+        return None
+    artifact = data.get("artifact_id")
+    if (not isinstance(artifact, str)
+            or not PUBLIC_BUILD_ARTIFACT.fullmatch(artifact)
+            or not artifact.startswith(f"JUDUN-{normalized[0]}-")):
+        return None
+    return {"version": normalized[0], "artifact_id": artifact}
+
+
+
+def assess_public_deep_integrity(integrity_result: dict, *,
+                                 live_artifact: str | None,
+                                 live_version: str | None) -> str:
+    """Validate the *shape and consistency* of an unauthenticated deep probe.
+
+    A public endpoint can report its own SHA matches, but cannot independently
+    attest the contents of private production files. Do not turn this into a
+    trusted signature check or end-to-end acceptance.
+    """
+    if not live_artifact or not live_version:
+        return "LIVE_IDENTITY_NOT_VERIFIED"
+    if integrity_result.get("status") != "OK":
+        return "DEEP_RESPONSE_UNVERIFIED"
+    data = integrity_result.get("data")
+    if not isinstance(data, dict):
+        return "DEEP_RESPONSE_UNVERIFIED"
+    if (data.get("status") != "ok"
+            or data.get("artifact_id") != live_artifact
+            or data.get("deep_verified") is not True):
+        return "DEEP_IDENTITY_OR_VERIFICATION_MISMATCH"
+    reported_version = data.get("version")
+    if (not isinstance(reported_version, str)
+            or reported_version.removeprefix("v") != live_version):
+        return "DEEP_VERSION_MISMATCH"
+    count = data.get("files_verified")
+    manifest_count = data.get("manifest_file_count")
+    mismatches = data.get("mismatch_count")
+    if (type(count) is not int or count < 79
+            or type(manifest_count) is not int or manifest_count != count
+            or type(mismatches) is not int or mismatches != 0):
+        return "DEEP_FILE_COUNT_OR_MISMATCH_INVALID"
+    for name in ("formal_evidence_sha256", "source_tree_sha256"):
+        value = data.get(name)
+        if not isinstance(value, str) or not HEX_SHA256.fullmatch(value):
+            return "DEEP_SHA256_MISSING_OR_INVALID"
+    return "PASS"
+
+
+def assess_snapshot_stability(next_build: dict, *,
+                              initial_artifact: str | None,
+                              initial_version: str | None) -> str:
+    """Detect an observed release change during a multi-endpoint public audit."""
+    if not initial_artifact or not initial_version:
+        return "INITIAL_IDENTITY_UNVERIFIED"
+    identity = parse_public_build_identity(next_build)
+    if identity is None:
+        return "FINAL_BUILD_UNVERIFIED"
+    if (identity["version"] != initial_version
+            or identity["artifact_id"] != initial_artifact):
+        return "BUILD_CHANGED_DURING_AUDIT"
+    return "CONSISTENT"
+
+
+def audit() -> dict:
+    channel = json.loads((PROJECT_ROOT / "channel/stable.json").read_text("utf-8"))
+    historical = json.loads(
+        (PROJECT_ROOT / "assets/v1.2.114-expansion-resilience-verification-20261017.json")
+        .read_text("utf-8")
+    )
+    build_result = public_json("/health/build")
+    live_version = None
+    live_artifact = None
+    live_build_identity = "NOT_VERIFIED"
+    initial_identity = parse_public_build_identity(build_result)
+    if initial_identity is not None:
+        live_version = initial_identity["version"]
+        live_artifact = initial_identity["artifact_id"]
+        live_build_identity = "OBSERVED"
+    integrity = public_json("/health/artifact?deep=true")
+    integrity_status = assess_public_deep_integrity(
+        integrity, live_artifact=live_artifact, live_version=live_version
+    )
+
+    home = public_get("/")
+    homepage = {"status": "NOT_VERIFIED", "approved_visual_unchanged": "NOT_VERIFIED"}
+    pricing_mode = "NOT_VERIFIED"
+    if home["status"] == "OK":
+        try:
+            text = home["content"].decode("utf-8")
+            parsed = PublicHome()
+            parsed.feed(text)
+            value = "".join(parsed.text_parts)
+            homepage["status"] = (
+                "ENTRY_IDS_PRESENT" if {"fileInput", "dataConsentInput", "submitBtn"}.issubset(parsed.ids)
+                and parsed.duplicate_ids == 0 and "居盾" in value
+                else "ENTRY_MISSING_OR_DUPLICATE_ID"
+            )
+            # HTML inspection is NOT a pixel/brand review; do not overclaim.
+            pricing_mode = (
+                "PUBLIC_TEST_MODE_NOTICE_PRESENT" if "目前為付費功能測試模式" in value
+                else "NOT_VERIFIED_BY_PUBLIC_HTML"
+            )
+        except (UnicodeError, ValueError):
+            homepage["status"] = "INVALID_HTML"
+
+    exclusion = public_json("/health/source-exclusion")
+    exclusion_status = "NOT_VERIFIED"
+    if exclusion["status"] == "OK":
+        data = exclusion["data"]
+        if data.get("remaining_cases") == 0 and data.get("remaining_records") == 0:
+            exclusion_status = "ZERO_REMAINING_REPORTED"
+        else:
+            exclusion_status = "EXCLUSIONS_UNRESOLVED_OR_UNVERIFIED"
+
+    # A single initial /health/build check can race a concurrent production
+    # release while /health/artifact and homepage are being read. Bracket
+    # the observation, and fail closed on any identity or network drift.
+    snapshot_stability = assess_snapshot_stability(
+        public_json("/health/build"),
+        initial_artifact=live_artifact, initial_version=live_version,
+    )
+    if snapshot_stability != "CONSISTENT":
+        live_build_identity = "INCONSISTENT_OR_UNVERIFIED"
+        integrity_status = "RELEASE_CHANGED_OR_UNVERIFIED_DURING_AUDIT"
+
+    status_result = {
+        "schema": "judun.p3.production-readiness.v1",
+        "observed_at_utc": datetime.now(timezone.utc).isoformat(),
+        "purpose": "READ_ONLY_INTEGRATION_BLOCKER_DIAGNOSIS",
+        "production_was_modified": False,
+        "payment_or_upload_performed": False,
+        "public_live": {
+            "build_identity": live_build_identity,
+            "snapshot_stability": snapshot_stability,
+            "display_version": live_version,
+            "artifact_id": live_artifact,
+            "deep_integrity": integrity_status,
+            "deep_integrity_scope": "PUBLIC_ENDPOINT_SELF_REPORT_NOT_INDEPENDENT_DISK_HASH",
+            "homepage_entry": homepage["status"],
+            "approved_visual_unchanged": "NOT_VERIFIED",
+            "payment": pricing_mode,
+            "source_exclusion": exclusion_status,
+        },
+        "signed_channel": {
+            "expected_display_version": channel.get("expected_display_version"),
+            "base_artifact_id": channel.get("base_artifact_id"),
+            "target_artifact_id": channel.get("target_artifact_id"),
+            "counterfactual_agent_base_check": assess_published_channel(
+                channel, live_artifact
+            ),
+            "agent_actual_service_status": "UNKNOWN",
+            "release_id": channel.get("release_id"),
+            "note": "Stable channel version need not equal currently deployed production; do not roll back.",
+            "matches_observed_live_version": (
+                live_version is not None
+                and str(channel.get("expected_display_version") or "").lstrip("v") == live_version
+            ),
+        },
+        "historical_build_attestation": {
+            "version": historical.get("version"),
+            "artifact_id": historical.get("artifact_id"),
+            "same_as_live": (
+                live_artifact is not None and historical.get("artifact_id") == live_artifact
+            ),
+            "not_live_proof": True,
+        },
+        "source_in_this_git_repository": "ENCRYPTED_DEPLOYMENT_ASSETS_ONLY",
+        "editable_authoritative_source": "NOT_AVAILABLE_IN_THIS_WORKSPACE",
+        "existing_formal_qa_schema": "NOT_VERIFIED",
+        "authorized_release_signing": "NOT_AVAILABLE_IN_THIS_WORKSPACE",
+        "real_customer_quote_e2e": "NOT_RUN",
+        "real_payment_e2e": "NOT_RUN",
+        "real_report_pdf_e2e": "NOT_RUN",
+        "decision": "BLOCKED_FOR_PRODUCTION_INTEGRATION",
+        "required_next_action": "Use the existing trusted production source builder and signed-deployment environment; verify actual schema, payment and report/PDF flows before a single signed release.",
+    }
+    return status_result
+
+
+def main() -> int:
+    result = audit()
+    out = PROJECT_ROOT / "p3/results/production-readiness.json"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    # Public metadata only, no cookies, response HTML, raw exception or DB.
+    out.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    summary = {
+        "decision": result["decision"],
+        "observed_build": result["public_live"]["display_version"],
+        "observed_artifact_id": result["public_live"]["artifact_id"],
+        "integrity": result["public_live"]["deep_integrity"],
+        "pricing_mode": result["public_live"]["payment"],
+        "source_authority": result["editable_authoritative_source"],
+    }
+    print("P3_RELEASE_GATE", json.dumps(summary, ensure_ascii=False))
+    print("NO_DEPLOYMENT_OR_PAYMENT_PERFORMED")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,0 +1,25 @@
+{
+  "base_version": "1.2.121",
+  "target_version": "1.2.122",
+  "source_sha256": "c597f753f43b6401d1fae82b2ec3e1be1482e8b3f79179fdf27e84f2c1de7e8b",
+  "changed_functions": [
+    "_item_analysis_prompt",
+    "run_ai_analysis",
+    "run_resume_analysis",
+    "generate_advanced_theme_content",
+    "run_basic_guide_generation",
+    "run_item_deep_dive",
+    "run_variant_generation"
+  ],
+  "homepage_and_report_renderers_byte_equivalent": true,
+  "production_source_not_imported": true,
+  "fixture_tests": 10,
+  "p3_tests": 84,
+  "live_base_81_files_verified": true,
+  "release_commit": "19e5e9ef0223673194ca8584f189c27ecb111c30",
+  "release_packages_retained": [
+    "1.2.121",
+    "1.2.122"
+  ],
+  "previous_packages_removed_from_main": 50
+}

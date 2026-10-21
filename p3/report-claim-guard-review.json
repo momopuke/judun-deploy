@@ -1,0 +1,25 @@
+{
+  "base_version": "1.2.122",
+  "target_version": "1.2.123",
+  "target_app_sha256": "c506047e2a5f0ee740a13edb838664eb147311b7a4dc8ba9c1ed579ac8ed6dcd",
+  "source_tree_sha256": "898f7905196c40b1b722f0c7530cf331a1909141f90d398a55c6043be0e0756f",
+  "changed_functions": [
+    "run_ai_analysis",
+    "build_recheck_snapshot",
+    "_judun_guard_report_totals"
+  ],
+  "added_functions": [
+    "_judun_guard_report_claims",
+    "_judun_risk_score"
+  ],
+  "html_and_pdf_template_source_unchanged": true,
+  "homepage_version_only_change": true,
+  "public_html_sha256": "bc9a55842672cc653f66189109cf49be8e4d902a0b6e0d392a743df1a707f47c",
+  "all_81_deployed_files_verified": true,
+  "actual_vps_legacy_qa": "PASS",
+  "stored_analysis_and_price_rows_unchanged": true,
+  "python_tests": 324,
+  "node_tests": 50,
+  "release_commit": "90debb373f7102760a9cac76bb3d1b9391dc01ef",
+  "real_payment_and_smtp_tested": false
+}
