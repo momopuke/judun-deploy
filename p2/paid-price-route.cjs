@@ -94,7 +94,12 @@ async function showVerifiedPriceSectionAsync(input, interfaces, timeoutMs = 3000
     interfaces.isCurrent(opts) === true;
   const ensureCurrent = () => {
     if (expired || opts.signal.aborted) return {ok:false,reason:"REPORT_UI_TIMEOUT"};
-    if (!contextValid()) return {ok:false,reason:"REPORT_CONTEXT_CHANGED"};
+    if (!contextValid()) {
+      // Cancel participating background renderers as soon as the user changes
+      // reports; otherwise they may continue mutating the old report later.
+      controller.abort();
+      return {ok:false,reason:"REPORT_CONTEXT_CHANGED"};
+    }
     return null;
   };
   try {
