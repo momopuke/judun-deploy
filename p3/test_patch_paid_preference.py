@@ -7,6 +7,8 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
+import patch_paid_preference as source_patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from patch_paid_preference import (
@@ -26,6 +28,34 @@ def sample() -> bytes:
 
 
 class ExactPatch(unittest.TestCase):
+    def test_current_review_is_noop_and_historical_fixture_is_independently_pinned(self):
+        before = sample()
+        after, _, _ = apply_one_statement(before)
+        with patch.object(source_patch, 'OBSERVED_PUBLIC_HTML_SHA256', source_patch.sha(before)), patch.object(source_patch, 'CURRENT_PUBLIC_HTML_SHA256', source_patch.sha(after)):
+            unchanged, report, diff = source_patch.review_public_source(after)
+            self.assertEqual(unchanged, after)
+            self.assertEqual(report['statement_replacements'], 0)
+            self.assertEqual(diff, '')
+            self.assertTrue(report['live_source_already_contains_fixes'])
+            self.assertEqual(source_patch.historical_regression_source(after), before)
+
+    def test_unknown_current_source_is_never_accepted_or_rewritten(self):
+        for fn in (source_patch.review_public_source, source_patch.historical_regression_source):
+            with self.assertRaisesRegex(ValueError, 'PUBLIC_VERSION_SHA_MISMATCH'):
+                fn(sample())
+
+    def test_current_identity_without_guard_still_fails(self):
+        broken = sample()
+        with patch.object(source_patch, 'CURRENT_PUBLIC_HTML_SHA256', source_patch.sha(broken)):
+            with self.assertRaisesRegex(ValueError, 'DEPLOYED_FIX_SOURCE_GUARD_MISMATCH'):
+                source_patch.review_public_source(broken)
+
+    def test_historical_fixture_must_match_independent_old_sha(self):
+        after, _, _ = apply_one_statement(sample())
+        with patch.object(source_patch, 'CURRENT_PUBLIC_HTML_SHA256', source_patch.sha(after)):
+            with self.assertRaisesRegex(ValueError, 'HISTORICAL_FIXTURE_SHA_MISMATCH'):
+                source_patch.historical_regression_source(after)
+
     def test_rewrites_only_two_statements_and_keeps_brand(self):
         source = sample()
         patched, report, diff = apply_one_statement(source)

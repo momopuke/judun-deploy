@@ -120,11 +120,11 @@ jobs:
           path: p3/results/judun-p3-price-navigation.browser.js
           if-no-files-found: error
           retention-days: 14
-      - name: Stage exact original + one-line patched production homepage (ephemeral runner only)
+      - name: Stage SHA-verified historical before/after regression fixtures (never live production)
         env:
           RUNNER_TEMP_DIR: ${{ runner.temp }}
         run: |
-          python3 p3/patch_paid_preference.py --public-stage \
+          python3 p3/patch_paid_preference.py --historical-stage \
             --original-out "$RUNNER_TEMP_DIR/judun-p3-v12114-original.html" \
             --output "$RUNNER_TEMP_DIR/judun-p3-v12114-patched.html"
       - name: Verify negative-status false positives blocked by exact live-source patch

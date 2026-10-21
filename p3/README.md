@@ -1,3 +1,17 @@
+# 2026-10-21 最新接續狀態：正式 v1.2.120、v1.2.121 效能候選待部署
+
+本節取代下方歷史文字中「仍是 v1.2.114／沒有來源／未做 PDF」等過期狀態。
+
+- 正式 v1.2.120 已完成簽章與 81/81 深度 SHA，以及測試模式 Basic/ProMax 與四份 PDF 驗收；正式扣款與寄信未驗收。完整候選 P0/P1 尚不可視為已部署。
+- `preflight_render_patch.py` 僅接受已驗收 SHA `007c9edc1f8496018d5c9d91183990e2c54c7bf2fc3412a1a29d0798f13c6664` 的 v1.2.120 source；候選 v1.2.121 app SHA 為 `a1111db99cb1da112b4f8658257a6a1ada7c10bd3bfc6c2a8c8ac3c4cfdb7243`。轉換逐位元可逆，保留其餘全部 source。
+- 健康檢查使用 `ContextVar` 隔離合成報告的公開來源查詢，正常報告仍走原有搜尋與快取。真實 renderer、HTML 完整性、錯誤狀態檢查均保留；例外也必須 reset scope。前置檢查不必搶正式證據快取鎖。
+- 唯讀 `plan_signed_patch` 檢查81個現行正式檔案與獨立 base-tree；套用僅供原驗簽/備份/rollback代理，且再次檢查簽章內身分與 agent context。**未建立或修改任何 evidence DB schema/data**。
+- `test_preflight_render_patch.py` 16項通過；另外使用私人還原 source 的真實1249行渲染函式，在隔離 IO fixture 驗證原版會呼叫正式來源檢索、修正版不呼叫仍可產生完整 HTML。測得約0.004秒僅是本機 fixture，不是 VPS 冷啟動改善倍數，也不是付費/PDF 新版驗收。
+- `patch_paid_preference.py --public-review` 對獨立 SHA 核對過的現版回報零修改；`--historical-stage` 僅供離線瀏覽器回歸，必須還原出原 v1.2.114 SHA，未知 source 一律拒絕。現版與歷史 fixture 明確區別。
+- 自動審核拒絕本輪 HTTPS v3 維護入口；v1.2.121 的本機簽章包未排入正式 channel，也未重啟服務。須取得對具體版本部署、必要重啟及原回復機制的明確授權後，才可部署並跑實際 readiness/Basic/ProMax/PDF 及 SHA 驗收。
+
+---
+
 # 居盾 P3｜現行正式站接線（只改成功導覽，不改付款）
 
 > **整合候選，未部署。** 本目錄不是第二套網站，不取代現有 v1.2.114 的受信任原始碼、資料庫或簽章發行。

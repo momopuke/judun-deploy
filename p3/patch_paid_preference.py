@@ -37,6 +37,7 @@ NEW_COMPLETION = ("if (String(data.status || '').includes('完成') "
 BOUNDED_BYTES = 3_000_000
 # v1.2.114 exact public HTML verified on 2026-10-20; fail closed on drift.
 OBSERVED_PUBLIC_HTML_SHA256 = "092f952d45b44e1ca5f526d610864a34893f861cc4ee3f587f8fc808ffcbbad8"
+CURRENT_PUBLIC_HTML_SHA256 = "734850d449b8d586f75f4af7ec7436a8dae17aa74a9b57f16ceb8031e1bf41fe"
 
 
 def sha(data: bytes) -> str:
@@ -131,6 +132,41 @@ def fetch_public() -> bytes:
     raise RuntimeError("PUBLIC_SOURCE_UNAVAILABLE_AFTER_3_READ_ATTEMPTS") from last_error
 
 
+def review_public_source(data: bytes) -> tuple[bytes, dict, str]:
+    """Recognize only independently reviewed exact historical/current bytes."""
+    if sha(data) == OBSERVED_PUBLIC_HTML_SHA256:
+        return apply_one_statement(data)
+    if sha(data) != CURRENT_PUBLIC_HTML_SHA256:
+        raise ValueError("PUBLIC_VERSION_SHA_MISMATCH_STOP_AND_REVIEW")
+    text = data.decode('utf-8')
+    if text.count(NEW) != 1 or text.count(NEW_COMPLETION) != 1 or OLD in text or OLD_COMPLETION in text:
+        raise ValueError("DEPLOYED_FIX_SOURCE_GUARD_MISMATCH")
+    return data, {
+        "schema": "judun.p3.paid-price-source-patch.v1",
+        "observed_release": "1.2.120",
+        "original_sha256": sha(data), "patched_sha256": sha(data),
+        "statement_replacements": 0,
+        "live_source_already_contains_fixes": True,
+        "completion_status_gate_hardened": True,
+        "no_html_css_or_assets_changed": True,
+        "production_deployed_by_this_tool": False,
+        "actual_payment_e2e_passed_by_this_tool": False,
+    }, ""
+
+
+def historical_regression_source(data: bytes) -> bytes:
+    """Reproduce exact v114 fixture; never represent it as current production."""
+    if sha(data) == OBSERVED_PUBLIC_HTML_SHA256:
+        return data
+    review_public_source(data)
+    historical = (data.decode('utf-8').replace(NEW, OLD, 1)
+                  .replace(NEW_COMPLETION, OLD_COMPLETION, 1)
+                  .replace('1.2.120', '1.2.114').encode('utf-8'))
+    if sha(historical) != OBSERVED_PUBLIC_HTML_SHA256:
+        raise ValueError("HISTORICAL_FIXTURE_SHA_MISMATCH")
+    return historical
+
+
 
 def write_staging_artifacts(artifacts: list[tuple[Path, bytes]]) -> None:
     """Create staging artifacts exclusively; never overwrite an existing path.
@@ -167,20 +203,29 @@ def main() -> int:
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--public-review", action="store_true")
     mode.add_argument("--public-stage", action="store_true")
+    mode.add_argument("--historical-stage", action="store_true")
     mode.add_argument("--input", type=Path)
     parser.add_argument("--original-out", type=Path)
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
     if args.public_review and (args.output or args.original_out):
         parser.error("--public-review never writes a complete public homepage")
-    if args.public_stage and (not args.output or not args.original_out):
-        parser.error("--public-stage requires distinct original-out and output")
+    if (args.public_stage or args.historical_stage) and (not args.output or not args.original_out):
+        parser.error("staging requires distinct original-out and output")
     if args.input and (not args.output or args.original_out):
         parser.error("--input requires --output and forbids --original-out")
-    original = fetch_public() if (args.public_review or args.public_stage) else args.input.read_bytes()
-    if (args.public_review or args.public_stage) and sha(original) != OBSERVED_PUBLIC_HTML_SHA256:
-        raise ValueError("PUBLIC_VERSION_SHA_MISMATCH_STOP_AND_REVIEW")
-    changed, report, patch = apply_one_statement(original)
+    public_mode = args.public_review or args.public_stage or args.historical_stage
+    original = fetch_public() if public_mode else args.input.read_bytes()
+    if args.historical_stage:
+        observed_sha = sha(original)
+        original = historical_regression_source(original)
+        changed, report, patch = apply_one_statement(original)
+        report.update(historical_regression_fixture=True, observed_public_sha256=observed_sha,
+                      fixture_is_current_production=False)
+    elif public_mode:
+        changed, report, patch = review_public_source(original)
+    else:
+        changed, report, patch = apply_one_statement(original)
     review_dir = Path("p3/results")
     review_dir.mkdir(parents=True, exist_ok=True)
     (review_dir / "paid-preference-exact.patch").write_text(patch, encoding="utf-8")
