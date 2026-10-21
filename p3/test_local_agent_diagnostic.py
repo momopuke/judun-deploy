@@ -4,7 +4,7 @@ import sys
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from local_agent_diagnostic import classify_logs, config_summary, diagnose
+from local_agent_diagnostic import classify_logs, config_summary, diagnose, latest_agent_event
 
 
 class LocalAgentDiagnosticTests(unittest.TestCase):
@@ -36,6 +36,54 @@ class LocalAgentDiagnosticTests(unittest.TestCase):
         self.assertEqual(stats["success"], 1)
         self.assertNotIn("/private/", str(stats))
         self.assertNotIn("123", str(stats))
+
+    def test_last_observed_success_supersedes_older_failure(self):
+        raw = (
+            "previous run: Encrypted payload SHA256 mismatch; token=never-export\\n"
+            "[SUCCESS] Auto-deployed and verified\\n"
+        )
+        latest = latest_agent_event(raw)
+        self.assertEqual(latest, "success")
+        stats = classify_logs(raw)
+        self.assertEqual(stats["encrypted_payload_sha_mismatch"], 1)
+        self.assertEqual(stats["success"], 1)
+        status = diagnose({
+            "agent_installed": True, "timer_enabled": "enabled",
+            "timer_active": "active", "agent_log_categories": stats,
+            "agent_last_observed_event": latest,
+        })
+        self.assertEqual(status, "RECORDED_SUCCESS_BUT_LIVE_UNVERIFIED")
+        self.assertNotIn("never-export", str(stats))
+        self.assertNotIn("never-export", status)
+
+    def test_last_observed_failure_supersedes_older_success(self):
+        raw = (
+            "[SUCCESS] Auto-deployed and verified\\n"
+            "another run: Encrypted payload SHA256 mismatch\\n"
+        )
+        stats = classify_logs(raw)
+        self.assertEqual(latest_agent_event(raw), "encrypted_payload_sha_mismatch")
+        status = diagnose({
+            "agent_installed": True, "timer_enabled": "enabled",
+            "timer_active": "active", "agent_log_categories": stats,
+            "agent_last_observed_event": latest_agent_event(raw),
+        })
+        self.assertEqual(status, "RECORDED_ENCRYPTED_PAYLOAD_SHA_MISMATCH")
+
+    def test_success_is_not_a_proof_of_current_release(self):
+        self.assertEqual(latest_agent_event("ordinary journal line"), "NONE")
+        self.assertEqual(
+            latest_agent_event("Release already processed: v1.2.114"),
+            "release_already_processed",
+        )
+        info = {
+            "agent_installed": True, "timer_enabled": "enabled",
+            "timer_active": "active", "agent_log_categories": {"success": 1},
+            "agent_last_observed_event": "release_already_processed",
+        }
+        self.assertEqual(
+            diagnose(info), "RECORDED_ALREADY_PROCESSED_LIVE_UNVERIFIED"
+        )
 
     def test_stop_states_precede_logs(self):
         sample = {
