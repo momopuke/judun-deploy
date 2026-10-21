@@ -95,6 +95,18 @@ class ReleaseRetentionSafetyTests(unittest.TestCase):
             plan({"schema": "judun.release-backup-inventory.v1", "entries": []},
                  current_artifact=CURRENT, previous_artifact=PREVIOUS)
 
+    def test_rejects_newer_or_same_version_as_previous_release(self):
+        current = "JUDUN-1.2.122-C597F753F43B"
+        candidates = (
+            "JUDUN-1.2.123-NEXT",
+            "JUDUN-1.2.122-PREVIOUS-BUILD",
+        )
+        for previous in candidates:
+            with self.subTest(previous=previous), self.assertRaisesRegex(
+                ValueError, "PREVIOUS_RELEASE_NOT_OLDER"
+            ):
+                plan(sample(), current_artifact=current, previous_artifact=previous)
+
     def test_no_paths_data_or_customer_tokens_in_output(self):
         inv = sample()
         inv["entries"].append({"kind": "formal_data_backup",
