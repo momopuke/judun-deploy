@@ -67,7 +67,21 @@ class OfflineSourceRestoreTests(unittest.TestCase):
             restricted = root / "private-stage"
             restricted.mkdir(mode=0o700)
             dest = restricted / "app.py"
-            staged = recover(enc, meta, hist, out_private=dest)
+            with self.assertRaisesRegex(ValueError, "PRIVATE_STAGING_REQUIRES_VERIFIED_LIVE_SOURCE"):
+                recover(enc, meta, hist, out_private=dest)
+            rows = [{"path": "runtime/app.py", "size": len(source), "sha256": sha(source)}]
+            for i in range(80):
+                data = ("fixture-file-" + str(i)).encode("ascii")
+                rows.append({"path": "runtime/ref%03d" % i, "size": len(data), "sha256": sha(data)})
+            tree = computed_tree_sha(rows)
+            trusted = root / "trusted-manifest.json"
+            trusted.write_text(json.dumps({
+                "schema": "judun.deploy-manifest.v1",
+                "version": "1.2.114", "artifact_id": BUILD,
+                "files": rows, "source_tree_sha256": tree,
+            }))
+            staged = recover(enc, meta, hist, out_private=dest,
+                             trusted_manifest=trusted, public_tree_sha256=tree)
             self.assertTrue(staged["staged_to_private_destination"])
             self.assertEqual(dest.read_bytes(), source)
             self.assertEqual(dest.stat().st_mode & 0o777, 0o600)
@@ -86,6 +100,29 @@ class OfflineSourceRestoreTests(unittest.TestCase):
             meta.write_text(json.dumps(record))
             with self.assertRaisesRegex(ValueError, "UNEXPECTED_SOURCE_ATTESTATION"):
                 recover(enc, meta, hist)
+
+    def test_rejects_duplicate_tar_or_zip_member_before_choosing_app(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            original = b'APP_VERSION = "1.2.114"\n'
+            for kind in ("tar", "zip"):
+                with self.subTest(kind=kind):
+                    archive = root / ("dup.tar.gz" if kind == "tar" else "dup.zip")
+                    if kind == "tar":
+                        with tarfile.open(archive, "w:gz") as tar:
+                            for content in (original, b'APP_VERSION = "1.2.114"\n# different\n'):
+                                item = tarfile.TarInfo("runtime/app.py")
+                                item.size = len(content)
+                                tar.addfile(item, BytesIO(content))
+                    else:
+                        import warnings
+                        with warnings.catch_warnings():
+                            warnings.simplefilter("ignore", UserWarning)
+                            with ZipFile(archive, "w") as z:
+                                z.writestr("runtime/app.py", original)
+                                z.writestr("runtime/app.py", original + b"# different\n")
+                    with self.assertRaisesRegex(ValueError, "DUPLICATE_ARCHIVE_MEMBER"):
+                        inspect_plaintext(archive, "1.2.114")
 
     def test_reject_unsafe_archived_member_and_wrong_python_version(self):
         with tempfile.TemporaryDirectory() as td:
