@@ -71,8 +71,15 @@ jobs:
         run: node --test p2/paid-price-route.test.cjs p3/report-integration.test.cjs
       - name: Verify exact ProMax preference and completion-status source guards
         run: python3 -m unittest discover -s p3 -p 'test_*.py' -v
+      - name: Fail-closed gate for historical pinned public homepage fixture
+        id: historical
+        run: python3 p3/current_release_fixture_gate.py --github-output "$GITHUB_OUTPUT"
       - name: Prepare exact two-statement live-source patch (read-only)
+        if: steps.historical.outputs.run_pinned_fixture == 'true'
         run: python3 p3/patch_paid_preference.py --public-review
+      - name: Report obsolete historical source fixture without weakening SHA checks
+        if: steps.historical.outputs.run_pinned_fixture == 'false'
+        run: echo "HISTORICAL_V114_V120_PATCH_SKIPPED_ON_NEWER_GUARDED_RELEASE; NOT A PRODUCTION ACCEPTANCE"
       - name: Save reviewable live-source patch without deploying
         if: always()
         uses: actions/upload-artifact@v4
@@ -120,7 +127,14 @@ jobs:
           path: p3/results/judun-p3-price-navigation.browser.js
           if-no-files-found: error
           retention-days: 14
+      - name: Fail-closed gate for old before/after browser fixtures
+        id: historical
+        run: python3 p3/current_release_fixture_gate.py --github-output "$GITHUB_OUTPUT"
+      - name: Report skipped obsolete historical browser regression
+        if: steps.historical.outputs.run_pinned_fixture == 'false'
+        run: echo "HISTORICAL_V114_BROWSER_FIXTURE_SKIPPED_ON_NEWER_GUARDED_RELEASE; LIVE CHECKS REMAIN REQUIRED"
       - name: Stage SHA-verified historical before/after regression fixtures (never live production)
+        if: steps.historical.outputs.run_pinned_fixture == 'true'
         env:
           RUNNER_TEMP_DIR: ${{ runner.temp }}
         run: |
@@ -128,6 +142,7 @@ jobs:
             --original-out "$RUNNER_TEMP_DIR/judun-p3-v12114-original.html" \
             --output "$RUNNER_TEMP_DIR/judun-p3-v12114-patched.html"
       - name: Verify negative-status false positives blocked by exact live-source patch
+        if: steps.historical.outputs.run_pinned_fixture == 'true'
         env:
           RUNNER_TEMP_DIR: ${{ runner.temp }}
         run: |
@@ -135,6 +150,7 @@ jobs:
             "$RUNNER_TEMP_DIR/judun-p3-v12114-original.html" \
             "$RUNNER_TEMP_DIR/judun-p3-v12114-patched.html"
       - name: Compare real before/after ProMax behavior in fully network-isolated Chromium
+        if: steps.historical.outputs.run_pinned_fixture == 'true'
         env:
           RUNNER_TEMP_DIR: ${{ runner.temp }}
         run: |
@@ -142,6 +158,7 @@ jobs:
             "$RUNNER_TEMP_DIR/judun-p3-v12114-original.html" \
             "$RUNNER_TEMP_DIR/judun-p3-v12114-patched.html"
       - name: Exercise actual Basic and ProMax completion callback on mocked, isolated status
+        if: steps.historical.outputs.run_pinned_fixture == 'true'
         env:
           RUNNER_TEMP_DIR: ${{ runner.temp }}
         run: |
