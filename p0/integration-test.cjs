@@ -71,6 +71,12 @@ const BASE='https://judun.142-93-91-214.sslip.io/';
       await page.waitForFunction(()=>document.documentElement.dataset.judunP0Ready==='1');
       await page.evaluate(()=>scrollTo(0,0));
       await page.screenshot({path:'p0/results/integrated-'+name+'.png',fullPage:false});
+      if(width<=520) {
+        assert(await page.locator('.v128-hero-copy h1 span').evaluate(el=>{
+          const box=el.getBoundingClientRect();
+          return el.scrollWidth<=box.width+2 && box.right<=innerWidth+2;
+        }),'mobile brand heading must remain within the page');
+      }
       const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth);
       assert(overflow<=2,'horizontal overflow '+name+': '+overflow);
       assert.deepEqual(failures,[]);
