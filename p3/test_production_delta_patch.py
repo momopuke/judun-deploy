@@ -10,9 +10,9 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from production_delta_patch import (
-    BASE_ARTIFACT, BASE_VERSION, TARGET_ARTIFACT, TARGET_SIGNATURE,
+    BASE_APP_SHA256, TARGET_APP_SHA256, BASE_ARTIFACT, BASE_VERSION, TARGET_ARTIFACT, TARGET_INSTANCE, TARGET_SIGNATURE,
     TARGET_VERSION, OLD, OLD_COMPLETION, NEW, NEW_COMPLETION,
-    computed_tree_sha, computed_live_tree_sha, inspect_managed_source, patch_app, plan_update, sha,
+    computed_tree_sha, computed_live_tree_sha, inspect_managed_source, patch_app, plan_update, sha, apply,
 )
 
 def fixture(root):
@@ -99,6 +99,30 @@ class DeltaReleaseTests(unittest.TestCase):
             self.assertIn(TARGET_SIGNATURE, new_app.decode())
             self.assertEqual((root / "app.py").read_bytes(), before)
             self.assertEqual(json.loads((root / "DEPLOY_MANIFEST.json").read_text())["version"], BASE_VERSION)
+
+    def test_signed_patch_refuses_same_version_with_unverified_bytes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fixture(root)
+            release = root / "release"
+            release.mkdir()
+            (release / "release.json").write_text(json.dumps({
+                "base_artifact_id": BASE_ARTIFACT,
+                "target_artifact_id": TARGET_ARTIFACT,
+                "target_build_instance_id": TARGET_INSTANCE
+            }))
+            self.assertEqual(len(BASE_APP_SHA256), 64)
+            self.assertEqual(len(TARGET_APP_SHA256), 64)
+            self.assertNotEqual(sha((root / "app.py").read_bytes()), BASE_APP_SHA256)
+            with patch.dict(os.environ, {
+                "JUDUN_BASE_ARTIFACT_ID": BASE_ARTIFACT,
+                "JUDUN_TARGET_ARTIFACT_ID": TARGET_ARTIFACT,
+                "JUDUN_TARGET_BUILD_INSTANCE_ID": TARGET_INSTANCE,
+                "JUDUN_SIMULATE": "1"
+            }):
+                with self.assertRaisesRegex(ValueError, "UNEXPECTED_V114_APP_CONTENT_SHA"):
+                    apply(root, release)
+            self.assertEqual(json.loads((root / "DEPLOY_MANIFEST.json").read_text())["version"],BASE_VERSION)
 
     def test_drift_and_wrong_release_are_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
