@@ -31,4 +31,18 @@ const {chromium}=require("playwright");
   console.log(code);
   console.log("P3_PUBLIC_COMPLETION_FUNCTION_END");
  }finally{await browser.close();}
-})().catch(e=>{console.error("P3_PUBLIC_COMPLETION_REVIEW_FAILED",e.name);process.exitCode=1});
+})().catch(e=>{
+  // Do not print arbitrary exception text: browser/library errors can contain
+  // private query strings, cookies or server headers. Only known safe codes.
+  const known=new Set([
+    "P3_READONLY_LIVE_SITE_UNAVAILABLE",
+    "MISSING_PUBLIC_COMPLETION_FN",
+    "COMPLETION_FN_REVIEW_LIMIT"
+  ]);
+  const reason=known.has(e && e.message) ? e.message :
+    (e && e.name==="TimeoutError" ? "READONLY_BROWSER_TIMEOUT" :
+     "READONLY_BROWSER_UNEXPECTED_FAILURE");
+  console.error("P3_PUBLIC_COMPLETION_REVIEW_FAILED",
+    JSON.stringify({reason,error_type:e && e.name==="TimeoutError" ? "TimeoutError" : "Error"}));
+  process.exitCode=1;
+});
