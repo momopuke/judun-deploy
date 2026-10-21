@@ -101,9 +101,15 @@ class SignedChannelPublisherTests(TestCase):
         calls = []
         def fake_http(method, endpoint, token, body=None, missing_ok=False):
             calls.append((method, endpoint, body))
+            if endpoint.startswith("/git/refs/") and method == "PATCH":
+                return {"object": {"sha": "e"*40}}
             if endpoint.startswith("/git/ref/"):
-                return {"object": {"sha": "a"*40}}
+                return {"object": {"sha": "e"*40 if any(
+                    method == "PATCH" and name.startswith("/git/refs/")
+                    for method, name, _ in calls) else "a"*40}}
             if endpoint.startswith("/git/commits/"):
+                if endpoint.endswith("e"*40):
+                    return {"tree": {"sha": "d"*40}, "parents": [{"sha": "a"*40}]}
                 return {"tree": {"sha": "b"*40}}
             if endpoint.startswith("/contents/channel/stable.json"):
                 return {"content": base64.b64encode(old).decode()}
@@ -115,10 +121,13 @@ class SignedChannelPublisherTests(TestCase):
                 return {"sha": "c"*40}
             if endpoint == "/git/trees":
                 return {"sha": "d"*40}
+            if endpoint.startswith("/git/trees/"):
+                return {"truncated": False, "tree": [
+                    {"path": name, "sha": "c"*40, "type": "blob", "mode": "100644"}
+                    for name in (info["payload_path"], "channel/stable.json.sig.b64",
+                                 "channel/stable.json")]}
             if endpoint == "/git/commits":
                 return {"sha": "e"*40}
-            if endpoint.startswith("/git/refs/") and method == "PATCH":
-                return {"ref": "refs/heads/main"}
             raise AssertionError(endpoint)
         verify_called = []
         with mock.patch.object(pub, "github", side_effect=fake_http):
@@ -132,8 +141,12 @@ class SignedChannelPublisherTests(TestCase):
                           if end == "/git/trees")["tree"]],
                          [info["payload_path"], "channel/stable.json.sig.b64",
                           "channel/stable.json"])
-        self.assertEqual(calls[-1][0], "PATCH")
-        self.assertEqual(calls[-1][2]["force"], False)
+        updates = [call for call in calls if call[0] == "PATCH"
+                   and call[1] == "/git/refs/heads/main"]
+        self.assertEqual(len(updates), 1)
+        self.assertEqual(updates[0][2]["force"], False)
+        self.assertEqual(calls[-1][0:2],
+                         ("GET", "/git/trees/" + "d"*40 + "?recursive=1"))
 
     def test_existing_payload_and_stale_channel_refused_before_git_writes(self):
         m, sig, cms = self.sample()
