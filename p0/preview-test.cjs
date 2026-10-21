@@ -1,11 +1,44 @@
 /* On-page preview tests only: no publication, no upload, no payment actions. */
-const {chromium} = require('playwright');
+const {chromium, request} = require('playwright');
 const path=require('path');
 const fs=require('fs');
 const assert=require('assert/strict');
+const {createHash}=require('crypto');
 const BASE="https://judun.142-93-91-214.sslip.io/";
 (async ()=>{
   fs.mkdirSync('p0/results',{recursive:true});
+  // Verify a fresh PUBLIC homepage response, once per run, before previewing.
+  // Re-fetching the identical server-rendered HTML for every viewport stresses
+  // the small production VPS and can time out at the last viewport.
+  const api=await request.newContext({timeout:20000});
+  let homepage;
+  try {
+    for (let attempt=1; attempt<=2; attempt++) {
+      try {
+        const res=await api.get(BASE,{timeout:20000});
+        assert(res.ok(), 'Live homepage HTTP '+res.status());
+        assert((res.headers()['content-type'] || '').toLowerCase().includes('text/html'),
+          'Live homepage must return HTML');
+        const bytes=await res.body();
+        assert(bytes.length>0 && bytes.length<=3000000,
+          'Live homepage response size outside review limits');
+        homepage=bytes.toString('utf8');
+        assert(homepage.includes('fileInput') && homepage.includes('dataConsentInput'),
+          'Live homepage missing required original upload controls');
+        console.log('P0_LIVE_HTML_SNAPSHOT',JSON.stringify({
+          bytes:bytes.length,sha256:createHash('sha256').update(bytes).digest('hex'),attempt
+        }));
+        break;
+      } catch (err) {
+        if (attempt===2) throw err; // never substitute an old/offline fixture
+        console.warn('P0_LIVE_FETCH_RETRY',JSON.stringify({
+          attempt,reason:String(err.message || err).slice(0,180)
+        }));
+      }
+    }
+  } finally {
+    await api.dispose();
+  }
   const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
   for (const [name,width,height,isMobile] of [
     ['desktop',1440,900,false],
@@ -16,6 +49,11 @@ const BASE="https://judun.142-93-91-214.sslip.io/";
   ]) {
     const context=await browser.newContext({viewport:{width,height},isMobile,deviceScaleFactor:1,reducedMotion:'reduce'});
     const page=await context.newPage();
+    // Every viewport gets the SAME freshly verified live response, served at
+    // the original HTTPS origin. No uploads, reports or payment are triggered.
+    await page.route(BASE,route=>route.fulfill({
+      status:200,contentType:'text/html; charset=utf-8',body:homepage
+    }));
     await page.goto(BASE,{waitUntil:'domcontentloaded',timeout:45000});
     await page.waitForSelector('button.v128-primary-cta',{timeout:20000});
     const before=await page.evaluate(()=>{
