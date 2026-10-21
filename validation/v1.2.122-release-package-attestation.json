@@ -1,0 +1,9 @@
+{
+  "schema": "judun.release-package-attestation.v1",
+  "version": "1.2.122",
+  "artifact_id": "JUDUN-1.2.122-C597F753F43B",
+  "encrypted_source_sha256": "b2b3c3516af5d7bc021913d8de386114f2dacb57a3789032bc63b23e42c925a1",
+  "scope": "SIGNED_SOURCE_DELTA_NOT_FULL_SNAPSHOT",
+  "target_app_sha256": "c597f753f43b6401d1fae82b2ec3e1be1482e8b3f79179fdf27e84f2c1de7e8b",
+  "source_tree_sha256": "2feb05ae52987ea2ecc119bc08017e863e2f17169c970fa4a234101394e5022d"
+}

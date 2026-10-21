@@ -1,0 +1,54 @@
+{
+  "base_version": "1.2.123",
+  "target_version": "1.2.124",
+  "target_app_sha256": "17d7ac26eab85daadbdbf8feb76b0d7af8f83fe471baef331b7c455634708ed8",
+  "source_tree_sha256": "d655470d06b96f5131c95d3e52e2bf47fdd38e29200d9b85b787037a74b2c3c8",
+  "changed_functions": [
+    "_public_evidence_search_index",
+    "rank_public_evidence_records",
+    "build_public_evidence_context"
+  ],
+  "added_functions": [
+    "_judun_iter_search_evidence"
+  ],
+  "homepage_and_pdf_template_source_unchanged": true,
+  "read_only_search_preserves_existing_qa_policy": true,
+  "actual_database_qa": {
+    "action": "ACTUAL_V124_STREAMING_SEARCH_QA",
+    "result": "PASS",
+    "queries": [
+      {
+        "query": "室內油漆工程",
+        "cold_seconds": 11.1916,
+        "cache_seconds": 0.000322,
+        "hits": 5,
+        "original_scoring_reference_seconds": 15.651,
+        "same_full_records_scores_and_order": true
+      },
+      {
+        "query": "超耐磨木地板",
+        "cold_seconds": 12.0656,
+        "cache_seconds": 0.000274,
+        "hits": 5,
+        "original_scoring_reference_seconds": 15.0287,
+        "same_full_records_scores_and_order": true
+      },
+      {
+        "query": "插座增設",
+        "cold_seconds": 14.2663,
+        "cache_seconds": 0.000282,
+        "hits": 5,
+        "original_scoring_reference_seconds": 7.1478,
+        "same_full_records_scores_and_order": true
+      }
+    ],
+    "new_search_process_peak_rss_kb": 125648,
+    "production_source_not_imported": true,
+    "no_bulk_corpus_cache_loaded": true,
+    "formal_database_unchanged": true
+  },
+  "python_p3_tests": 102,
+  "python_p1_tests": 230,
+  "node_tests": 50,
+  "release_commit": "506a05b75a1d7ac8f2244071d98effa1a0edbd5d"
+}

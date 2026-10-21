@@ -1,4 +1,5 @@
 """Synthetic CMS attestation tests, never production source or keys."""
+import json
 from pathlib import Path
 import sys
 import tempfile
@@ -6,7 +7,15 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from attest_encrypted_source import audit, recipient_serial
-from test_offline_source_recovery import make_suite
+from test_offline_source_recovery import make_suite as make_synthetic_suite
+
+def make_suite(root):
+    enc, meta, hist, source = make_synthetic_suite(root)
+    value = json.loads(meta.read_text())
+    value.update(version="1.2.123", artifact_id="JUDUN-1.2.123-C506047E2A5F")
+    meta.write_text(json.dumps(value))
+    return enc, meta, hist, source
+
 
 
 class CmsSourceProvenanceTests(unittest.TestCase):

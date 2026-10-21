@@ -29,8 +29,12 @@ class LiveFixtureRoutingTests(unittest.TestCase):
         self.assertEqual(result["decision"], "RUN")
 
     def test_known_release_html_drift_always_blocks(self):
-        result = assess(build("1.2.120"), page(b"unreviewed changed live HTML"))
-        self.assertEqual(result, {"decision": "BLOCK", "reason": "PINNED_RELEASE_SHA_DRIFT"})
+        for version in ("1.2.120", "1.2.124"):
+            result = assess(build(version), page(b"unreviewed changed live HTML"))
+            self.assertEqual(result, {"decision": "BLOCK", "reason": "PINNED_RELEASE_SHA_DRIFT"})
+
+    def test_current_release_pin_is_distinct_from_retained_historical_pin(self):
+        self.assertNotEqual(PINNED["1.2.120"], PINNED["1.2.124"])
 
     def test_newer_site_with_existing_fixes_skips_obsolete_fixture_only(self):
         content = f"<script>\n{NEW}\n{NEW_COMPLETION}\n</script>".encode()
