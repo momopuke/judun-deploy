@@ -77,6 +77,8 @@ const BASE='https://judun.142-93-91-214.sslip.io/';
           return el.scrollWidth<=box.width+2 && box.right<=innerWidth+2;
         }),'mobile brand heading must remain within the page');
       }
+      assert(await page.locator('.v129-nav-logo .judun-mark-shell').evaluate(el=>el.getBoundingClientRect().width>=35),
+        'brand logo must not be compressed by navigation links');
       const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth);
       assert(overflow<=2,'horizontal overflow '+name+': '+overflow);
       assert.deepEqual(failures,[]);

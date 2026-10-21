@@ -172,3 +172,12 @@
 @media (max-width: 520px) {
   .judun-quote-prep { padding: 13px 15px; }
 }
+
+/* Keep the existing logo lockup intact when tablet navigation wraps. */
+header.v128-brand-hero .v129-nav-logo,
+header.v128-brand-hero .judun-mark-shell,
+header.v128-brand-hero .brand-wordmark { flex-shrink: 0; }
+header.v128-brand-hero .brand-wordmark small { white-space: nowrap; }
+@media (min-width: 521px) and (max-width: 1000px) {
+  header.v128-brand-hero .v129-independent-pill { display: none; }
+}
