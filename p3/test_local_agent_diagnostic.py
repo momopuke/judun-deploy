@@ -4,7 +4,7 @@ import sys
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from local_agent_diagnostic import classify_logs, config_summary, diagnose, latest_agent_event
+from local_agent_diagnostic import classify_logs, config_summary, diagnose, latest_agent_event, safe_local_identity, collect
 
 
 class LocalAgentDiagnosticTests(unittest.TestCase):
@@ -84,6 +84,39 @@ class LocalAgentDiagnosticTests(unittest.TestCase):
         self.assertEqual(
             diagnose(info), "RECORDED_ALREADY_PROCESSED_LIVE_UNVERIFIED"
         )
+
+    def test_local_build_and_artifact_identity_must_agree(self):
+        a = {"display_version": "v1.2.122", "artifact_id": "JUDUN-1.2.122-AABB"}
+        self.assertEqual(safe_local_identity(a), a)
+        for bad in (
+            {"display_version": "1.2.122", "artifact_id": "JUDUN-1.2.121-AABB"},
+            {"display_version": "1.2.122", "artifact_id": "JUDUN-1.2.122"},
+            {"display_version": "1.2.122", "artifact_id": "x"},
+            {"display_version": "1.2.122", "artifact_id": None},
+            {"display_version": None, "artifact_id": "JUDUN-1.2.122-AABB"},
+            {"display_version": "v1.2.122-rc1", "artifact_id": "JUDUN-1.2.122-AABB"},
+            [],
+            None,
+        ):
+            with self.subTest(bad=bad):
+                self.assertIsNone(safe_local_identity(bad))
+
+    def test_last_agent_event_comes_from_journal_tail_not_initial_bytes(self):
+        from unittest.mock import patch, MagicMock
+        import local_agent_diagnostic as diag
+        massive_prefix = "Channel signature verification failed\n" + ("private-log-noise\n" * 10000)
+        latest = "[SUCCESS] Auto-deployed and verified\n"
+        fake = MagicMock(returncode=0, stdout=massive_prefix + latest)
+        with (patch.object(diag, "CONFIG") as config,
+              patch.object(diag, "run_status", return_value="active"),
+              patch.object(diag.subprocess, "run", return_value=fake),
+              patch.object(diag, "urlopen", side_effect=OSError("offline"))):
+            config.is_file.return_value = False
+            collected = collect()
+        self.assertEqual(collected["agent_last_observed_event"], "success")
+        self.assertEqual(collected["service_success_observed_in_sample"], True)
+        self.assertEqual(collected["service_ever_successful"], "OBSERVED_IN_RECENT_SAMPLE")
+        self.assertFalse(collected["pull_agent_required_for_https_v3"])
 
     def test_stop_states_precede_logs(self):
         sample = {
