@@ -4,7 +4,7 @@ import sys
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from production_readiness import assess_published_channel, assess_public_deep_integrity
+from production_readiness import assess_published_channel, assess_public_deep_integrity, assess_snapshot_stability
 
 
 class SignedChannelBaselineTests(unittest.TestCase):
@@ -113,6 +113,43 @@ class DeepIntegrityTests(unittest.TestCase):
         # Integrity source is a public, self-reported endpoint: this module
         # deliberately does not fetch production files or verify a private
         # authoritative manifest. Full deployment acceptance is separate.
+
+
+
+class SnapshotStabilityTests(unittest.TestCase):
+    def assess(self, result, version="1.2.122",
+               artifact="JUDUN-1.2.122-C597F753F43B"):
+        return assess_snapshot_stability(
+            result, initial_artifact=artifact, initial_version=version
+        )
+
+    def test_same_build_is_consistent(self):
+        initial = {"status": "OK", "data": {
+            "display_version": "1.2.122",
+            "artifact_id": "JUDUN-1.2.122-C597F753F43B",
+        }}
+        self.assertEqual(self.assess(initial), "CONSISTENT")
+
+    def test_redeployment_between_public_probes_blocks_clean_audit(self):
+        switched = {"status": "OK", "data": {
+            "version": "1.2.123",
+            "artifact_id": "JUDUN-1.2.123-NEW",
+        }}
+        self.assertEqual(self.assess(switched), "BUILD_CHANGED_DURING_AUDIT")
+
+    def test_second_probe_failure_fails_closed(self):
+        self.assertEqual(
+            self.assess({"status": "NOT_VERIFIED"}), "FINAL_BUILD_UNVERIFIED"
+        )
+        self.assertEqual(
+            self.assess({"status": "OK", "data": None}), "FINAL_BUILD_UNVERIFIED"
+        )
+
+    def test_missing_initial_build_never_proves_stability(self):
+        self.assertEqual(
+            self.assess({"status": "OK", "data": {}}, artifact=None),
+            "INITIAL_IDENTITY_UNVERIFIED",
+        )
 
 
 
