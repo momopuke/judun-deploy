@@ -52,6 +52,7 @@ jobs:
           print("APPROVED_DIFF_FILES", len(changed))
           PY
   quality:
+    if: github.ref != 'refs/heads/main'
     needs: release-boundary
     runs-on: ubuntu-latest
     timeout-minutes: 4
@@ -105,6 +106,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
   homepage-preview:
+    if: github.ref != 'refs/heads/main'
     needs: release-boundary
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -193,3 +195,18 @@ jobs:
             p0/results/integration.json
           if-no-files-found: ignore
           retention-days: 14
+
+  main-signed-publisher:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify the pinned signed stable channel without deploying
+        run: python3 .github/scripts/verify_release.py package
+      - name: Validate public direct-deploy publisher and acceptance gate
+        run: |
+          python3 -m py_compile p3/direct_deploy_publish.py
+          python3 -m unittest discover -s p3 -p 'test_direct_deploy_publish.py' -v
+      - name: Confirm this workflow does not publish to VPS
+        run: echo "GITHUB_MAIN_SIGNED_CHANNEL_VERIFIED; NO_DEPLOYMENT_PERFORMED"
