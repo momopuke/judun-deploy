@@ -208,6 +208,21 @@ test("async completion rechecks trusted report context after renderer and scroll
     assert.equal(scrollCount,flipAt==="mount"?0:1,flipAt);
   }
 });
+test("a report switch actively aborts its former renderer signal", async () => {
+  let current=true,signal=null,release;
+  const pending=new Promise(resolve=>{release=resolve;});
+  const task=showVerifiedPriceSectionAsync(unlocked("basic"),{
+    isCurrent:()=>current,
+    mount:(_target, opts)=>{signal=opts.signal; return pending;},
+    findSection:()=>{throw Error("stale report was inspected");}
+  },1000);
+  await Promise.resolve();
+  assert.equal(signal.aborted,false);
+  current=false;
+  release();
+  assert.deepEqual(await task,{ok:false,reason:"REPORT_CONTEXT_CHANGED"});
+  assert.equal(signal.aborted,true);
+});
 test("async navigation bounded timeout does not scroll late", async () => {
   let unblock;
   let focused=false, scrolled=false;
