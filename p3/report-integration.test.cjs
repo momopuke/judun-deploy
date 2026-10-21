@@ -220,6 +220,34 @@ test("repeated notification cannot reuse active navigation for unverified entitl
   release();
   assert.deepEqual(await verified,{ok:true,target:"report-price-items"});
 });
+test("A-B-A route changes never revive a superseded paid report navigation",async()=>{
+  const {el,calls:uiCalls}=fakeSection();
+  const adapter=makeAdapter({section:el}).adapter;
+  let releaseOld,releaseNew;
+  const oldPending=new Promise(resolve=>{releaseOld=resolve});
+  const newPending=new Promise(resolve=>{releaseNew=resolve});
+  let mounts=0;
+  adapter.renderAuthorizedReport=(_target,opts)=>{
+    mounts++;
+    return opts.reportId==="case-report-44"?oldPending:newPending;
+  };
+  const first=continueToPriceAfterVerifiedUnlock(serverReady(),adapter,1000);
+  await Promise.resolve();await Promise.resolve();
+  adapter.currentReportId="case-report-45";
+  const other={...serverReady(),reportId:"case-report-45",entitlementReportId:"case-report-45"};
+  const second=continueToPriceAfterVerifiedUnlock(other,adapter,1000);
+  await Promise.resolve();await Promise.resolve();
+  // Switch back before the stale first mount finishes, using the same DOM.
+  adapter.currentReportId="case-report-44";
+  releaseOld();
+  const firstResult=await first;
+  assert.deepEqual(firstResult,{ok:false,reason:"REPORT_CONTEXT_CHANGED"});
+  releaseNew();
+  const secondResult=await second;
+  assert.deepEqual(secondResult,{ok:false,reason:"REPORT_CONTEXT_CHANGED"});
+  assert.equal(mounts,2);
+  assert.deepEqual(uiCalls,[]);
+});
 test("timeout never calls focus and must pass an abort signal to real report mount",async()=>{
   let signal;
   const {el,calls}=fakeSection();
