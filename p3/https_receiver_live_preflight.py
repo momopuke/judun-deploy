@@ -11,7 +11,9 @@ import json
 from pathlib import Path
 
 from https_receiver_bundle_audit import inspect_bundle
-from production_readiness import public_json, assess_public_deep_integrity
+from production_readiness import (
+    public_json, assess_public_deep_integrity, assess_snapshot_stability,
+)
 
 
 def audit_against_current_live(bundle: Path, *, expected_target_artifact: str,
@@ -46,6 +48,32 @@ def audit_against_current_live(bundle: Path, *, expected_target_artifact: str,
         live_formal_sha256=live_formal,
         live_mismatches=deep["mismatch_count"],
     )
+    # Bracket the expensive local ZIP hash audit with fresh public reads.
+    # A release may be promoted while inspect_bundle() is hashing a ZIP.
+    # Never permit a previously observed base artifact to authorize a
+    # later upload against a changed or partially verified live release.
+    final_build_r = public_json("/health/build")
+    final_deep_r = public_json("/health/artifact?deep=true")
+    if assess_snapshot_stability(
+        final_build_r, initial_artifact=live_artifact,
+        initial_version=live_version
+    ) != "CONSISTENT":
+        raise ValueError("HTTPS_V3_LIVE_CHANGED_DURING_PREFLIGHT")
+    if assess_public_deep_integrity(
+        final_deep_r, live_artifact=live_artifact,
+        live_version=live_version
+    ) != "PASS":
+        raise ValueError("HTTPS_V3_FINAL_DEEP_INTEGRITY_UNVERIFIED")
+    # Both reads must describe precisely the same public integrity state.
+    # Matching artifact identity alone does not guarantee a stable manifest.
+    final_deep = final_deep_r["data"]
+    for field in (
+        "version", "artifact_id", "formal_evidence_sha256",
+        "source_tree_sha256", "files_verified",
+        "manifest_file_count", "mismatch_count", "deep_verified",
+    ):
+        if final_deep.get(field) != deep.get(field):
+            raise ValueError("HTTPS_V3_DEEP_SNAPSHOT_CHANGED_DURING_PREFLIGHT")
     result["live_deep_verified"] = True
     result["verified_live_artifact"] = live_artifact
     result["next_step"] = "AUTHORIZED_RECEIVER_UPLOAD_NOT_PERFORMED"
