@@ -1,0 +1,195 @@
+name: JUDUN P0 unified pre-release acceptance (never deploy)
+on:
+  push:
+    paths:
+      - "p0/**"
+      - "p1/**"
+      - "p2/**"
+      - "p3/**"
+      - "P0_UNIFIED_README.md"
+      - ".github/workflows/judun-p0-unified-acceptance.yml"
+  pull_request:
+    paths:
+      - "p0/**"
+      - "p1/**"
+      - "p2/**"
+      - "p3/**"
+      - "P0_UNIFIED_README.md"
+      - ".github/workflows/judun-p0-unified-acceptance.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  release-boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Reject any accidental edits to signed production release surfaces
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import subprocess
+          changed = subprocess.check_output(
+              ["git", "diff", "--name-only", "origin/main...HEAD"], text=True
+          ).splitlines()
+          allowed = (
+              "p0/", "p1/", "p2/", "p3/",
+          )
+          exact = {
+              "P0_UNIFIED_README.md",
+              ".github/workflows/judun-p0-unified-acceptance.yml",
+          }
+          forbidden = [
+              name for name in changed
+              if not name.startswith(allowed) and name not in exact
+          ]
+          if forbidden:
+              raise SystemExit("RELEASE_BOUNDARY_FAILURE: " + repr(forbidden))
+          print("SIGNED_CHANNEL_UNCHANGED", True)
+          print("APPROVED_DIFF_FILES", len(changed))
+          PY
+  quality:
+    needs: release-boundary
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - name: P3 read-only LIVE build and integrity snapshot before legacy tests
+        run: python3 p3/production_readiness.py
+      - name: Attest retained previous v1.2.125 encrypted package and CMS recipient (no decrypt)
+        run: python3 p3/attest_encrypted_source.py
+      - name: Inspect public deep-health field types only (no values, no deploy)
+        run: python3 p3/public_deep_contract.py
+      - name: Diagnose original HTTPS deployment receiver (GET only; no release)
+        run: python3 p3/receiver_readiness.py
+      - name: Execute source QA, redirect chain, price-basis and expansion snapshot tests
+        run: python3 -m unittest discover -s p1 -p 'test_*.py' -v
+      - name: Execute checkout-to-price navigation and asynchronous report tests
+        run: node --test p2/paid-price-route.test.cjs p3/report-integration.test.cjs p3/live_client_guard_audit.test.cjs
+      - name: Verify exact ProMax preference and completion-status source guards
+        run: python3 -m unittest discover -s p3 -p 'test_*.py' -v
+      - name: Fail-closed gate for historical pinned public homepage fixture
+        id: historical
+        run: python3 p3/current_release_fixture_gate.py --github-output "$GITHUB_OUTPUT"
+      - name: Prepare exact two-statement live-source patch (read-only)
+        if: steps.historical.outputs.run_pinned_fixture == 'true'
+        run: python3 p3/patch_paid_preference.py --public-review
+      - name: Report obsolete historical source fixture without weakening SHA checks
+        if: steps.historical.outputs.run_pinned_fixture == 'false'
+        run: echo "HISTORICAL_V114_V120_PATCH_SKIPPED_ON_NEWER_GUARDED_RELEASE; NOT A PRODUCTION ACCEPTANCE"
+      - name: Save reviewable live-source patch without deploying
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: judun-p3-dual-safety-source-patch-NOT-DEPLOYED
+          path: |
+            p3/results/paid-preference-exact.patch
+            p3/results/paid-preference-review.json
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Observe published free entry WITHOUT any payment/upload
+        run: python3 p2/audit_public_funnel.py
+      - name: P3 read-only live integration and release gate (never deploy)
+        run: python3 p3/production_readiness.py
+      - name: Save non-sensitive audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: judun-unified-public-funnel-observation
+          path: |
+            p2/results/*.json
+            p3/results/*.json
+          if-no-files-found: ignore
+          retention-days: 14
+  homepage-preview:
+    needs: release-boundary
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install isolated browser
+        run: |
+          npm install --no-save playwright@1.56.1 esbuild@0.25.12
+          npx playwright install --with-deps chromium
+      - name: Review exact live completion callback body before E2E fixture
+        run: node p3/review-live-status-flow.cjs
+      - name: Produce actual browser-loadable P3 navigation script (staging only)
+        run: npx esbuild p3/report-browser-entry.cjs --bundle --platform=browser --format=iife --target=es2020 --minify --outfile=p3/results/judun-p3-price-navigation.browser.js
+      - name: Exercise browser bundle on isolated authorized-report fixture
+        run: node p3/browser-bundle-smoke.cjs
+      - name: Save browser integration candidate (NOT deployed)
+        uses: actions/upload-artifact@v4
+        with:
+          name: judun-p3-browser-navigation-candidate-NOT-DEPLOYED
+          path: p3/results/judun-p3-price-navigation.browser.js
+          if-no-files-found: error
+          retention-days: 14
+      - name: Fail-closed gate for old before/after browser fixtures
+        id: historical
+        run: python3 p3/current_release_fixture_gate.py --github-output "$GITHUB_OUTPUT"
+      - name: Report skipped obsolete historical browser regression
+        if: steps.historical.outputs.run_pinned_fixture == 'false'
+        run: echo "HISTORICAL_V114_BROWSER_FIXTURE_SKIPPED_ON_NEWER_GUARDED_RELEASE; LIVE CHECKS REMAIN REQUIRED"
+      - name: Stage SHA-verified historical before/after regression fixtures (never live production)
+        if: steps.historical.outputs.run_pinned_fixture == 'true'
+        env:
+          RUNNER_TEMP_DIR: ${{ runner.temp }}
+        run: |
+          python3 p3/patch_paid_preference.py --historical-stage \
+            --original-out "$RUNNER_TEMP_DIR/judun-p3-v12114-original.html" \
+            --output "$RUNNER_TEMP_DIR/judun-p3-v12114-patched.html"
+      - name: Verify negative-status false positives blocked by exact live-source patch
+        if: steps.historical.outputs.run_pinned_fixture == 'true'
+        env:
+          RUNNER_TEMP_DIR: ${{ runner.temp }}
+        run: |
+          node p3/negative-status-diagnostic.cjs \
+            "$RUNNER_TEMP_DIR/judun-p3-v12114-original.html" \
+            "$RUNNER_TEMP_DIR/judun-p3-v12114-patched.html"
+      - name: Compare real before/after ProMax behavior in fully network-isolated Chromium
+        if: steps.historical.outputs.run_pinned_fixture == 'true'
+        env:
+          RUNNER_TEMP_DIR: ${{ runner.temp }}
+        run: |
+          node p3/actual-homepage-staging-smoke.cjs \
+            "$RUNNER_TEMP_DIR/judun-p3-v12114-original.html" \
+            "$RUNNER_TEMP_DIR/judun-p3-v12114-patched.html"
+      - name: Exercise actual Basic and ProMax completion callback on mocked, isolated status
+        if: steps.historical.outputs.run_pinned_fixture == 'true'
+        env:
+          RUNNER_TEMP_DIR: ${{ runner.temp }}
+        run: |
+          node p3/real-completion-callback-sandbox.cjs \
+            "$RUNNER_TEMP_DIR/judun-p3-v12114-original.html" \
+            "$RUNNER_TEMP_DIR/judun-p3-v12114-patched.html"
+      - name: Check live-public-home in TEMPORARY browser only at five viewports
+        run: node p0/preview-test.cjs
+      - name: Verify integrated inline homepage startup and original controls in isolated browser
+        run: node p0/integration-test.cjs
+      - name: Review published unlock success branch source (read-only)
+        run: node p3/review-live-unlock.cjs
+      - name: Verify live executable navigation guards without initiating payment
+        run: node p3/live_client_guard_audit.cjs
+      - name: Discover real live homepage/report integration points (read-only)
+        run: node p3/site-contract-inventory.cjs
+      - name: Save P3 safe public UI inventory
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: judun-p3-live-dom-integration-inventory
+          path: p3/results/site-contract-inventory.json
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Store desktop, tablet and mobile QA screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: judun-unified-desktop-tablet-phone-visual-qa
+          path: |
+            p0/results/*.png
+            p0/results/integration.json
+          if-no-files-found: ignore
+          retention-days: 14
