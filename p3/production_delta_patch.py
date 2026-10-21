@@ -23,6 +23,9 @@ BASE_ARTIFACT = "JUDUN-1.2.114-AA38F0567A4D"
 TARGET_ARTIFACT = "JUDUN-1.2.115-3EDDAC2BC3D6"
 TARGET_INSTANCE = "1.2.115-20261021-P3-3EDDAC2BC3D6"
 TARGET_SIGNATURE = "JUDUN_1.2.115_VERIFIED_PAID_PRICE_NAV_20261021"
+# Content-addressed from the real v1.2.114 reconstructed release chain.
+BASE_APP_SHA256 = "496a0746cf982f01f67921dbb3ac9da8758af3207cc117cc2c9e9bea1d079f0b"
+TARGET_APP_SHA256 = "82eaca97cb4d65c8205bda4c92f215f26cba569e0f494202bd2216103fadb7d2"
 OLD = "const preferred = tier === 'promax' ? 'report-five-themes' : 'report-price-items';"
 NEW = "const preferred = 'report-price-items';"
 OLD_COMPLETION = "if (String(data.status || '').includes('完成')) {"
@@ -198,7 +201,14 @@ def apply(root: pathlib.Path, release_dir: pathlib.Path) -> None:
         os.getenv('JUDUN_TARGET_ARTIFACT_ID') != TARGET_ARTIFACT or
         os.getenv('JUDUN_TARGET_BUILD_INSTANCE_ID') != TARGET_INSTANCE):
         raise ValueError('SIGNED_AGENT_ENVIRONMENT_MISMATCH')
+    # Only the independently reconstructed and artifact-verified v1.2.114
+    # bytes may be modified. A stale or locally altered same-version app
+    # must not pass because its manifest and version strings happen to agree.
+    if sha((root / 'app.py').read_bytes()) != BASE_APP_SHA256:
+        raise ValueError('UNEXPECTED_V114_APP_CONTENT_SHA')
     new_app, new_manifest = plan_update(root)
+    if sha(new_app) != TARGET_APP_SHA256:
+        raise ValueError('PATCHED_APP_NOT_THE_VERIFIED_RELEASE_OUTPUT')
     if os.getenv('JUDUN_SIMULATE') == '1':
         print('P3_SIGNED_PATCH_DRY_RUN_PASS')
         return
