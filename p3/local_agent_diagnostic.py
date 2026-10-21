@@ -87,6 +87,19 @@ def latest_agent_event(raw: str) -> str:
                 latest = name
                 break
     return latest
+\n\ndef safe_local_identity(data: object) -> dict | None:
+    """Return non-secret verified version/artifact pair only."""
+    if not isinstance(data, dict):
+        return None
+    version = data.get("display_version") or data.get("version")
+    artifact = data.get("artifact_id")
+    if (not isinstance(version, str)
+            or not re.fullmatch(r"v?\\d+\\.\\d+\\.\\d+", version)
+            or not isinstance(artifact, str)
+            or not re.fullmatch(r"JUDUN-[A-Za-z0-9._-]{1,100}", artifact)
+            or not artifact.startswith("JUDUN-" + version.removeprefix("v") + "-")):
+        return None
+    return {"display_version": version, "artifact_id": artifact}
 
 
 def collect() -> dict:
@@ -136,14 +149,9 @@ def collect() -> dict:
     try:
         with urlopen("http://127.0.0.1:8000/health/build", timeout=5) as response:
             data = json.loads(response.read(65537))
-        version = data.get("display_version") or data.get("version")
-        artifact = data.get("artifact_id")
-        if (isinstance(version, str) and
-            re.fullmatch(r"v?\d+\.\d+\.\d+", version) and
-            isinstance(artifact, str) and
-            re.fullmatch(r"JUDUN-[A-Za-z0-9._-]{1,100}", artifact) and
-            artifact.startswith("JUDUN-" + version.removeprefix("v") + "-")):
-            info["local_version"] = {"display_version": version, "artifact_id": artifact}
+        identity = safe_local_identity(data)
+        if identity is not None:
+            info["local_version"] = identity
     except (OSError, ValueError, KeyError, TypeError):
         pass
     info["diagnostic"] = diagnose(info)
