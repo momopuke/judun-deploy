@@ -20,9 +20,9 @@ import tempfile
 BASE_VERSION = "1.2.114"
 TARGET_VERSION = "1.2.115"
 BASE_ARTIFACT = "JUDUN-1.2.114-AA38F0567A4D"
-TARGET_ARTIFACT = "JUDUN-1.2.115-21P3A85DF204"
-TARGET_INSTANCE = "1.2.115-20261021-P3-21P3A85DF204"
-TARGET_SIGNATURE = "JUDUN_1.2.115_P3_PAID_PRICE_NAV_SAFE_20261021"
+TARGET_ARTIFACT = "JUDUN-1.2.115-3EDDAC2BC3D6"
+TARGET_INSTANCE = "1.2.115-20261021-P3-3EDDAC2BC3D6"
+TARGET_SIGNATURE = "JUDUN_1.2.115_VERIFIED_PAID_PRICE_NAV_20261021"
 OLD = "const preferred = tier === 'promax' ? 'report-five-themes' : 'report-price-items';"
 NEW = "const preferred = 'report-price-items';"
 OLD_COMPLETION = "if (String(data.status || '').includes('完成')) {"
@@ -49,6 +49,22 @@ def computed_tree_sha(files: list) -> str:
     return sha(rows.encode('utf-8'))
 
 
+
+def computed_live_tree_sha(files: list) -> str:
+    """Actual v1.2.114 VPS DEPLOY_MANIFEST.json source-tree contract.
+
+    Distinct from the original Windows HTTPS-v3 ZIP builder's NUL-delimited
+    outer manifest (computed_tree_sha). The signed v1.2.114 apply_resilience.py
+    computes path TAB sha256 TAB size LF in sorted-path order.
+    """
+    records = ''.join(
+        f"{x['path']}\\t{x['sha256']}\\t{x['size']}\\n"
+        for x in sorted(files, key=lambda x: x['path'])
+    )
+    return sha(records.encode("utf-8"))
+
+
+
 def inspect_managed_source(root: pathlib.Path, *, version: str = BASE_VERSION,
                            artifact: str = BASE_ARTIFACT) -> tuple[dict, bytes]:
     manifest = json.loads((root / 'DEPLOY_MANIFEST.json').read_text('utf-8'))
@@ -64,7 +80,7 @@ def inspect_managed_source(root: pathlib.Path, *, version: str = BASE_VERSION,
         raise ValueError('MANIFEST_DUPLICATE_OR_MISSING_APP')
     if any(x in paths for x in ('RELEASE.json', 'VERSION.txt')):
         raise ValueError('ADDITIONAL_VERSION_SOURCE_REQUIRES_REVIEW')
-    if computed_tree_sha(files) != manifest.get('source_tree_sha256'):
+    if computed_live_tree_sha(files) != manifest.get('source_tree_sha256'):
         raise ValueError('SOURCE_TREE_DIGEST_MISMATCH')
     app_data = None
     for item in files:
@@ -104,19 +120,36 @@ def patch_app(original: bytes) -> bytes:
         head = js.rfind(fn, max(0, pos - 16000), pos)
         if head < 0 or re.search(r'\b(?:async\s+)?function\s+[A-Za-z_$]\w*\s*\(', js[head + len(fn):pos]):
             raise ValueError('JS_FUNCTION_CONTEXT_DRIFT')
-    original_version = f'APP_VERSION = "{BASE_VERSION}"'
-    if text.count(original_version) != 1:
-        raise ValueError('VERSION_CONSTANT_MISMATCH')
-    original_revision = f'RELEASE_REVISION = "{BASE_VERSION}"'
-    if text.count(original_revision) != 1:
-        raise ValueError('RELEASE_REVISION_CONSTANT_MISMATCH')
-    sig_pattern = r'^BUILD_SIGNATURE = "JUDUN_1\.2\.114_[A-Z0-9_]{8,160}"$'
-    if len(re.findall(sig_pattern, text, flags=re.MULTILINE)) != 1:
-        raise ValueError('BUILD_SIGNATURE_CONSTANT_MISMATCH')
+    # Historical actual v1.2.114 app.py contains SINGLE-quoted version
+    # declarations. Check their AST values and change only these three
+    # module-level assignments, independent of original quote style.
+    expected = {
+        'APP_VERSION': BASE_VERSION,
+        'RELEASE_REVISION': BASE_VERSION,
+        'BUILD_SIGNATURE': 'JUDUN_1.2.114_EXPANSION_RESILIENCE_20261017',
+    }
+    target = {
+        'APP_VERSION': TARGET_VERSION,
+        'RELEASE_REVISION': TARGET_VERSION,
+        'BUILD_SIGNATURE': TARGET_SIGNATURE,
+    }
+    changes = [node for node in tree.body
+               if isinstance(node, ast.Assign) and len(node.targets) == 1
+               and isinstance(node.targets[0], ast.Name)
+               and node.targets[0].id in expected]
+    if (len(changes) != 3
+            or any(node.lineno != node.end_lineno
+                   or not isinstance(node.value, ast.Constant)
+                   or node.value.value != expected[node.targets[0].id]
+                   for node in changes)
+            or {node.targets[0].id for node in changes} != set(expected)):
+        raise ValueError('RELEASE_METADATA_AST_DRIFT')
     changed = text.replace(OLD, NEW, 1).replace(OLD_COMPLETION, NEW_COMPLETION, 1)
-    changed = changed.replace(original_version, f'APP_VERSION = "{TARGET_VERSION}"', 1)
-    changed = changed.replace(original_revision, f'RELEASE_REVISION = "{TARGET_VERSION}"', 1)
-    changed = re.sub(sig_pattern, f'BUILD_SIGNATURE = "{TARGET_SIGNATURE}"', changed, count=1, flags=re.MULTILINE)
+    lines = changed.splitlines(keepends=True)
+    for node in changes:
+        key = node.targets[0].id
+        lines[node.lineno - 1] = key + ' = ' + repr(target[key]) + '\\n'
+    changed = ''.join(lines)
     if changed.count(NEW) != 1 or changed.count(NEW_COMPLETION) != 1:
         raise ValueError('AMBIGUOUS_PATCH_RESULT')
     compile(changed, '<signed-current-patched-app>', 'exec')
@@ -134,7 +167,7 @@ def plan_update(root: pathlib.Path) -> tuple[bytes, bytes]:
                     display_version='v' + TARGET_VERSION,
                     build_signature=TARGET_SIGNATURE, artifact_id=TARGET_ARTIFACT,
                     build_instance_id=TARGET_INSTANCE,
-                    source_tree_sha256=computed_tree_sha(manifest['files']),
+                    source_tree_sha256=computed_live_tree_sha(manifest['files']),
                     built_at_utc=dt.datetime.now(dt.timezone.utc).isoformat(timespec='seconds'))
     if manifest.get('formal_evidence_sha256') != original_formal_hash:
         raise ValueError('FORMAL_DATA_PROTECTION_ERROR')
