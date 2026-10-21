@@ -91,6 +91,33 @@ def assess_published_channel(channel: dict, live_artifact: str | None) -> str:
 
 HEX_SHA256 = re.compile(r"[0-9a-fA-F]{64}")
 
+PUBLIC_BUILD_VERSION = re.compile(r"v?\d+\.\d+\.\d+")
+PUBLIC_BUILD_ARTIFACT = re.compile(r"JUDUN-\d+\.\d+\.\d+-[A-Za-z0-9._-]{1,100}")
+
+
+def parse_public_build_identity(result: dict) -> dict | None:
+    """Reject split-brain version fields before treating a build as one release.
+
+    Public status is still self-reported; this is structural consistency only.
+    """
+    if result.get("status") != "OK" or not isinstance(result.get("data"), dict):
+        return None
+    data = result["data"]
+    versions = [data[key] for key in ("display_version", "version") if key in data]
+    if (not versions or any(not isinstance(v, str)
+                            or not PUBLIC_BUILD_VERSION.fullmatch(v) for v in versions)):
+        return None
+    normalized = [v.removeprefix("v") for v in versions]
+    if len(set(normalized)) != 1:
+        return None
+    artifact = data.get("artifact_id")
+    if (not isinstance(artifact, str)
+            or not PUBLIC_BUILD_ARTIFACT.fullmatch(artifact)
+            or not artifact.startswith(f"JUDUN-{normalized[0]}-")):
+        return None
+    return {"version": normalized[0], "artifact_id": artifact}
+
+
 
 def assess_public_deep_integrity(integrity_result: dict, *,
                                  live_artifact: str | None,
@@ -136,13 +163,11 @@ def assess_snapshot_stability(next_build: dict, *,
     """Detect an observed release change during a multi-endpoint public audit."""
     if not initial_artifact or not initial_version:
         return "INITIAL_IDENTITY_UNVERIFIED"
-    if next_build.get("status") != "OK" or not isinstance(next_build.get("data"), dict):
+    identity = parse_public_build_identity(next_build)
+    if identity is None:
         return "FINAL_BUILD_UNVERIFIED"
-    data = next_build["data"]
-    version = data.get("display_version") or data.get("version")
-    if (not isinstance(version, str)
-            or version.removeprefix("v") != initial_version
-            or data.get("artifact_id") != initial_artifact):
+    if (identity["version"] != initial_version
+            or identity["artifact_id"] != initial_artifact):
         return "BUILD_CHANGED_DURING_AUDIT"
     return "CONSISTENT"
 
@@ -157,14 +182,11 @@ def audit() -> dict:
     live_version = None
     live_artifact = None
     live_build_identity = "NOT_VERIFIED"
-    if build_result["status"] == "OK":
-        data = build_result["data"]
-        version = str(data.get("display_version") or data.get("version") or "").lstrip("v")
-        artifact = data.get("artifact_id")
-        if re.fullmatch(r"\d+\.\d+\.\d+", version) and isinstance(artifact, str) and re.fullmatch(r"JUDUN-[A-Za-z0-9._-]{1,100}", artifact):
-            live_version = version
-            live_artifact = artifact
-            live_build_identity = "OBSERVED"
+    initial_identity = parse_public_build_identity(build_result)
+    if initial_identity is not None:
+        live_version = initial_identity["version"]
+        live_artifact = initial_identity["artifact_id"]
+        live_build_identity = "OBSERVED"
     integrity = public_json("/health/artifact?deep=true")
     integrity_status = assess_public_deep_integrity(
         integrity, live_artifact=live_artifact, live_version=live_version
