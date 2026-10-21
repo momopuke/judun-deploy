@@ -81,17 +81,46 @@ class SignedChannelPublisherTests(TestCase):
     def test_live_requires_exact_base_and_81_managed_files(self):
         base = "JUDUN-1.2.126-5D4BA415AA32"
         digest = "a" * 64
-        build = {"artifact_id": base}
-        deep = {"artifact_id": base, "status": "ok", "deep_verified": True,
+        build = {"artifact_id": base, "version": "1.2.126",
+                 "build_instance_id": "1.2.126-20261022-HOME-5D4BA415AA32",
+                 "source_tree_sha256": digest}
+        deep = {"artifact_id": base, "version": "1.2.126",
+                "build_instance_id": build["build_instance_id"],
+                "status": "ok", "deep_verified": True,
                 "mismatch_count": 0, "files_verified": 81,
                 "manifest_file_count": 81, "source_tree_sha256": digest}
         pub.check_live(build, deep, base, digest)
         for override in ({"mismatch_count": 1}, {"files_verified": 79},
                          {"source_tree_sha256": "b" * 64},
-                         {"manifest_file_count": 80}):
+                         {"manifest_file_count": 80},
+                         {"build_instance_id": "1.2.126-DRIFT"},
+                         {"version": "1.2.125"}):
             with self.subTest(override=override):
                 with self.assertRaises(ValueError):
                     pub.check_live(build, deep | override, base, digest)
+
+    def test_live_build_and_deep_split_brain_fails_closed(self):
+        base = "JUDUN-1.2.126-5D4BA415AA32"
+        digest = "a"*64
+        instance = "1.2.126-20261022-HOME-5D4BA415AA32"
+        build = {"artifact_id": base, "version": "1.2.126",
+                 "build_instance_id": instance, "source_tree_sha256": digest}
+        deep = {"artifact_id": base, "version": "1.2.126",
+                "build_instance_id": instance, "source_tree_sha256": digest,
+                "status": "ok", "deep_verified": True, "mismatch_count": 0,
+                "files_verified": 81, "manifest_file_count": 81}
+        for drift in ({"source_tree_sha256": "b"*64},
+                      {"version": "1.2.125"},
+                      {"build_instance_id": "unrelated-instance"}):
+            with self.subTest(drift=drift):
+                with self.assertRaises(ValueError):
+                    pub.check_live(build | drift, deep, base, digest)
+        for drift in ({"source_tree_sha256": "b"*64},
+                      {"version": "1.2.125"},
+                      {"build_instance_id": "unrelated-instance"}):
+            with self.subTest(deep_drift=drift):
+                with self.assertRaises(ValueError):
+                    pub.check_live(build, deep | drift, base, digest)
 
     def test_atomic_publisher_writes_no_partial_ref_and_checks_source_key(self):
         m, sig, cms = self.sample()
