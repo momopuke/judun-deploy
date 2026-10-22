@@ -200,8 +200,10 @@ class SignedChannelPublisherTests(TestCase):
         info = json.loads(m)
         target = info["target_artifact_id"]
         build = {"artifact_id": target, "build_instance_id": info["target_build_instance_id"],
-                 "display_version": info["expected_display_version"]}
+                 "display_version": info["expected_display_version"],
+                 "version": "1.2.127", "source_tree_sha256": "a"*64}
         deep = {"artifact_id": target, "build_instance_id": info["target_build_instance_id"],
+                "version": "1.2.127", "source_tree_sha256": "a"*64,
                 "status": "ok", "deep_verified": True, "mismatch_count": 0,
                 "files_verified": 81, "manifest_file_count": 81}
         def live_good(path):
@@ -213,6 +215,8 @@ class SignedChannelPublisherTests(TestCase):
         self.assertEqual(result["version"], "v1.2.127")
 
         for drift in ({"mismatch_count": 1}, {"manifest_file_count": 82},
+                      {"version": "1.2.126"},
+                      {"source_tree_sha256": "b"*64},
                       {"artifact_id": "JUDUN-1.2.126-5D4BA415AA32"}):
             def live_bad(path):
                 if path == "/health/artifact?deep=true":
@@ -220,6 +224,31 @@ class SignedChannelPublisherTests(TestCase):
                 return live_good(path)
             with self.subTest(drift=drift):
                 with mock.patch.object(pub, "live_get", side_effect=live_bad):
+                    with self.assertRaisesRegex(
+                            ValueError, "DIRECT_DEPLOY_PUBLISHED_BUT_VPS_DEPLOYMENT_NOT_VERIFIED"):
+                        pub.verify_target_live(info, attempts=1, interval=0)
+
+    def test_post_publish_build_identity_drift_or_missing_tree_cannot_pass(self):
+        m, _, _ = self.sample()
+        info = json.loads(m)
+        build = {"artifact_id": info["target_artifact_id"],
+                 "build_instance_id": info["target_build_instance_id"],
+                 "display_version": "v1.2.127", "version": "1.2.127",
+                 "source_tree_sha256": "a"*64}
+        deep = build | {"status": "ok", "deep_verified": True,
+                        "mismatch_count": 0, "files_verified": 81,
+                        "manifest_file_count": 81}
+        for drift in ({"version": "1.2.126"},
+                      {"source_tree_sha256": "b"*64},
+                      {"source_tree_sha256": None},
+                      {"source_tree_sha256": ""},
+                      {"source_tree_sha256": "not-a-sha256"}):
+            def live(path):
+                return {"/health/build": build | drift,
+                        "/health/artifact?deep=true": deep,
+                        "/health/ready": {"status": "ready"}}[path]
+            with self.subTest(drift=drift):
+                with mock.patch.object(pub, "live_get", side_effect=live):
                     with self.assertRaisesRegex(
                             ValueError, "DIRECT_DEPLOY_PUBLISHED_BUT_VPS_DEPLOYMENT_NOT_VERIFIED"):
                         pub.verify_target_live(info, attempts=1, interval=0)
@@ -296,3 +325,4 @@ class SignedChannelPublisherTests(TestCase):
                                        "DIRECT_DEPLOY_RECOVERY_SIGNED_CHANNEL_MISMATCH"):
                 pub.verify_published_channel(m, signature, cms, target,
                                              self.pubkey)
+

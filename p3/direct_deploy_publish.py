@@ -292,19 +292,17 @@ def verify_target_live(target, *, attempts=36, interval=10):
                     and build.get("build_instance_id") == target["target_build_instance_id"]
                     and build.get("display_version") == target["expected_display_version"]):
                 deep = live_get("/health/artifact?deep=true")
-                count, total = deep.get("files_verified"), deep.get("manifest_file_count")
-                if (deep.get("artifact_id") == target["target_artifact_id"]
-                        and deep.get("build_instance_id") == target["target_build_instance_id"]
-                        and deep.get("status") == "ok"
-                        and deep.get("deep_verified") is True
-                        and type(deep.get("mismatch_count")) is int
-                        and deep["mismatch_count"] == 0
-                        and type(count) is int and type(total) is int
-                        and count >= 80 and count == total
-                        and live_get("/health/ready").get("status") == "ready"):
+                tree_sha = build.get("source_tree_sha256")
+                if not isinstance(tree_sha, str) or not HEX64.fullmatch(tree_sha):
+                    deny("TARGET_SOURCE_TREE_SHA_MISSING")
+                # Apply the same release-identity checks before and after a
+                # rollout. Matching artifact labels alone cannot rule out
+                # mixed responses from different releases.
+                check_live(build, deep, target["target_artifact_id"], tree_sha)
+                if live_get("/health/ready").get("status") == "ready":
                     return {"artifact_id": target["target_artifact_id"],
                             "version": target["expected_display_version"],
-                            "managed_files": count}
+                            "managed_files": deep["files_verified"]}
         except ValueError:
             pass
         if attempt + 1 < attempts:
@@ -368,3 +366,4 @@ def run():
 
 if __name__ == "__main__":
     raise SystemExit(run())
+
