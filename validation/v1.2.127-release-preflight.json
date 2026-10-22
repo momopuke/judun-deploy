@@ -1,0 +1,56 @@
+{
+  "schema": "judun.release-acceptance.v1",
+  "version": "1.2.127",
+  "status": "awaiting-vps-agent-diagnostics",
+  "production_acceptance_passed": false,
+  "release_commit": "e92ad0b321779602b86aea132eb0f9d2f4aa6f23",
+  "base": {
+    "artifact_id": "JUDUN-1.2.126-5D4BA415AA32",
+    "source_tree_sha256": "cc382cff7bd06e4020b84952aece020c2162aeaec908dc4f30db8b9b00727068",
+    "files_verified": 81,
+    "mismatch_count": 0
+  },
+  "target": {
+    "artifact_id": "JUDUN-1.2.127-C4B2046E7637",
+    "build_instance_id": "1.2.127-20261022-P1-C4B2046E7637",
+    "app_sha256": "c4b2046e7637b0ae394589fe9d06a1c0e86fbf92597b9342df588ef41c1b3a13",
+    "source_tree_sha256": "c8ffbacfc495e5d0433314ef2cda90963923cf906dfb7164ab9cec69f0680fc2",
+    "managed_files": 81,
+    "changed_source_files": [
+      "app.py",
+      "professional_report.py",
+      "price_quality.py"
+    ]
+  },
+  "preflight": {
+    "p1_tests": 232,
+    "verified_source_integration_tests": 16,
+    "publisher_tests": 14,
+    "all_tests_passed": true,
+    "original_ed25519_key_verified": true,
+    "original_cms_decrypt_roundtrip_verified": true,
+    "all_81_target_files_verified": true,
+    "full_program_backup_restore_rehearsal_files": 81,
+    "synthetic_business_data_preserved_in_rehearsal": true,
+    "homepage_payment_and_authorization_function_bodies_unchanged": true,
+    "pdf_fixture": {
+      "full_pages": 11,
+      "highlight_pages": 2,
+      "direct_source_links_verified": true
+    },
+    "github_signed_files_exact_readback": true
+  },
+  "production": {
+    "last_observed_version": "1.2.126",
+    "new_version_observed": false,
+    "basic_unlock": "pending",
+    "promax_unlock": "pending",
+    "direct_price_gap_landing": "pending",
+    "full_highlight_and_pdf": "pending",
+    "old_case_and_entitlements": "pending",
+    "backup_retention_on_vps": "pending",
+    "payment_mode": "TEST",
+    "real_payment_tested": false
+  },
+  "blocker": "Original VPS is active. Cloud Browser reports DigitalOcean Site Unavailable; available connector cannot execute guest commands or read systemd journal. Need original judun-autodeploy.service journal to distinguish pending pickup from agent failure."
+}
