@@ -1,0 +1,83 @@
+{
+  "status": "production_acceptance_passed",
+  "version": "1.2.130",
+  "artifact_id": "JUDUN-1.2.130-1239187341B9",
+  "source_tree_sha256": "d9640b73afa9514bd176b7877f1c5aa44f815e439a37d9fef834bb90cde7c80a",
+  "formal_evidence_sha256": "cb2530901faf1cf044105e83e74ad099ee8c5974fda2bb34307a79257b79dc4d",
+  "publication_commit": "d9ef3f712470bf8f0ec9a9fce3121072314addf2",
+  "deep_files_verified": 83,
+  "mismatch_count": 0,
+  "ready": true,
+  "offline_application_tests": 20,
+  "offline_release_install_rollback_tests": 2,
+  "synthetic_case_id": "794319e4-28d0-4650-a400-d01114589dea",
+  "priced_items": 3,
+  "quote_total_twd": 78000,
+  "original_payment": "30%/40%/30%",
+  "original_warranty": "2 years",
+  "ocr_terms_preserved": true,
+  "free_terms_preserved": true,
+  "basic_unlock_passed": true,
+  "promax_all_five_themes_passed": true,
+  "resume_same_case_without_new_payment": true,
+  "paid_unlock_metrics": {
+    "incremental_item_model_ms": 0,
+    "incremental_items": 0,
+    "preview_items_reused": 3,
+    "court_evidence_reused": true,
+    "backend_rules_ms": 13,
+    "report_render_ms": 25645,
+    "total_ms": 36303,
+    "reused_preview_pipeline": true,
+    "theme_parallelism": 5,
+    "themes_reused": 0,
+    "theme_model_wall_ms": 10576
+  },
+  "pdfs": {
+    "full": {
+      "bytes": 6442804,
+      "sha256": "04ac957d4ba98d78cd13ff23a78610e931009525c34905bc6e0678e31ffff9e8",
+      "queue_seconds": 31.7,
+      "pages": 23,
+      "terms_preserved": true,
+      "text_blocks_outside_page": 0,
+      "visual_review": "Cover, original terms page, final page, and full page overview inspected."
+    },
+    "highlight": {
+      "bytes": 433163,
+      "sha256": "fa4d39d3acbc636c1ac06ea2a79a2fdccf885dfac9646421e17f9b153b23cfb6",
+      "queue_seconds": 20.0,
+      "pages": 7,
+      "terms_preserved": true,
+      "text_blocks_outside_page": 0,
+      "visual_review": "Cover, original terms page, final page, and full page overview inspected."
+    }
+  },
+  "browser_case_id": "6537f903-0216-4dcd-91af-f8786d0f738d",
+  "browser_confirmation_terms_visible": true,
+  "browser_submit_passed": true,
+  "browser_basic_auto_navigated_to_price_step": true,
+  "browser_promax_upgrade_passed": true,
+  "limitations": [
+    "TEST payment mode; no real payment charge.",
+    "SMTP disabled; no real email delivery test.",
+    "No deliberate upstream outage injection on production."
+  ],
+  "v129_live_issue_fixed": {
+    "cause": "AdaptiveModelSemaphore.acquire did not accept timeout, causing paid routes to fail before network invocation.",
+    "fix": "v130 adds timeout-aware waiting to the original adaptive controller; four new tests exercise that real controller."
+  },
+  "backup_versions": [
+    "1.2.129",
+    "1.2.130"
+  ],
+  "browser_promax_auto_navigated_to_price_step": true,
+  "browser_theme_labels": [
+    "03-1｜議價策略已解鎖",
+    "03-2｜規格補強已解鎖",
+    "03-3｜付款節點已解鎖",
+    "03-4｜驗收標準已解鎖",
+    "03-5｜談判話術已解鎖"
+  ],
+  "verified_at_taipei": "2026-10-23T05:32:42.184526+08:00"
+}
