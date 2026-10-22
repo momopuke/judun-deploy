@@ -1,7 +1,7 @@
 {
   "schema": "judun.release-acceptance.v1",
   "version": "1.2.127",
-  "status": "awaiting-vps-agent-diagnostics",
+  "status": "awaiting-repaired-installer-deployment",
   "production_acceptance_passed": false,
   "release_commit": "e92ad0b321779602b86aea132eb0f9d2f4aa6f23",
   "base": {
@@ -38,7 +38,8 @@
       "highlight_pages": 2,
       "direct_source_links_verified": true
     },
-    "github_signed_files_exact_readback": true
+    "github_signed_files_exact_readback": true,
+    "original_agent_work_path_guard_verified": true
   },
   "production": {
     "last_observed_version": "1.2.126",
@@ -50,7 +51,10 @@
     "old_case_and_entitlements": "pending",
     "backup_retention_on_vps": "pending",
     "payment_mode": "TEST",
-    "real_payment_tested": false
+    "real_payment_tested": false,
+    "failed_attempt_rollback_deep_files_verified": 81,
+    "failed_attempt_rollback_mismatch_count": 0
   },
-  "blocker": "Original VPS is active. Cloud Browser reports DigitalOcean Site Unavailable; available connector cannot execute guest commands or read systemd journal. Need original judun-autodeploy.service journal to distinguish pending pickup from agent failure."
+  "blocker": "Original agent validated signature and decrypted payload, but service sandbox rejected /root/backup write before source mutation. Installer now stores verified program snapshots under the original writable agent work base; service protections unchanged.",
+  "installer_revision": 2
 }
