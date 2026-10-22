@@ -1,11 +1,11 @@
 {
   "schema": "judun-autodeploy-v1",
-  "release_id": "v1.2.126-home-scenario-entry-20261022",
-  "base_artifact_id": "JUDUN-1.2.125-C94C757A01CF",
-  "target_artifact_id": "JUDUN-1.2.126-5D4BA415AA32",
-  "target_build_instance_id": "1.2.126-20261022-HOME-5D4BA415AA32",
-  "expected_display_version": "v1.2.126",
-  "payload_path": "releases/v1.2.126-home-scenario-entry-20261022.cms.b64",
-  "payload_sha256": "9dcb3a920150270bee358f1e3625b08410a6110f5d9aa582ef316571f2b4dddd",
+  "release_id": "v1.2.127-p1-source-quality-20261022",
+  "base_artifact_id": "JUDUN-1.2.126-5D4BA415AA32",
+  "target_artifact_id": "JUDUN-1.2.127-C4B2046E7637",
+  "target_build_instance_id": "1.2.127-20261022-P1-C4B2046E7637",
+  "expected_display_version": "v1.2.127",
+  "payload_path": "releases/v1.2.127-p1-source-quality-20261022.cms.b64",
+  "payload_sha256": "838be3261522102ba35934217be9f9e33ca730560e288ad4d6a54b691522129e",
   "noop": false
 }
