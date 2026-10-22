@@ -1,0 +1,74 @@
+{
+  "schema": "judun.release-acceptance.v1",
+  "version": "1.2.128",
+  "status": "awaiting-live-acceptance",
+  "production_acceptance_passed": false,
+  "base": {
+    "artifact_id": "JUDUN-1.2.127-C4B2046E7637",
+    "source_tree_sha256": "c8ffbacfc495e5d0433314ef2cda90963923cf906dfb7164ab9cec69f0680fc2",
+    "files_verified": 81,
+    "mismatch_count": 0
+  },
+  "target": {
+    "artifact_id": "JUDUN-1.2.128-B8DEE1B0BA85",
+    "build_instance_id": "1.2.128-20261022-P1-B8DEE1B0BA85",
+    "app_sha256": "b8dee1b0ba852001287d9dd6fe3afaea994e3cc8aef6d60d819f89ae1d88fc85",
+    "source_tree_sha256": "e423e6bec827f17fcc355d75151f2de15107b5157d0a4282ebb4382e81dc1569",
+    "managed_files": 81,
+    "changed_files": [
+      "app.py"
+    ]
+  },
+  "problem_observed_on_v127": {
+    "basic_unlock_and_direct_price_landing": "passed",
+    "promax_backend_completion": "passed",
+    "promax_report_render_ms": 238528,
+    "promax_theme_generation_wall_ms": 47829,
+    "preview_public_evidence_ms": 87747,
+    "production_acceptance_passed": false
+  },
+  "fix": {
+    "compact_item_name_and_rowid_cache": true,
+    "maximum_metadata_bytes": 67108864,
+    "maximum_entries": 300000,
+    "full_source_bodies_cached": false,
+    "formal_database_mode": "read-only",
+    "fresh_candidate_source_and_case_QA": true,
+    "WAL_revision_invalidation": true,
+    "homepage_payment_and_authorization_unchanged": true
+  },
+  "preflight": {
+    "p1_tests": 232,
+    "current_source_and_retrieval_tests": 19,
+    "publisher_tests": 14,
+    "all_passed": true,
+    "original_ed25519_verified": true,
+    "original_CMS_roundtrip_verified": true,
+    "full_81_file_install_and_rollback_rehearsal": true,
+    "replicated_sqlite_fixture_records": 163226,
+    "local_seconds": {
+      "v127": [
+        3.326,
+        2.784,
+        3.222
+      ],
+      "v128": [
+        1.125,
+        0.245,
+        0.283
+      ]
+    },
+    "unchanged_ranking_for_tested_work_items": true
+  },
+  "retention": {
+    "program_backup_versions": [
+      "1.2.127",
+      "1.2.128"
+    ],
+    "old_program_snapshot_removed_only_after_new_live_deep_verification": true,
+    "customer_and_formal_evidence_backups_preserved": true,
+    "release_packages_retained_in_main": 2
+  },
+  "payment_mode": "TEST",
+  "real_payment_tested": false
+}

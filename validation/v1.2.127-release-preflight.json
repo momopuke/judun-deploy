@@ -1,7 +1,7 @@
 {
   "schema": "judun.release-acceptance.v1",
   "version": "1.2.127",
-  "status": "awaiting-repaired-installer-deployment",
+  "status": "not-accepted-report-render-latency",
   "production_acceptance_passed": false,
   "release_commit": "e92ad0b321779602b86aea132eb0f9d2f4aa6f23",
   "base": {
@@ -42,19 +42,20 @@
     "original_agent_work_path_guard_verified": true
   },
   "production": {
-    "last_observed_version": "1.2.126",
-    "new_version_observed": false,
-    "basic_unlock": "pending",
-    "promax_unlock": "pending",
-    "direct_price_gap_landing": "pending",
+    "last_observed_version": "1.2.127",
+    "new_version_observed": true,
+    "basic_unlock": "passed",
+    "promax_unlock": "backend-completed",
+    "direct_price_gap_landing": "basic-passed-promax-client-waiting",
     "full_highlight_and_pdf": "pending",
     "old_case_and_entitlements": "pending",
     "backup_retention_on_vps": "pending",
     "payment_mode": "TEST",
     "real_payment_tested": false,
     "failed_attempt_rollback_deep_files_verified": 81,
-    "failed_attempt_rollback_mismatch_count": 0
+    "failed_attempt_rollback_mismatch_count": 0,
+    "report_render_ms": 238528
   },
-  "blocker": "Original agent validated signature and decrypted payload, but service sandbox rejected /root/backup write before source mutation. Installer now stores verified program snapshots under the original writable agent work base; service protections unchanged.",
+  "blocker": "Production report rendering rescans the formal evidence corpus for each work item; measured 238.5 seconds during ProMax composition. v1.2.128 repairs retrieval before production acceptance.",
   "installer_revision": 2
 }
