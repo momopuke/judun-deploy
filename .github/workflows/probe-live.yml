@@ -104,3 +104,4 @@ jobs:
               "status": "approved design and routing smoke check"
           }, ensure_ascii=False))
           PY
+# Recheck production baseline for signed release prep 2026-10-23
