@@ -110,3 +110,4 @@ jobs:
           }, ensure_ascii=False))
           PY
 # Recheck production baseline for signed release prep 2026-10-23
+# Post-release read-only production identity probe for v1.2.133 2026-10-23
