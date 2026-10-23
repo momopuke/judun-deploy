@@ -3,6 +3,8 @@ on:
   push:
     paths:
       - ".github/workflows/probe-live.yml"
+      - "channel/stable.json"
+      - "channel/stable.json.sig.b64"
   workflow_dispatch:
 permissions:
   contents: read
@@ -10,7 +12,7 @@ permissions:
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 7
     steps:
       - name: Verify restored brand homepage, working entry points and production integrity
         shell: bash
@@ -86,16 +88,29 @@ jobs:
           expected_artifact = str(signed_channel["target_artifact_id"])
           assert expected_artifact.startswith("JUDUN-"), "Invalid channel target"
 
-          _, build = get_json("/health/build")
-          version = str(build.get("version") or build.get("display_version") or "").lstrip("v")
+          # The original VPS pull timer checks GitHub once a minute.
+          # A new signed release can be published before the agent installs it.
+          # Wait briefly for the exact target; never approve stale production.
+          deadline = time.monotonic() + 180
+          while True:
+              _, build = get_json("/health/build")
+              version = str(build.get("version") or build.get("display_version") or "").lstrip("v")
+              artifact_id = build.get("artifact_id", "")
+              if version == expected_version and artifact_id == expected_artifact:
+                  break
+              if time.monotonic() >= deadline:
+                  raise AssertionError(
+                      "SIGNED_RELEASE_NOT_INSTALLED: published=" + expected_version + " / " + expected_artifact +
+                      "; live=" + version + " / " + str(artifact_id))
+              print("WAIT_FOR_SIGNED_DEPLOY", json.dumps({
+                  "expected": expected_version, "live": version, "artifact": artifact_id
+              }))
+              time.sleep(10)
           match = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)", version)
           assert match, f"Invalid version: {version}"
           assert tuple(map(int, match.groups())) >= (1, 2, 111), f"Pre-restoration deployment detected: {version}"
           artifact_id = build.get("artifact_id", "")
           assert artifact_id.startswith("JUDUN-"), f"Missing artifact ID: {build}"
-          assert version == expected_version and artifact_id == expected_artifact, (
-              "SIGNED_RELEASE_NOT_INSTALLED: published=" + expected_version + " / " + expected_artifact +
-              "; live=" + version + " / " + str(artifact_id))
           print("SIGNED_RELEASE_LIVE_IDENTITY_PASS", expected_version, expected_artifact)
 
           _, integrity = get_json("/health/artifact?deep=true")
