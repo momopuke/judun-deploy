@@ -73,6 +73,19 @@ jobs:
               assert body, f"Empty route: {path}"
               print("ROUTE_OK", path, sec)
 
+          # The release channel is signed and GitHub-published, but the VPS
+          # can lag behind it. A green health check alone is not deployment.
+          import os
+          channel_url = ("https://raw.githubusercontent.com/" +
+                         os.environ["GITHUB_REPOSITORY"] + "/" +
+                         os.environ["GITHUB_SHA"] + "/channel/stable.json")
+          req = urllib.request.Request(channel_url, headers={"Cache-Control": "no-cache"})
+          with urllib.request.urlopen(req, timeout=20) as response:
+              signed_channel = json.load(response)
+          expected_version = str(signed_channel["expected_display_version"]).lstrip("v")
+          expected_artifact = str(signed_channel["target_artifact_id"])
+          assert expected_artifact.startswith("JUDUN-"), "Invalid channel target"
+
           _, build = get_json("/health/build")
           version = str(build.get("version") or build.get("display_version") or "").lstrip("v")
           match = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)", version)
@@ -80,6 +93,10 @@ jobs:
           assert tuple(map(int, match.groups())) >= (1, 2, 111), f"Pre-restoration deployment detected: {version}"
           artifact_id = build.get("artifact_id", "")
           assert artifact_id.startswith("JUDUN-"), f"Missing artifact ID: {build}"
+          assert version == expected_version and artifact_id == expected_artifact, (
+              "SIGNED_RELEASE_NOT_INSTALLED: published=" + expected_version + " / " + expected_artifact +
+              "; live=" + version + " / " + str(artifact_id))
+          print("SIGNED_RELEASE_LIVE_IDENTITY_PASS", expected_version, expected_artifact)
 
           _, integrity = get_json("/health/artifact?deep=true")
           assert integrity.get("status") == "ok", integrity
@@ -94,7 +111,7 @@ jobs:
           _, ready = get_json("/health/ready")
           assert ready.get("status") == "ready", "Production preflight is not ready"
           assert ready.get("version") == version, "Readiness version differs"
-          print("PREDEPLOY_READY_PASS", json.dumps({"version": version, "ready": ready["status"]}))
+          print("PRODUCTION_READY_PASS", json.dumps({"version": version, "ready": ready["status"]}))
 
           if tuple(map(int, match.groups())) >= (1, 2, 133):
               from urllib.error import HTTPError
