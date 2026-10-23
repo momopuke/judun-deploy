@@ -96,6 +96,16 @@ jobs:
           assert ready.get("version") == version, "Readiness version differs"
           print("PREDEPLOY_READY_PASS", json.dumps({"version": version, "ready": ready["status"]}))
 
+          if tuple(map(int, match.groups())) >= (1, 2, 133):
+              from urllib.error import HTTPError
+              try:
+                  request("/admin/preflight")
+              except RuntimeError as err:
+                  assert "HTTP Error 401" in str(err), "Admin endpoint must refuse anonymous access"
+                  print("ADMIN_UNAUTHENTICATED_REFUSAL_PASS")
+              else:
+                  raise AssertionError("Admin endpoint unexpectedly permitted anonymous access")
+
           _, excluded = get_json("/health/source-exclusion")
           assert excluded.get("remaining_cases") == 0, excluded
           assert excluded.get("remaining_records") == 0, excluded
@@ -111,3 +121,4 @@ jobs:
           PY
 # Recheck production baseline for signed release prep 2026-10-23
 # Post-release read-only production identity probe for v1.2.133 2026-10-23
+# v1.2.133 post-release read-only check 2026-10-23 12:05 UTC
