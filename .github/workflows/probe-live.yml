@@ -77,13 +77,52 @@ jobs:
 
           # The release channel is signed and GitHub-published, but the VPS
           # can lag behind it. A green health check alone is not deployment.
-          import os
-          channel_url = ("https://raw.githubusercontent.com/" +
-                         os.environ["GITHUB_REPOSITORY"] + "/" +
-                         os.environ["GITHUB_SHA"] + "/channel/stable.json")
-          req = urllib.request.Request(channel_url, headers={"Cache-Control": "no-cache"})
-          with urllib.request.urlopen(req, timeout=20) as response:
-              signed_channel = json.load(response)
+          import base64, hashlib, os, subprocess, tempfile
+          from pathlib import Path
+
+          root_url = ("https://raw.githubusercontent.com/" +
+                      os.environ["GITHUB_REPOSITORY"] + "/" +
+                      os.environ["GITHUB_SHA"] + "/")
+
+          def immutable_resource(path, max_bytes):
+              req = urllib.request.Request(root_url + path, headers={"Cache-Control": "no-cache"})
+              with urllib.request.urlopen(req, timeout=25) as response:
+                  payload = response.read(max_bytes + 1)
+              assert 0 < len(payload) <= max_bytes, f"Invalid signed resource size: {path}"
+              return payload
+
+          signed_manifest_bytes = immutable_resource("channel/stable.json", 8192)
+          signed_channel = json.loads(signed_manifest_bytes)
+          public_key = immutable_resource("keys/release_signing_public.pem", 4096)
+          assert hashlib.sha256(public_key).hexdigest() == (
+              "17c8b563d224568447c3af1db57c8bb9ce51dbeac6c21371e909bc3a5635a8db"
+          ), "Signing trust root changed"
+          sig_b64 = immutable_resource("channel/stable.json.sig.b64", 1024)
+          signature = base64.b64decode(b"".join(sig_b64.split()), validate=True)
+          assert len(signature) == 64, "Invalid Ed25519 signature length"
+          with tempfile.TemporaryDirectory() as td:
+              folder = Path(td)
+              (folder / "manifest").write_bytes(signed_manifest_bytes)
+              (folder / "signature").write_bytes(signature)
+              (folder / "public.pem").write_bytes(public_key)
+              verified = subprocess.run([
+                  "openssl", "pkeyutl", "-verify", "-pubin",
+                  "-inkey", str(folder / "public.pem"), "-rawin",
+                  "-in", str(folder / "manifest"), "-sigfile", str(folder / "signature")
+              ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=15, check=False)
+          assert verified.returncode == 0, "Signed channel Ed25519 verification failed"
+          payload_path = signed_channel.get("payload_path", "")
+          assert re.fullmatch(r"releases/[A-Za-z0-9._-]+\\.cms\\.b64", payload_path), (
+              "Unsafe CMS path"
+          )
+          cms_encoded = immutable_resource(payload_path, 30000000)
+          cms_binary = base64.b64decode(b"".join(cms_encoded.split()), validate=True)
+          assert 0 < len(cms_binary) <= 20000000, "Invalid CMS payload length"
+          assert hashlib.sha256(cms_binary).hexdigest() == signed_channel.get("payload_sha256"), (
+              "Encrypted release payload SHA mismatch"
+          )
+          print("CHANNEL_SIGNATURE_AND_CMS_SHA_PASS", signed_channel["release_id"])
+
           expected_version = str(signed_channel["expected_display_version"]).lstrip("v")
           expected_artifact = str(signed_channel["target_artifact_id"])
           assert expected_artifact.startswith("JUDUN-"), "Invalid channel target"
