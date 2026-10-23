@@ -112,7 +112,7 @@ jobs:
               ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=15, check=False)
           assert verified.returncode == 0, "Signed channel Ed25519 verification failed"
           payload_path = signed_channel.get("payload_path", "")
-          assert re.fullmatch(r"releases/[A-Za-z0-9._-]+\\.cms\\.b64", payload_path), (
+          assert re.fullmatch(r"releases/[A-Za-z0-9._-]+\.cms\.b64", payload_path), (
               "Unsafe CMS path"
           )
           cms_encoded = immutable_resource(payload_path, 30000000)
