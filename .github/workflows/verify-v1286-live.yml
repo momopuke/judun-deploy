@@ -27,3 +27,4 @@ jobs:
         run: python3 .github/scripts/verify_release.py package
       - name: Verify production identity and all managed files
         run: python3 .github/scripts/verify_release.py live
+# v1.2.133 signed release final live-base verification 2026-10-23
