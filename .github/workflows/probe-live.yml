@@ -91,6 +91,11 @@ jobs:
           if expected is not None:
               assert verified == int(expected), f"Partial verification: {verified}/{expected}"
 
+          _, ready = get_json("/health/ready")
+          assert ready.get("status") == "ready", "Production preflight is not ready"
+          assert ready.get("version") == version, "Readiness version differs"
+          print("PREDEPLOY_READY_PASS", json.dumps({"version": version, "ready": ready["status"]}))
+
           _, excluded = get_json("/health/source-exclusion")
           assert excluded.get("remaining_cases") == 0, excluded
           assert excluded.get("remaining_records") == 0, excluded
