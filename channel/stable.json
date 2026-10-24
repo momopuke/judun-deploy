@@ -1,11 +1,11 @@
 {
   "schema": "judun-autodeploy-v1",
-  "release_id": "v1.2.144-pdf-stale-recovery-20261025",
-  "base_artifact_id": "JUDUN-1.2.143-PDFAUTH20261025",
-  "target_artifact_id": "JUDUN-1.2.144-PDFRECOVERY20261025",
-  "target_build_instance_id": "1.2.144-20261025-PDFRECOVERY",
-  "expected_display_version": "v1.2.144",
-  "payload_path": "releases/v1.2.144-pdf-stale-recovery-20261025.cms.b64",
-  "payload_sha256": "42fc0c230f1444c4b7d74e00250c684f0595a5e6956af36ae280a235425ec64b",
+  "release_id": "v1.2.145-private-evidence-20261025",
+  "base_artifact_id": "JUDUN-1.2.144-PDFRECOVERY20261025",
+  "target_artifact_id": "JUDUN-1.2.145-PRIVATEEVIDENCE20261025",
+  "target_build_instance_id": "1.2.145-20261025-PRIVATEEVIDENCE",
+  "expected_display_version": "v1.2.145",
+  "payload_path": "releases/v1.2.145-private-evidence-20261025.cms.b64",
+  "payload_sha256": "6e9321d48ba51eedef42ed8956c842316cf9ce8182be80c0d7dfb7c1afb52a8c",
   "noop": false
 }

@@ -1,0 +1,61 @@
+name: JUDUN private evidence and customer entry live verification
+on:
+  push:
+    paths:
+      - channel/stable.json
+      - .github/workflows/v145-private-evidence-live.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Wait for signed v145 and verify privacy boundary
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json,time,urllib.request,urllib.error
+          base='https://judun.142-93-91-214.sslip.io'
+          def get(path):
+              req=urllib.request.Request(base+path,headers={'Cache-Control':'no-cache','User-Agent':'JUDUN-v145-private-acceptance'})
+              try:
+                  with urllib.request.urlopen(req,timeout=25) as response:
+                      return response.status,response.read(1_000_000).decode('utf-8','replace')
+              except urllib.error.HTTPError as exc:
+                  return exc.code,exc.read(2000).decode('utf-8','replace')
+          deadline=time.monotonic()+420
+          while True:
+              try:
+                  code,raw=get('/health/build')
+                  if code==200:
+                      build=json.loads(raw)
+                      if build.get('version')=='1.2.145' and build.get('artifact_id')=='JUDUN-1.2.145-PRIVATEEVIDENCE20261025':
+                          break
+              except (ValueError,TimeoutError,urllib.error.URLError):
+                  pass
+              if time.monotonic()>deadline:raise AssertionError('LIVE_V145_NOT_READY')
+              time.sleep(10)
+          code,raw=get('/health/artifact?deep=true')
+          assert code==200,(code,raw[:250])
+          integ=json.loads(raw)
+          assert integ['status']=='ok' and integ['files_verified']==85 and integ['mismatch_count']==0,integ
+          print('LIVE_V145_DEEP_PASS',build['artifact_id'],integ['files_verified'])
+          for path in ('/public-quote-evidence','/public-quote-evidence?item=paint'):
+              status,_=get(path)
+              assert status==401,(path,status)
+              print('PRIVATE_EVIDENCE_UNAUTHENTICATED_401_PASS',path)
+          status,trust=get('/trust-method')
+          assert status==200,status
+          assert '查看公開報價證據庫</a>' not in trust
+          assert '同規格詢價卡</a>' not in trust
+          print('UNWANTED_CUSTOMER_CTA_REMOVED_PASS')
+          status,validation=get('/validation-program')
+          assert status==200,status
+          assert '查看五張同規格詢價卡</a>' not in validation
+          print('UNWANTED_VALIDATION_CTA_REMOVED_PASS')
+          status,company=get('/matching/?role=company')
+          assert status==200 and company,(status,len(company))
+          print('COMPANY_COOPERATION_ENTRY_PRESERVED_PASS')
+          PY
