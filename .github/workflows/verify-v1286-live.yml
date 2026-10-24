@@ -27,4 +27,15 @@ jobs:
         run: python3 .github/scripts/verify_release.py package
       - name: Verify production identity and all managed files
         run: python3 .github/scripts/verify_release.py live
+      - name: Read-only live source identity for next signed delta
+        run: |
+          python3 - <<'PY'
+          import json, urllib.request
+          url='https://judun.142-93-91-214.sslip.io/health/build'
+          request=urllib.request.Request(url,headers={'Cache-Control':'no-cache','User-Agent':'JUDUN-v136-preflight/1'})
+          with urllib.request.urlopen(request,timeout=30) as response:
+              data=json.load(response)
+          safe={key:data.get(key) for key in ('version','artifact_id','source_tree_sha256','build_instance_id','manifest_status')}
+          print('LIVE_SOURCE_IDENTITY',json.dumps(safe,ensure_ascii=False,sort_keys=True))
+          PY
 # v1.2.133 signed release final live-base verification 2026-10-23
