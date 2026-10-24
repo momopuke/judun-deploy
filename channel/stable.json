@@ -1,11 +1,11 @@
 {
   "schema": "judun-autodeploy-v1",
-  "release_id": "v1.2.134-pdf-queue-resilience-20261024",
-  "base_artifact_id": "JUDUN-1.2.133-98F644DD1A70",
-  "target_artifact_id": "JUDUN-1.2.134-3F0B7006648F",
-  "target_build_instance_id": "1.2.134-20261023-PDF-3F0B7006648F",
-  "expected_display_version": "v1.2.134",
-  "payload_path": "releases/v1.2.134-pdf-queue-resilience-20261024.cms.b64",
-  "payload_sha256": "d7711ea80616f98f6b72ee944f25c46bbb7ae554fe2a848aafaebf7876e7f970",
+  "release_id": "v1.2.135-operator-mail-clarity-20261024",
+  "base_artifact_id": "JUDUN-1.2.134-3F0B7006648F",
+  "target_artifact_id": "JUDUN-1.2.135-A9081D1465C1",
+  "target_build_instance_id": "1.2.135-20261024-CLARITY-A9081D1465C1",
+  "expected_display_version": "v1.2.135",
+  "payload_path": "releases/v1.2.135-operator-mail-clarity-20261024.cms.b64",
+  "payload_sha256": "d5e71dac29841305041a3a192764064b7540b35e5f7a1a8c9daaa4b33233476b",
   "noop": false
 }
