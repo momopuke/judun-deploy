@@ -38,4 +38,33 @@ jobs:
           safe={key:data.get(key) for key in ('version','artifact_id','source_tree_sha256','build_instance_id','manifest_status')}
           print('LIVE_SOURCE_IDENTITY',json.dumps(safe,ensure_ascii=False,sort_keys=True))
           PY
+      - name: Verify protected evidence, live progress route and mail availability
+        run: |
+          python3 - <<'PY'
+          import json, urllib.request, urllib.error
+          base='https://judun.142-93-91-214.sslip.io'
+          def get(path):
+              req=urllib.request.Request(base+path,headers={'Cache-Control':'no-cache','User-Agent':'JUDUN-v136-feature-qa/1'})
+              return urllib.request.urlopen(req,timeout=30)
+          with get('/') as r:
+              home=r.read().decode('utf-8')
+          assert 'judun-company-floating' in home, 'Fixed company CTA absent'
+          assert '/status-lite/' in home and 'pollJudunCase' in home, 'Single-flight progress polling absent'
+          assert '查看公開報價證據庫' not in home, 'Private source navigation leaked'
+          for path in ('/public-quote-evidence','/same-spec-inquiry','/admin/email-test'):
+              try:
+                  with get(path) as r:
+                      raise AssertionError('Protected route unexpectedly accessible: '+path)
+              except urllib.error.HTTPError as e:
+                  assert e.code in (401,403), (path,e.code)
+          try:
+              with get('/status-lite/__judun_nonexistent__') as r:
+                  raise AssertionError('Unknown case unexpectedly exists')
+          except urllib.error.HTTPError as e:
+              assert e.code in (404,410),e.code
+          with get('/health/build') as r:
+              health=json.load(r)
+          assert health['version']=='1.2.136'
+          print('FEATURE_ACCESS_AND_POLL_PASS',{'fixed_company':True,'protected_routes':3,'light_status':True,'mail_delivery_enabled':health.get('mail_delivery_enabled')})
+          PY
 # v1.2.133 signed release final live-base verification 2026-10-23
