@@ -132,7 +132,16 @@ jobs:
           # Wait briefly for the exact target; never approve stale production.
           deadline = time.monotonic() + 420
           while True:
-              _, build = get_json("/health/build")
+              try:
+                  _, build = get_json("/health/build")
+              except RuntimeError as exc:
+                  # Existing single-process restarts can yield temporary 502s.
+                  # Retry within the signed rollout deadline.
+                  if time.monotonic() >= deadline:
+                      raise AssertionError("SIGNED_RELEASE_HEALTH_NOT_RECOVERED: " + str(exc))
+                  print("WAIT_FOR_RESTART_HEALTH", str(exc))
+                  time.sleep(10)
+                  continue
               version = str(build.get("version") or build.get("display_version") or "").lstrip("v")
               artifact_id = build.get("artifact_id", "")
               if version == expected_version and artifact_id == expected_artifact:
