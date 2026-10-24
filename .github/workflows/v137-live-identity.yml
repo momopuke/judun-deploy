@@ -1,0 +1,27 @@
+name: JUDUN v137 immediate read-only live identity
+on:
+  push:
+    paths:
+      - '.github/workflows/v137-live-identity.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Inspect live version without mutation or credentials
+        run: |
+          python3 - <<'PY'
+          import json,urllib.request,time
+          base='https://judun.142-93-91-214.sslip.io'
+          for path in ('/health/build','/health/artifact?deep=true'):
+              req=urllib.request.Request(base+path,headers={'Cache-Control':'no-cache'})
+              with urllib.request.urlopen(req,timeout=30) as response:
+                  data=json.load(response)
+              if path.startswith('/health/build'):
+                  print('VERSION',json.dumps({k:data.get(k) for k in ('version','artifact_id','source_tree_sha256','mail_delivery_enabled')}))
+              else:
+                  print('INTEGRITY',json.dumps({k:data.get(k) for k in ('status','artifact_id','files_verified','mismatch_count')}))
+          PY
