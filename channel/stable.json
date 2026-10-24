@@ -1,11 +1,11 @@
 {
   "schema": "judun-autodeploy-v1",
-  "release_id": "v1.2.139-analysis-progress-20261024",
-  "base_artifact_id": "JUDUN-1.2.138-GMAILRELIABLE20261024",
-  "target_artifact_id": "JUDUN-1.2.139-ANALYSISPROGRESS20261024",
-  "target_build_instance_id": "1.2.139-20261024-ATOMICPROGRESS",
-  "expected_display_version": "v1.2.139",
-  "payload_path": "releases/v1.2.139-analysis-progress-20261024.cms.b64",
-  "payload_sha256": "144a2ccefb4a1b8419c82d7fd091a2fedb8616064bee41c4ffc0098be53265fe",
+  "release_id": "v1.2.140-resume-progress-20261024",
+  "base_artifact_id": "JUDUN-1.2.139-ANALYSISPROGRESS20261024",
+  "target_artifact_id": "JUDUN-1.2.140-UXPOLL20261024",
+  "target_build_instance_id": "1.2.140-20261024-UXPOLL",
+  "expected_display_version": "v1.2.140",
+  "payload_path": "releases/v1.2.140-resume-progress-20261024.cms.b64",
+  "payload_sha256": "bdddbff7ce9a33578baaa27f0aee15b94bc22a2f3723ec7f5bf25f8f561eb14c",
   "noop": false
 }
