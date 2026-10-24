@@ -1,11 +1,11 @@
 {
   "schema": "judun-autodeploy-v1",
-  "release_id": "v1.2.145-private-evidence-20261025",
+  "release_id": "v1.2.146-private-evidence-astfix-20261025",
   "base_artifact_id": "JUDUN-1.2.144-PDFRECOVERY20261025",
-  "target_artifact_id": "JUDUN-1.2.145-PRIVATEEVIDENCE20261025",
-  "target_build_instance_id": "1.2.145-20261025-PRIVATEEVIDENCE",
-  "expected_display_version": "v1.2.145",
-  "payload_path": "releases/v1.2.145-private-evidence-20261025.cms.b64",
-  "payload_sha256": "6e9321d48ba51eedef42ed8956c842316cf9ce8182be80c0d7dfb7c1afb52a8c",
+  "target_artifact_id": "JUDUN-1.2.146-PRIVATEEVIDENCEFIX20261025",
+  "target_build_instance_id": "1.2.146-20261025-PRIVATEEVIDENCE",
+  "expected_display_version": "v1.2.146",
+  "payload_path": "releases/v1.2.146-private-evidence-astfix-20261025.cms.b64",
+  "payload_sha256": "60726bc06a4e6ae53c7e705be6146adc52319b111f20c2b084f1901685436920",
   "noop": false
 }
