@@ -12,7 +12,7 @@ permissions:
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 7
+    timeout-minutes: 10
     steps:
       - name: Verify restored brand homepage, working entry points and production integrity
         shell: bash
@@ -130,7 +130,7 @@ jobs:
           # The original VPS pull timer checks GitHub once a minute.
           # A new signed release can be published before the agent installs it.
           # Wait briefly for the exact target; never approve stale production.
-          deadline = time.monotonic() + 180
+          deadline = time.monotonic() + 420
           while True:
               _, build = get_json("/health/build")
               version = str(build.get("version") or build.get("display_version") or "").lstrip("v")
