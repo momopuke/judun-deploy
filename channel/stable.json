@@ -1,11 +1,11 @@
 {
   "schema": "judun-autodeploy-v1",
-  "release_id": "v1.2.141-pdf-queue-reliability-20261025",
-  "base_artifact_id": "JUDUN-1.2.140-UXPOLL20261024",
-  "target_artifact_id": "JUDUN-1.2.141-PDFQUEUE20261025",
-  "target_build_instance_id": "1.2.141-20261025-PDFQUEUE",
-  "expected_display_version": "v1.2.141",
-  "payload_path": "releases/v1.2.141-pdf-queue-reliability-20261025.cms.b64",
-  "payload_sha256": "aa984b93ef711ddaca01e40263113111ff9bde42cd7a3c69ff00359d4c765ea9",
+  "release_id": "v1.2.142-service-restart-recovery-20261025",
+  "base_artifact_id": "JUDUN-1.2.141-PDFQUEUE20261025",
+  "target_artifact_id": "JUDUN-1.2.142-RESTARTFIX20261025",
+  "target_build_instance_id": "1.2.142-20261025-RESTARTFIX",
+  "expected_display_version": "v1.2.142",
+  "payload_path": "releases/v1.2.142-service-restart-recovery-20261025.cms.b64",
+  "payload_sha256": "3312bad60274df3d469e55ea845045ef3b218c2aa015f388fd223838e591cdbc",
   "noop": false
 }
