@@ -64,7 +64,7 @@ jobs:
               assert e.code in (404,410),e.code
           with get('/health/build') as r:
               health=json.load(r)
-          assert health['version']=='1.2.137'
+          assert health['version']==json.load(open('channel/stable.json'))['expected_display_version'].lstrip('v'), 'Live version mismatches signed channel'
           print('FEATURE_ACCESS_AND_POLL_PASS',{'fixed_company':True,'protected_routes':4,'light_status':True,'mail_delivery_enabled':health.get('mail_delivery_enabled')})
           PY
 # v1.2.133 signed release final live-base verification 2026-10-23
