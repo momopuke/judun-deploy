@@ -75,4 +75,19 @@ jobs:
           assert health['version']==json.load(open('channel/stable.json'))['expected_display_version'].lstrip('v'), 'Live version mismatches signed channel'
           print('FEATURE_ACCESS_AND_POLL_PASS',{'fixed_company':True,'protected_routes':4,'light_status':True,'mail_delivery_enabled':health.get('mail_delivery_enabled')})
           PY
+      - name: Verify non-existent PDF jobs are private
+        run: |
+          python3 - <<'PY'
+          import urllib.request, urllib.error
+          base='https://judun.142-93-91-214.sslip.io'
+          unknown='0'*64
+          routes=('/print-jobs/'+unknown, '/print-jobs/'+unknown+'/file', '/print-jobs/'+unknown+'/view')
+          for route in routes:
+              try:
+                  with urllib.request.urlopen(urllib.request.Request(base+route,headers={'Cache-Control':'no-cache'}),timeout=20) as response:
+                      raise AssertionError('Unowned PDF route unexpectedly succeeded: '+route)
+              except urllib.error.HTTPError as e:
+                  assert e.code in (401,403,404), (route,e.code)
+          print('PDF_PRIVATE_MISSING_TASK_ROUTES_PASS',len(routes))
+          PY
 # v1.2.133 signed release final live-base verification 2026-10-23
