@@ -1,11 +1,11 @@
 {
   "schema": "judun-autodeploy-v1",
-  "release_id": "v1.2.137-gmail-https-20261024",
-  "base_artifact_id": "JUDUN-1.2.136-ANALYSISFIX20261024",
-  "target_artifact_id": "JUDUN-1.2.137-GMAILHTTPS20261024",
-  "target_build_instance_id": "1.2.137-20261024-GMAILHTTPS20261024",
-  "expected_display_version": "v1.2.137",
-  "payload_path": "releases/v1.2.137-gmail-https-20261024.cms.b64",
-  "payload_sha256": "6642e0466609ddab2ba321dfbabeb16550572361261c8058fa23d250bf3d7bce",
+  "release_id": "v1.2.138-gmail-reliability-20261024",
+  "base_artifact_id": "JUDUN-1.2.137-GMAILHTTPS20261024",
+  "target_artifact_id": "JUDUN-1.2.138-GMAILRELIABLE20261024",
+  "target_build_instance_id": "1.2.138-20261024-MAILRELIABLE",
+  "expected_display_version": "v1.2.138",
+  "payload_path": "releases/v1.2.138-gmail-reliability-20261024.cms.b64",
+  "payload_sha256": "7852bc9228d39092bc8211bc95b367ebb62de1cfcc8b132f7e4734a66b7c2331",
   "noop": false
 }
