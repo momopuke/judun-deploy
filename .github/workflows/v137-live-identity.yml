@@ -1,4 +1,4 @@
-name: JUDUN v137 immediate read-only live identity
+name: JUDUN immediate read-only production identity
 on:
   push:
     paths:
