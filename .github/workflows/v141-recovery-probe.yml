@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Inspect deployed manifest and running app
+      - name: Inspect repaired v142 process and manifest
         run: |
           python3 - <<'PY'
           import urllib.request,json,time
