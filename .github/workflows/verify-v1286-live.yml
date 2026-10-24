@@ -50,6 +50,14 @@ jobs:
               home=r.read().decode('utf-8')
           assert 'judun-company-floating' in home, 'Fixed company CTA absent'
           assert '/status-lite/' in home and 'pollJudunCase' in home, 'Single-flight progress polling absent'
+          assert '已處理 ' in home and ' 個分析步驟' in home, 'v140 homeowner progress wording missing'
+          begin = 'window.resumeAnalysis = async function(btn, jobId) {'
+          end = 'window.previewPackage = async function(jobId) {'
+          assert home.count(begin) == 1 and home.count(end) == 1, 'Resume handler unavailable'
+          resume = home.split(begin, 1)[1].split(end, 1)[0]
+          assert 'timer = setTimeout(poll' in resume, 'Resume not using serialized polling'
+          assert 'setInterval(' not in resume, 'Overlapping resume polling persists'
+          print('V140_HOMEOWNER_PROGRESS_AND_RESUME_PASS')
           assert '查看公開報價證據庫' not in home, 'Private source navigation leaked'
           for path in ('/public-quote-evidence','/same-spec-inquiry','/admin/email-test','/admin/gmail-https-code'):
               try:
