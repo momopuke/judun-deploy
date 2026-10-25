@@ -1,0 +1,54 @@
+name: JUDUN company onboarding live verification
+on:
+  push:
+    paths:
+      - channel/stable.json
+      - .github/workflows/v147-company-onboarding-live.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Verify signed live version and low-friction company onboarding
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json,os,time,urllib.error,urllib.request
+          base='https://judun.142-93-91-214.sslip.io'
+          signed_url='https://raw.githubusercontent.com/'+os.environ['GITHUB_REPOSITORY']+'/'+os.environ['GITHUB_SHA']+'/channel/stable.json'
+          with urllib.request.urlopen(signed_url,timeout=25) as r:signed=json.load(r)
+          expected_version=signed['expected_display_version'].lstrip('v')
+          expected_artifact=signed['target_artifact_id']
+          def get(path):
+              req=urllib.request.Request(base+path,headers={'Cache-Control':'no-cache','User-Agent':'JUDUN-v147-company-acceptance'})
+              try:
+                  with urllib.request.urlopen(req,timeout=25) as r:return r.status,r.read(1_500_000).decode('utf-8','replace')
+              except urllib.error.HTTPError as e:return e.code,e.read(4000).decode('utf-8','replace')
+          deadline=time.monotonic()+420
+          while True:
+              try:
+                  code,raw=get('/health/build')
+                  if code==200:
+                      build=json.loads(raw)
+                      if build.get('version')==expected_version and build.get('artifact_id')==expected_artifact:break
+              except (ValueError,TimeoutError,urllib.error.URLError):pass
+              if time.monotonic()>=deadline:raise AssertionError('LIVE_SIGNED_VERSION_NOT_READY:'+expected_version)
+              time.sleep(10)
+          code,raw=get('/health/artifact?deep=true');assert code==200,(code,raw[:300])
+          integ=json.loads(raw);assert integ.get('status')=='ok' and integ.get('artifact_id')==expected_artifact and int(integ.get('files_verified') or 0)==85 and int(integ.get('mismatch_count') or 0)==0,integ
+          print('LIVE_V147_DEEP_PASS',expected_artifact,integ['files_verified'])
+          code,page=get('/matching/?role=company');assert code==200,code
+          for phrase in ('免費接案合作','先留必要資料即可','免費加入接案名單'):
+              assert phrase in page,phrase
+          for forbidden in ('name="commission_agree"','目前可洽談案件數','>統一編號<'):
+              assert forbidden not in page,forbidden
+          print('FREE_COMPANY_ONBOARDING_UI_PASS')
+          for path in ('/matching/','/cooperation/'):
+              status,body=get(path);assert status==200 and body,(path,status)
+          for path in ('/public-quote-evidence','/public-quote-evidence?item=paint'):
+              status,_=get(path);assert status==401,(path,status)
+          print('OWNER_AND_PRIVACY_GUARDS_PASS')
+          PY
