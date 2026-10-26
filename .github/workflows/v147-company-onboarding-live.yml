@@ -38,8 +38,8 @@ jobs:
               if time.monotonic()>=deadline:raise AssertionError('LIVE_SIGNED_VERSION_NOT_READY:'+expected_version)
               time.sleep(10)
           code,raw=get('/health/artifact?deep=true');assert code==200,(code,raw[:300])
-          integ=json.loads(raw);assert integ.get('status')=='ok' and integ.get('artifact_id')==expected_artifact and int(integ.get('files_verified') or 0)==85 and int(integ.get('mismatch_count') or 0)==0,integ
-          print('LIVE_V147_DEEP_PASS',expected_artifact,integ['files_verified'])
+          integ=json.loads(raw);assert integ.get('status')=='ok' and integ.get('artifact_id')==expected_artifact and int(integ.get('files_verified') or 0)==int(integ.get('manifest_file_count') or 0)==int(signed.get('expected_managed_file_count',85)) and int(integ.get('mismatch_count') or 0)==0,integ
+          print('LIVE_SIGNED_DEEP_PASS',expected_artifact,integ['files_verified'])
           code,page=get('/matching/?role=company');assert code==200,code
           for phrase in ('免費接案合作','先留必要資料即可','免費加入接案名單'):
               assert phrase in page,phrase

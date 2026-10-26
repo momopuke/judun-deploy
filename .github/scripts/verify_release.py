@@ -45,6 +45,10 @@ def verify_live(m):
                 assert d.get("build_instance_id") == m["target_build_instance_id"], "deep build mismatch"
                 assert d.get("mismatch_count") == 0, "managed file drift"
                 assert int(d.get("files_verified") or 0) == int(d.get("manifest_file_count") or 0) >= 52, "incomplete verification"
+                if "expected_managed_file_count" in m:
+                    assert d["files_verified"] == m["expected_managed_file_count"], "signed managed file count mismatch"
+                if "expected_source_tree_sha256" in m:
+                    assert d.get("source_tree_sha256") == m["expected_source_tree_sha256"], "signed source tree mismatch"
                 assert get_json("/health/ready").get("status") == "ready", "runtime not ready"
                 print("LIVE_DEEP_VERIFY_PASS", json.dumps({"version": b["display_version"], "artifact_id": expected, "files_verified": d["files_verified"]}), flush=True)
                 return
