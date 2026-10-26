@@ -1,13 +1,12 @@
 {
   "schema": "judun-autodeploy-v1",
-  "release_id": "v1.2.149-commercial-ux-company-lineagefix-20261027",
-  "base_artifact_id": "JUDUN-1.2.146-PRIVATEEVIDENCEFIX20261025",
-  "target_artifact_id": "JUDUN-1.2.149-COMMERCIAL20261027",
-  "target_build_instance_id": "1.2.149-20261027-COMMERCIAL",
-  "expected_display_version": "v1.2.149",
+  "release_id": "v1.2.150-clear-partner-entry-20261027",
+  "base_artifact_id": "JUDUN-1.2.149-COMMERCIAL20261027",
+  "target_artifact_id": "JUDUN-1.2.150-PARTNERENTRY20261027",
+  "target_build_instance_id": "1.2.150-20261027-PARTNERENTRY",
+  "expected_display_version": "v1.2.150",
   "expected_managed_file_count": 88,
-  "expected_source_tree_sha256": "bc948907f6238676da4921c0748dcf8bb43baaf3ce2bf97ba37034dac9e47214",
-  "payload_path": "releases/v1.2.149-commercial-ux-company-lineagefix-20261027.cms.b64",
-  "payload_sha256": "f7d5645cbb3cd9cadb9aea38c8de8b659926a34323249047a1b6986a7c2496de",
+  "payload_path": "releases/v1.2.150-clear-partner-entry-20261027.cms.b64",
+  "payload_sha256": "e8c66f2f6043bd77f1560219807e9a91449d4dc37cdafd6d6143e030043cbaf6",
   "noop": false
 }
