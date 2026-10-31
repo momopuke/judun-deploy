@@ -1,0 +1,8 @@
+{
+  "schema": "sc-vps-ops/v1",
+  "seq": 1,
+  "operation": "browser_limit",
+  "quota_percent": 25,
+  "cpu_weight": 10,
+  "note": "2026-10-31 reduce browser CPU allocation after v3 load 30 PSI99.6; preserve all recordings and LINE Guard"
+}
