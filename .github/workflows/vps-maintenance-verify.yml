@@ -1,0 +1,45 @@
+name: SC VPS maintenance source QA (never deploy)
+on:
+  push:
+    branches: [vps-maintenance]
+    paths:
+      - "vps-maintenance/**"
+      - ".github/workflows/vps-maintenance-verify.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax, pin, and bounded-command check
+        run: |
+          set -Eeuo pipefail
+          python3 -m py_compile vps-maintenance/agent.py
+          bash -n vps-maintenance/bootstrap.sh
+          SHA="$(git hash-object vps-maintenance/agent.py)"
+          grep -q "AGENT_GIT_BLOB_SHA='$SHA'" vps-maintenance/bootstrap.sh
+          python3 vps-maintenance/agent.py --check
+          python3 - <<'PY'
+          import importlib.util, math, pathlib
+          p=pathlib.Path("vps-maintenance/agent.py")
+          spec=importlib.util.spec_from_file_location("sc_agent",p)
+          a=importlib.util.module_from_spec(spec); spec.loader.exec_module(a)
+          assert a.cpu_percent('400ms')==40
+          assert a.cpu_percent('250ms')==25
+          assert a.cpu_percent('150ms')==15
+          assert a.cpu_percent('1000000us')==100
+          assert a.cpu_percent('infinity')==math.inf
+          for s in ('50pct','50', 'invalid','10m'):
+              try: a.cpu_percent(s)
+              except a.Blocked: pass
+              else: raise AssertionError("unsafe unparsed quota")
+          src=p.read_text()
+          assert "shell=True" not in src
+          assert "('status', 'browser_limit')" in src
+          assert "stripchat-browser-desktop.service" in src
+          assert "'quota_percent'] <= 40" in src
+          print("SC_VPS_REMOTE_SOURCE_QA_PASS")
+          PY
