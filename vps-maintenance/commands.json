@@ -1,8 +1,8 @@
 {
   "schema": "sc-vps-ops/v1",
-  "seq": 2,
-  "operation": "status",
-  "quota_percent": 25,
+  "seq": 3,
+  "operation": "browser_limit",
+  "quota_percent": 20,
   "cpu_weight": 10,
-  "note": "2026-11-01 read-only verification after successful enrollment; preserve browser quota and all services"
+  "note": "2026-11-02 targeted browser throttle 25 to 20 percent. No restart, preserve recorder and LINE. Live block unverified."
 }
