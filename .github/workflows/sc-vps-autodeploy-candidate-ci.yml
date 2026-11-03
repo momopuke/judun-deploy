@@ -3,7 +3,7 @@ on:
   push:
     branches: [vps-maintenance]
     paths:
-      - 'vps-maintenance/autodeploy/review/**'
+      - 'vps-maintenance/autodeploy/**'
       - 'vps-maintenance/autodeploy/channel.json'
       - 'vps-maintenance/autodeploy/channel.sig.b64'
       - '.github/workflows/sc-vps-autodeploy-candidate-ci.yml'
@@ -67,3 +67,33 @@ jobs:
               PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s . -p test_pull_agent_v5.py -q
               echo "v5 signing and watchdog round $n PASS"
           done
+
+      - name: Official published agent contract QA (not just review candidate)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd vps-maintenance/autodeploy
+          python3 -m py_compile pull_agent.py
+          python3 pull_agent.py --check
+          bash -n bootstrap.sh
+          python3 - <<'PY'
+          import hashlib,pathlib,re,json
+          root=pathlib.Path('.')
+          source=(root/'pull_agent.py').read_bytes()
+          shell=(root/'bootstrap.sh').read_text()
+          digest=hashlib.sha256(source).hexdigest()
+          assert "AGENT_SHA256='"+digest+"'" in shell
+          assert 'TimeoutStartSec=900s' in shell
+          assert shell.index('systemctl start sc-vps-autodeploy.service') < shell.index('systemctl enable --now sc-vps-autodeploy.timer')
+          assert 'FIRST_RELEASE_MUST_BE_READ_ONLY_STATUS' in source.decode()
+          assert 'UNRESOLVED_PREVIOUS_RELEASE_REQUIRES_RECONCILIATION' in source.decode()
+          assert 'TARGET_PARENT_UNSAFE' in source.decode()
+          assert json.loads((root/'channel.json').read_text())['operation']=='status'
+          print('OFFICIAL_SC_VPS_PINNED_AGENT_QA_PASS')
+          PY
+          for n in 1 2 3 4 5; do
+            PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s . -p test_pull_agent.py -q
+            PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s . -p test_signed_channel.py -q
+            echo "official signed agent QA round $n PASS"
+          done
+          echo 'NO_VPS_DEPLOYMENT_PERFORMED'
