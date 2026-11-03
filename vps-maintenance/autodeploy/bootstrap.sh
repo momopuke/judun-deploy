@@ -6,8 +6,8 @@ umask 077
 export LC_ALL=C
 REPO='https://raw.githubusercontent.com/momopuke/judun-deploy'
 # Release bot commit (exact source); filled with immutable SHA after publication.
-COMMIT='59d1f4b37f20457c071600e797d2c43369d46a6b'
-AGENT_SHA256='f9578b6af10667556649bcd1b7f7b79ba14d145432b4ccabe80d1a2cab0b6ce5'
+COMMIT='9682f08100a47aeae4a0799776161182d753adf1'
+AGENT_SHA256='ae64aa284bd5e4c21ffd53be4f284adce514c9d515fcb9b48ec61cc0f216d464'
 PUB_SHA256='5af7e7c13f1db31b0ce72f87a9e67765ca237a2cb8cdc318a0709b44c8e80418'
 AGENT_URL="$REPO/$COMMIT/vps-maintenance/autodeploy/pull_agent.py"
 PUB_URL="$REPO/$COMMIT/vps-maintenance/autodeploy/release-signing-public.pem"
@@ -56,7 +56,7 @@ CPUQuota=15%
 MemoryMax=180M
 Nice=15
 IOSchedulingClass=idle
-TimeoutStartSec=260s
+TimeoutStartSec=900s
 NoNewPrivileges=yes
 PrivateTmp=yes
 StandardOutput=journal
@@ -78,13 +78,23 @@ WantedBy=timers.target
 EOF
 chmod 0644 "$SERVICE" "$TIMER"
 systemctl daemon-reload
-systemctl enable --now sc-vps-autodeploy.timer || fail 'timer enable failed'
-log 'Signed release channel enrolled. Running first release acceptance (guarded).'
-if systemctl start sc-vps-autodeploy.service;then
-  log 'FIRST_RUN_FINISHED; check private state for applied/safety_refused/needs_review'
-else
-  log 'First run blocked (e.g. no network); timer stays active for later retries'
+log 'Running signed read-only first release acceptance before enabling automatic timer.'
+if ! systemctl start sc-vps-autodeploy.service;then
+  log 'First run BLOCKED; timer remains disabled for safety.'
+  journalctl -u sc-vps-autodeploy.service --no-pager -n 15 -o cat 2>/dev/null || true
+  fail 'signed first-run validation did not pass'
 fi
+python3 - <<'PYSTATE' || fail 'first-run state is not read-only PASS'
+import json,pathlib
+p=pathlib.Path('/var/lib/sc-vps-autodeploy/state.json')
+s=json.loads(p.read_text())
+assert s.get('last_sequence')==1, s
+assert s.get('operation')=='status' and s.get('status')=='applied', s
+assert s.get('code_installed') is False, s
+print('[SCVPS-AUTO] SIGNED_READ_ONLY_STATUS_PASS')
+PYSTATE
+systemctl enable --now sc-vps-autodeploy.timer || fail 'timer enable failed'
+log 'Signed channel verified; auto-deploy timer active. New updates require separate valid Ed25519 signatures.'
 log 'STATUS: systemctl is-active sc-vps-autodeploy.timer'
 log 'RESULT: cat /var/lib/sc-vps-autodeploy/state.json'
 log 'No change to protected services was requested by enrollment itself'
