@@ -222,6 +222,8 @@ def once() -> int:
             doc=verify(get(CHANNEL+'channel.json',MAX_MANIFEST),get(CHANNEL+'channel.sig.b64',1024))
             last=read_state();seq=last.get('last_sequence',0)
             if type(seq)!=int or seq<0:raise Rejected('STATE_SEQUENCE')
+            if last.get('status') in ('in_progress', 'needs_review', 'protected_service_changed'):
+                raise Rejected('UNRESOLVED_PREVIOUS_RELEASE_REQUIRES_RECONCILIATION')
             if doc['sequence']<=seq:
                 print('SC_VPS_ALREADY_HANDLED',seq);return 0
             if doc['sequence']>seq+100:raise Rejected('SEQUENCE_GAP_TOO_LARGE')
@@ -231,22 +233,68 @@ def once() -> int:
                 work=Path(td)
                 source=stage_files(doc,work)
                 preflight_tests(source,doc['version'])
+                # A status release is *read-only*: run the verified code from
+                # an isolated temporary folder, without installing files.
+                if doc['operation']=='status':
+                    result=operation(doc,source)
+                    after=read_protected()
+                    status='applied' if result['exit_code']==0 and baseline==after else 'needs_review'
+                    save_json(STATE/'state.json', {
+                        'last_sequence':doc['sequence'], 'release_id':doc['release_id'],
+                        'operation':'status', 'status':status, 'utc':now(),
+                        'result':result, 'protected_before':baseline,
+                        'protected_after':after, 'code_installed':False})
+                    print('SC_VPS_SIGNED_STATUS_RESULT', json.dumps({
+                        'sequence':doc['sequence'], 'status':status,
+                        'exit_code':result['exit_code']}), flush=True)
+                    return 0 if status=='applied' else 5
                 target,backup,copied,existing=install_code(doc,source,work)
+                operation_started=False
                 try:
+                    # Durable write-ahead fence: a killed parent must not
+                    # accidentally rerun a partially started v10 operation.
+                    save_json(STATE/'state.json', {
+                        'last_sequence':doc['sequence'], 'release_id':doc['release_id'],
+                        'operation':doc['operation'],'status':'in_progress',
+                        'utc':now(), 'code_backup':str(backup)})
+                    operation_started=True
                     result=operation(doc,target)
                     after=read_protected()
-                    if baseline!=after:raise Rejected('PROTECTED_SERVICE_STATUS_CHANGED')
-                    status = 'applied' if result['exit_code']==0 else ('safety_refused' if result['exit_code']==3 else 'needs_review')
-                    if status!='applied':
-                        restore_code(target,backup,copied,existing)
+                    code_restored=False
+                    rollback_result=None
+                    if baseline!=after:
+                        # v10 may have already persisted a memory setting.
+                        # Roll back through v10 BEFORE touching its watchdog source.
+                        if result['exit_code']==0 and doc['operation']=='apply':
+                            rollback_result=operation({**doc,'operation':'rollback'},target)
+                            if rollback_result['exit_code']==0:
+                                restore_code(target,backup,copied,existing)
+                                code_restored=True
+                        status='protected_service_changed'
+                    elif result['exit_code']==0:
+                        status='applied'
+                    elif result['exit_code']==3:
+                        status='safety_refused'
+                        # Explicit diagnosis-only exit has not armed persistence.
+                        if ' | diagnosis_only' in result['output_tail']:
+                            restore_code(target,backup,copied,existing)
+                            code_restored=True
+                    else:
+                        status='needs_review'
+                        # A v10 rollback timer could still be pending; retain
+                        # the signed source for its independent safety watchdog.
                     state={'last_sequence':doc['sequence'],'release_id':doc['release_id'],'operation':doc['operation'],
                         'status':status,'utc':now(),'result':result,'protected_before':baseline,'protected_after':after,
-                        'code_restored':status!='applied','code_backup':str(backup)}
+                        'code_restored':code_restored,'code_backup':str(backup),'rollback_result':rollback_result}
                     save_json(STATE/'state.json',state)
                     print('SC_VPS_SIGNED_RELEASE_RESULT',json.dumps({'sequence':doc['sequence'],'status':status,'exit_code':result['exit_code']}))
                     return 0 if status in ('applied','safety_refused') else 5
                 except Exception:
-                    restore_code(target,backup,copied,existing)
+                    # After starting v10, never remove its potential watchdog
+                    # source on an ambiguous failure. Leave signed files and
+                    # the durable backup for safe reconciliation.
+                    if not operation_started:
+                        restore_code(target,backup,copied,existing)
                     raise
         except Exception as e:
             reason=str(e) if isinstance(e,Rejected) else type(e).__name__
