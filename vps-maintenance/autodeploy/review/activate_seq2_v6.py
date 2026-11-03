@@ -93,7 +93,7 @@ def load_channel(m):
     except (ValueError,UnicodeError):raise Rejected('CHANNEL_JSON_INVALID')
     if doc.get('sequence')!=2 or doc.get('operation')!='status' or doc.get('release_id')!=RELEASE:
         raise Rejected('CHANNEL_NOT_PINNED_SEQ2_STATUS')
-    sig=base64.b64decode(sig64,validate=True)
+    sig=base64.b64decode(b''.join(sig64.split()),validate=True)
     if len(sig)!=64:raise Rejected('CHANNEL_SIGNATURE_LENGTH')
     with tempfile.TemporaryDirectory(prefix='sc-vps-seq2-verify-') as td:
         p=Path(td); (p/'doc').write_bytes(manifest);(p/'sig').write_bytes(sig)
