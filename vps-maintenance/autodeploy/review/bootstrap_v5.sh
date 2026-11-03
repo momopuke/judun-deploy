@@ -6,8 +6,8 @@ umask 077
 export LC_ALL=C
 REPO='https://raw.githubusercontent.com/momopuke/judun-deploy'
 # Release bot commit (exact source); filled with immutable SHA after publication.
-COMMIT='2e7b8ee9ab46b965adc634eb9ef74da4cd202096'
-AGENT_SHA256='a21ceba869cb9f30668881517b9bb7a7d57f19f9f61ed93e25a52115668d77ee'
+COMMIT='7219554c0c21ed4031e0856b3749e7fca5b8cd23'
+AGENT_SHA256='9113ce881789bad728cb8015f4f94d3cb685a1245d4b6bec8f271ebae5ff7c89'
 PUB_SHA256='5af7e7c13f1db31b0ce72f87a9e67765ca237a2cb8cdc318a0709b44c8e80418'
 AGENT_URL="$REPO/$COMMIT/vps-maintenance/autodeploy/review/pull_agent_v5.py"
 PUB_URL="$REPO/$COMMIT/vps-maintenance/autodeploy/release-signing-public.pem"
