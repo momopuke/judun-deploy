@@ -14,9 +14,9 @@ class SignedChannel(unittest.TestCase):
                             (BASE/'channel.sig.b64').read_bytes(),
                             BASE/'release-signing-public.pem')
 
-    def test_signed_read_only_first_release(self):
+    def test_signed_read_only_seq2_recovery(self):
         doc = self.signed()
-        self.assertEqual(doc['sequence'], 1)
+        self.assertEqual(doc['sequence'], 2)
         self.assertEqual(doc['operation'], 'status')
         self.assertRegex(doc['git_commit'], r'^[a-f0-9]{40}$')
         self.assertEqual(doc['version'], 10)
