@@ -97,3 +97,16 @@ jobs:
             echo "official signed agent QA round $n PASS"
           done
           echo 'NO_VPS_DEPLOYMENT_PERFORMED'
+
+      - name: Reconcile existing/partial enrollment without touching production
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd vps-maintenance/autodeploy/review
+          echo 'a83e22704c4629b988b37cb2b37625eb4bbdd5922daf51cf56edec08b10710df  reconcile_v1.py' | sha256sum -c -
+          python3 -m py_compile reconcile_v1.py
+          python3 reconcile_v1.py --self-test
+          for i in 1 2 3 4 5; do
+            python3 -m unittest discover -s . -p test_reconcile_v1.py -q
+          done
+          echo '100_SC_VPS_RECONCILIATION_TESTS_PASS_OFFLINE_ONLY'
