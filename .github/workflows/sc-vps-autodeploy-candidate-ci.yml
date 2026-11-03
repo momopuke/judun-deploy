@@ -140,3 +140,19 @@ jobs:
             echo "v3 guarded timeout/legacy migration round $i PASS"
           done
           echo '195/195 LOCAL_ONLY; NO_VPS_EXECUTION'
+
+      - name: Verified legacy sequence-1 recovery v4 (no VPS actions)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd vps-maintenance/autodeploy/review
+          echo '2cef3b74220347a6d33128183f3b99e08b0abb49545ae136fa8d6c0081998051  reconcile_v4.py' | sha256sum -c -
+          echo 'f83ba06033fc3d7b4b2ec6ae49e5e614fd1f40e2dcd284b97fa07688d1283484  test_legacy_v4.py' | sha256sum -c -
+          echo '1e0aaffe40cad4284ba9283a81967835f4c86ab06951d864b5513042e23d7b30  test_reconcile_v4.py' | sha256sum -c -
+          python3 -m py_compile reconcile_v4.py
+          python3 reconcile_v4.py --self-test
+          for i in 1 2 3 4 5; do
+            python3 -m unittest discover -s . -p 'test_*v4.py' -q
+            echo "signed legacy-status migration round $i PASS"
+          done
+          echo '345_LOCAL_REGRESSION_TESTS_PASS; VPS_NOT_TOUCHED'
