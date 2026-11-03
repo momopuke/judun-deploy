@@ -1,0 +1,36 @@
+name: SC VPS signed auto-deploy offline acceptance (never deploy)
+on:
+  push:
+    branches: [vps-maintenance]
+    paths:
+      - 'vps-maintenance/autodeploy/**'
+      - '.github/workflows/sc-vps-signed-autodeploy-ci.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  offline-tests:
+    name: Verify signed public release and safety tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Python and bootstrap syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd vps-maintenance/autodeploy
+          python3 -m py_compile pull_agent.py releases/SC-VPS-v10-20261104-a1/SC_VPS_Rescue_v10.py
+          bash -n bootstrap.sh
+      - name: Verify Ed25519 signature, SHA256 payload, root-guard contracts and v10 preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd vps-maintenance/autodeploy
+          for i in 1 2 3 4 5; do
+            python3 -m unittest test_pull_agent.Contract test_signed_channel.SignedChannel -q
+            (cd releases/SC-VPS-v10-20261104-a1 && python3 -m unittest discover -s tests -p 'test_v10.py' -q)
+            echo "OFFLINE_ACCEPTANCE_ROUND_$i=PASS"
+          done
+          echo "GH_OFFLINE_TEST_PASS; DOES_NOT_TOUCH_VPS"
