@@ -4,7 +4,7 @@
   "release_id": "SC-VPS-v10-20261104-a1",
   "git_commit": "59d1f4b37f20457c071600e797d2c43369d46a6b",
   "version": 10,
-  "operation": "apply",
+  "operation": "status",
   "files": {
     "SC_VPS_Base_ReadOnly.py": "20dd09582838f06c608ec8f678763668e89fa728217d5abfb3de3d750ac3591c",
     "SC_VPS_Metrics_ReadOnly.py": "8c57e40ba7c6c66215fd3087beb9810eb24a0bd1833c97bafa1a5e79112078d3",
