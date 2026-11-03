@@ -518,7 +518,7 @@ def reconcile_verified_legacy(sv,a,p,tm,st,timer_active,service_active):
             verify_effective_timeout()
             if safe_read(STATE,12000)!=st or (status_receipt and not signed_v10_installed()) or (refused_receipt and not verified_refused_legacy(st)):
                 raise Stop('LEGACY_RECEIPT_CHANGED_ON_RECHECK')
-            print('ENROLLMENT_ALREADY_COMPLETE_LEGACY_RECEIPT_VERIFIED',flush=True)
+            print('REFUSAL_MIGRATION_ALREADY_COMPLETE_AWAITING_SIGNED_STATUS' if refused_receipt else 'ENROLLMENT_ALREADY_COMPLETE_LEGACY_RECEIPT_VERIFIED',flush=True)
             return 0
         changed=[];was_timer_active=timer_active
         try:
