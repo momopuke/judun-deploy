@@ -31,7 +31,7 @@ jobs:
           root=pathlib.Path('.')
           m=json.loads((root/'channel.json').read_text())
           assert m['schema']=='sc-vps-signed-release/v1'
-          assert m['sequence']==1 and m['operation']=='status'
+          assert m['sequence']==2 and m['operation']=='status'
           assert m['git_commit']=='59d1f4b37f20457c071600e797d2c43369d46a6b'
           for n,digest in m['files'].items():
               p=root/'releases'/m['release_id']/n
@@ -172,3 +172,18 @@ jobs:
             echo "v5 guarded legacy refusal round $i PASS"
           done
           echo '590_V5_TESTS_LOCAL_ONLY; VPS_NOT_ACCESSED'
+
+      - name: Signed seq-2 updater migration v6 pinned and 5x34 simulation tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd vps-maintenance/autodeploy/review
+          echo 'f644a6647128654adb6c9b98b364f626832b4f13fc6b756ab0b5a1889cff7b49  activate_seq2_v6.py' | sha256sum -c -
+          echo '188753d10587a2aa5d9d6595de26d551ada7b84daa5ef3eeb032a4e89b4a6b96  test_activate_seq2_v6.py' | sha256sum -c -
+          python3 -m py_compile activate_seq2_v6.py
+          python3 activate_seq2_v6.py --self-test
+          for i in 1 2 3 4 5; do
+            PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s . -p test_activate_seq2_v6.py -q
+            echo "Signed read-only seq-2 v6 migration round $i PASS"
+          done
+          echo '170_LOCAL_TESTS_PASS; VPS_NOT_TOUCHED_BY_CI'
