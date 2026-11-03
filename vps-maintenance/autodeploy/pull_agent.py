@@ -164,6 +164,10 @@ def install_code(doc:dict,src:Path,work:Path):
     try:
         for name in sorted(doc['files']):
             dst=target/name
+            # Reject pre-existing symlinked/non-directory parents (e.g.
+            # target/tests -> /somewhere/else). Never write outside target.
+            if dst.parent.is_symlink() or (dst.parent.exists() and not dst.parent.is_dir()):
+                raise Rejected('TARGET_PARENT_UNSAFE')
             dst.parent.mkdir(mode=0o700,parents=True,exist_ok=True)
             if dst.exists() or dst.is_symlink():
                 if dst.is_symlink() or not dst.is_file():raise Rejected('TARGET_SYMLINK_OR_NOT_FILE')
@@ -222,6 +226,10 @@ def once() -> int:
             doc=verify(get(CHANNEL+'channel.json',MAX_MANIFEST),get(CHANNEL+'channel.sig.b64',1024))
             last=read_state();seq=last.get('last_sequence',0)
             if type(seq)!=int or seq<0:raise Rejected('STATE_SEQUENCE')
+            # The first successful enrollment must be a read-only signed status.
+            # Even an authorized channel update cannot turn bootstrap into apply.
+            if seq==0 and doc['operation']!='status':
+                raise Rejected('FIRST_RELEASE_MUST_BE_READ_ONLY_STATUS')
             if last.get('status') in ('in_progress', 'needs_review', 'protected_service_changed'):
                 raise Rejected('UNRESOLVED_PREVIOUS_RELEASE_REQUIRES_RECONCILIATION')
             if doc['sequence']<=seq:
