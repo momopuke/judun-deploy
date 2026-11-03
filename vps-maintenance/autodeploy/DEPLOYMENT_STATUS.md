@@ -1,3 +1,5 @@
+> **2026-11-04 recovery v2:** Host rejected old reconciler with `UNKNOWN_UNIT_CONTENTS:sc-vps-autodeploy.service`; this indicates a non-identical preexisting unit, not a failed SHA check. New `review/reconcile_v2.py` (SHA256 `c787f34a21e101881233a2e0d4c64fc4955488f7a9992bbc21714b296c27c50c`, Git blob `dd37516a8d4d62729f9bbec156f510d26f463588`) accepts only nonfunctional comment/whitespace differences; otherwise stops without mutation and prints a redacted fingerprint. Five rounds × 30 offline tests PASS. **No new agent enrollment or host success has yet been verified. Never delete or overwrite unknown unit files.**
+
 > **CURRENT CANONICAL ENTRYPOINT (2026-11-04):** `review/bootstrap_v5.sh` at commit `9cdc4a724ed36fa0f2c5534c6d3327e554be03be`, verified SHA256 `1102d5c0f3b8a2145ce0073df3b62b969dbc6b9243a2b7289e3ceeb8b4f3fef2`. See `review/ENROLLMENT_GUIDE.md`. Historical references below to root `bootstrap.sh` are superseded. The reviewed v5 agent includes the watchdog, first-run-read-only and nested-parent-symlink guards. VPS enrollment and v10 functional acceptance remain **NOT VERIFIED**.
 
 # SC VPS signed deployment — current status
