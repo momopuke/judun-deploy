@@ -178,7 +178,7 @@ jobs:
         run: |
           set -euo pipefail
           cd vps-maintenance/autodeploy/review
-          echo 'f644a6647128654adb6c9b98b364f626832b4f13fc6b756ab0b5a1889cff7b49  activate_seq2_v6.py' | sha256sum -c -
+          echo 'e3b8fe3a870976269d7a5cde60b2280638da8d02a7c1e688146dc39da5135576  activate_seq2_v6.py' | sha256sum -c -
           echo '188753d10587a2aa5d9d6595de26d551ada7b84daa5ef3eeb032a4e89b4a6b96  test_activate_seq2_v6.py' | sha256sum -c -
           python3 -m py_compile activate_seq2_v6.py
           python3 activate_seq2_v6.py --self-test
