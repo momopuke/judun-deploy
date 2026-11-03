@@ -43,3 +43,13 @@ NOTE: Read-only diagnostics are *not deployed by this GitHub commit*. Do not cla
 5. Confirm LINE Guard actual moderation behavior, as applicable, without testing against ordinary members.
 6. Only then make a minimal guarded production fix; back up exactly what is touched, retain an immediate rollback, recheck 5 rounds. Do not spend money without explicit authorization.
 7. Mark final acceptance PASS **only** when live evidence supports the functional tests and sustained pressure improvement.
+
+## 2026-11-03 continuation when Work quota is unavailable
+Single-run source: `vps-maintenance/vps_rescue_v5.py` (Git blob `a990121349e486c1153caa36488529b12fa3d353`, introduced at `d996bd9e8ac207fe857513ecfc23c61bceabc7ea`).
+- This is a **manual one-time** authorized SSH-console run; the existing GitHub polling agent cannot execute it.
+- Runs pinned `diagnostic_v1.py` 5 rounds, records a local/private JSON report at `/var/lib/sc-vps-maintenance/v5-final-report.json`.
+- Only mutating repair: when `livevpn-stripchat-forward.service` is `activating/auto-restart` with NRestarts >= 1000, nonzero exit, and RestartUSec < 180s, install managed 180s restart delay and reload systemd **without restarting services**. Other situations are skipped.
+- It does not alter Chromium profile/processes/flags, recorders, LINE Guard, JUDUN, video data, or credentials.
+- The publication has separately available source-level 28-test suite `test_rescue_v5.py` and GitHub CI workflow; **GitHub CI/VPS execution not yet verified**.
+- Its exit code 3 and status PARTIAL are expected while true live moderation and active recording-output verification are missing.
+- **Never describe this as solved until observed 5-round host metrics plus real protection/recording tests pass.**
