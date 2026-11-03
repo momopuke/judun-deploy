@@ -79,6 +79,18 @@ class Contract(unittest.TestCase):
                 self.assertTrue((folder/'new.py').exists())
                 a.restore_code(folder,backup,copied,existing)
                 self.assertFalse((folder/'new.py').exists())
+    def test_existing_symlinked_test_parent_refused(self):
+        d=doc();d['files']={'tests/test_v10.py':a.sha(b'new')}
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);target=root/'installed';target.mkdir()
+            outside=root/'outside';outside.mkdir()
+            (target/'tests').symlink_to(outside,target_is_directory=True)
+            src=root/'src';(src/'tests').mkdir(parents=True)
+            (src/'tests/test_v10.py').write_bytes(b'new')
+            with patch.object(a,'target_dir',return_value=target),patch.object(a,'BACKUPS',root/'backups'):
+                self.assertRaises(a.Rejected,a.install_code,d,src,root)
+            self.assertFalse((outside/'test_v10.py').exists())
+
     def test_no_restart_or_disable(self):
         s=P.read_text();self.assertNotIn("'systemctl','restart'",s)
         self.assertNotIn("'docker','stop'",s)
