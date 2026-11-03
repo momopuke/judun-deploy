@@ -1,26 +1,21 @@
-# SC VPS signed auto-deploy — controlled read-only enrollment candidate
+# Historical unsafe bootstrap hold — current signed read-only enrollment
 
-**Legacy bootstrap is prohibited:** Do NOT run `vps-maintenance/autodeploy/bootstrap.sh`. It pins the old agent, which can remove a watchdog's source on an ambiguous child timeout. This document remains intentionally named `DO_NOT_ENROLL_YET` to protect the legacy command.
+**Do not run legacy installers** pinned to the initial `autodeploy/pull_agent.py` blob `f92be0a246fc56b763f166097e5b0d0fb85d2480` or bootstrap blob `c4ebe79f94ea7e0bd4c266ecbe75bbf8e946e347`. The initial agent could remove a watchdog's source on an ambiguous operation timeout.
 
-## Audited candidate
-- Agent: `vps-maintenance/autodeploy/review/pull_agent_v5.py`, immutable source commit `2e7b8ee9ab46b965adc634eb9ef74da4cd202096`.
-- One-time installer: `vps-maintenance/autodeploy/review/bootstrap_v5.sh`, immutable installer commit `6406db25f73d3c22922c093297ff135a33e8b119`.
-- New agent explicitly refuses an initial `apply` or `rollback`. The signed channel is currently sequence 1, **`status` only**.
-- `status` executes the signed v10 status subcommand from a temporary location, without changing the installed v10 source or production systemd settings.
-- The installer verifies pinned SHA256 values, runs the signed status first, checks state, and only then enables the timer. If the first read-only check fails, no timer is enabled.
-- systemd `TimeoutStartSec` has been raised from 260s to 900s to cover the worst-case bounded download + five preflight rounds + child operation time.
+## Current single reviewed candidate
+- Official agent immutable commit: `53430996dd856643f3f68c5686afb8b1470114ae`; Git blob `3a7710c85f39f200e4eb03ba3d0df3e25e3894ec`.
+- Official one-time bootstrap immutable commit: `ee3693e9913337ae58dc947181e75eb231a3466c`; Git blob `1fbc40b970299eaaffc67bb587fdb3ece7f2a09f`.
+- Live signed channel: sequence 1, **operation=status**. First-run `apply` is explicitly refused by the agent. A read-only status runs from a temporary signed source and does not install a new rescue script.
+- The bootstrap checks pinned SHA256 values, systemd syntax and first-run signed result; **only after a successful read-only status** does it enable the new timer. The service timeout is 900 seconds to cover the bounded worst-case execution path.
+- The agent refuses unsigned/tampered payloads, unsafe symlink parents, an unresolved previous attempt, duplicate releases and unknown operations; it writes a durable in-progress fence before any later signed `apply` release.
 
-## Safety regression evidence (local simulation only)
-- Ed25519 signed channel verification: PASS; signed payload file SHA256 match: 7/7.
-- v10 memory-safety tests: five rounds PASS.
-- v5 first-run and rollback/timeout tests: 10 tests x five rounds PASS.
-- Legacy simulation: 8/8 scenarios PASS after test-fixture corrections.
-- `review/bootstrap_v5.sh` static safety and syntax tests PASS.
-- GitHub Actions offline QA workflow is published. A GitHub commit is not proof of a VPS deployment.
+## Evidence and scope
+- Official agent 24 tests + signed channel 4 tests: five local rounds, **140/140 PASS**.
+- The signed v10 memory-safety suite and new regression suite have also passed five local rounds.
+- A GitHub Actions offline QA workflow has been published, including an independent check of the **official** pinned agent. This does not prove cloud CI ran or that VPS execution succeeded.
+- **New agent NOT YET CONFIRMED ENROLLED ON VPS 142.93.91.214.** The existing `sc-vps-maintenance.timer` supports only `status` and `browser_limit` and cannot self-install the new agent. Current DigitalOcean-connected tools do not provide root shell execution.
 
-## Deployment boundary
-**The reviewed v5 candidate has NOT been installed on VPS 142.93.91.214.** The already installed `sc-vps-maintenance.timer` cannot execute new agents, and DigitalOcean connected API does not provide root-shell command execution. A one-time authorized VPS terminal invocation of the reviewed bootstrap is still required before subsequent signed releases can deploy automatically.
+## Critical deployment boundary
+One authorized VPS-side bootstrap invocation remains necessary. It must use the immutable reviewed bootstrap above and never ask for the root password or signing private key in ChatGPT. After real VPS `status=applied`/`code_installed=false` and timer-active evidence, future `sequence>=2` signed `apply` releases can be published from ChatGPT and automatically fetched by the server.
 
-After read-only enrollment reports success on the VPS, a separate signed sequence 2 `apply` may be published; v10 will independently refuse unsafe persistence. Neither a successful service state nor GitHub QA can prove real Stripchat moderation, uninterrupted recording output or reduced long-term CPU pressure. Do not declare project complete before those host-level checks.
-
-Never share root password, private signing key, streaming credentials, customer information or private logs in the public repository. Never reset, rebuild, resize, reboot or stop protected services merely to enroll.
+A green `status` is NOT v10 `--apply` success, proof of actual recordings, Stripchat moderation, FFmpeg health or sustained CPU pressure reduction. Never reset, rebuild, reboot, resize, stop protected production services, or delete video to satisfy enrollment.
