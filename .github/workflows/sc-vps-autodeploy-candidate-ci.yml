@@ -110,3 +110,18 @@ jobs:
             python3 -m unittest discover -s . -p test_reconcile_v1.py -q
           done
           echo '100_SC_VPS_RECONCILIATION_TESTS_PASS_OFFLINE_ONLY'
+
+      - name: Existing-install v2 semantic-only reconciliation tests (no VPS access)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd vps-maintenance/autodeploy/review
+          echo 'c787f34a21e101881233a2e0d4c64fc4955488f7a9992bbc21714b296c27c50c  reconcile_v2.py' | sha256sum -c -
+          echo '47df75545207f39d144228a019e5c6fb5278062d3bc9bd6df6072dac8da9d965  test_reconcile_v2.py' | sha256sum -c -
+          python3 -m py_compile reconcile_v2.py
+          python3 reconcile_v2.py --self-test
+          for i in 1 2 3 4 5; do
+            python3 -m unittest discover -s . -p 'test_reconcile_v*.py' -q
+            echo "Reconciliation round $i PASS"
+          done
+          echo 'SC_VPS_OFFLINE_150_ASSERTIONS_PASS'
