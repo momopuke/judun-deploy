@@ -1,3 +1,5 @@
+> **CURRENT CANONICAL ENTRYPOINT (2026-11-04):** `review/bootstrap_v5.sh` at commit `9cdc4a724ed36fa0f2c5534c6d3327e554be03be`, verified SHA256 `1102d5c0f3b8a2145ce0073df3b62b969dbc6b9243a2b7289e3ceeb8b4f3fef2`. See `review/ENROLLMENT_GUIDE.md`. Historical references below to root `bootstrap.sh` are superseded. The reviewed v5 agent includes the watchdog, first-run-read-only and nested-parent-symlink guards. VPS enrollment and v10 functional acceptance remain **NOT VERIFIED**.
+
 # SC VPS signed deployment — current status
 
 ## 2026-11-04 source review / release boundary
