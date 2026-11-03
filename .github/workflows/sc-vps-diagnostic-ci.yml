@@ -1,35 +1,39 @@
-name: SC VPS read-only diagnostic tests (never deploy)
+name: SC VPS safety and diagnostic CI (never deploy)
 on:
   push:
-    branches:
-      - vps-maintenance
+    branches: [vps-maintenance]
     paths:
       - 'vps-maintenance/diagnostic_v1.py'
       - 'vps-maintenance/test_diagnostic_v1.py'
+      - 'vps-maintenance/vps_rescue_v5.py'
+      - 'vps-maintenance/test_rescue_v5.py'
       - '.github/workflows/sc-vps-diagnostic-ci.yml'
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
-  test:
+  safety:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
-      - name: Syntax and five rounds of unit checks
+      - name: Syntax and five independent rounds
+        shell: bash
         run: |
-          python3 -m py_compile vps-maintenance/diagnostic_v1.py
+          python3 -m py_compile vps-maintenance/diagnostic_v1.py vps-maintenance/vps_rescue_v5.py
           for i in 1 2 3 4 5; do
-            python3 -m unittest discover -s vps-maintenance -p 'test_diagnostic_v1.py' -q
+            echo "ROUND $i"
+            python3 -m unittest discover -s vps-maintenance -p 'test_*.py' -v
           done
-      - name: Independent local environment smoke test (not VPS)
+      - name: Constrained local read-only smoke test (not VPS)
+        shell: bash
         run: |
-          python3 vps-maintenance/diagnostic_v1.py --sample 2 --print > /tmp/sc_vps_diagnostic_smoke.json
+          python3 vps-maintenance/diagnostic_v1.py --sample 2 --print >/tmp/sc-vps-local.json
           python3 - <<'PY'
           import json
-          v=json.load(open('/tmp/sc_vps_diagnostic_smoke.json'))
-          assert v['schema']=='sc-vps-diagnostic/v1'
-          assert v['stripchat_moderation_verified'] is False
-          assert v['recording_verified'] is False
-          print('LOCAL_SMOKE_PASS; VPS_NOT_TOUCHED')
+          s=json.load(open("/tmp/sc-vps-local.json"))
+          assert s["schema"]=="sc-vps-diagnostic/v1"
+          assert s["stripchat_moderation_verified"] is False
+          assert s["recording_verified"] is False
+          print("LOCAL_DIAGNOSTIC_ONLY_NO_VPS_CHANGES")
           PY
