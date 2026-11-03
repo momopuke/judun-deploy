@@ -105,6 +105,16 @@ class SignedDeploy(unittest.TestCase):
         self.enrolled()
         with patch.object(a,'get',side_effect=corrupt),patch.object(a,'operation') as op:
             self.assertEqual(a.once(),5);op.assert_not_called()
+    def test_symlinked_nested_directory_is_refused_without_external_write(self):
+        self.enrolled()
+        outside=self.home/'outside';outside.mkdir()
+        (self.target/'tests').symlink_to(outside,target_is_directory=True)
+        with patch.object(a,'operation') as op:
+            self.assertEqual(a.once(),5)
+            op.assert_not_called()
+        self.assertFalse((outside/'test_v10.py').exists())
+        self.assertEqual((self.target/'SC_VPS_Base_ReadOnly.py').read_text(),'original')
+
     def test_protected_service_changed_invokes_rollback(self):
         self.enrolled()
         different={**SERV,'stripchat-recorder':'false'}
