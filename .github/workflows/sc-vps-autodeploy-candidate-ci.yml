@@ -125,3 +125,18 @@ jobs:
             echo "Reconciliation round $i PASS"
           done
           echo 'SC_VPS_OFFLINE_150_ASSERTIONS_PASS'
+
+      - name: Exact known-260s host regression and guarded migration v3
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd vps-maintenance/autodeploy/review
+          echo 'c1632eb339bfe655199f134017dcc376e7f3e6a5f7519a36ac868c9df7996e8f  reconcile_v3.py' | sha256sum -c -
+          echo '4424edbbd95bd9dd97af8e3a4b09f3032f41acbc0587f03643c0be1e7c7bbabc  test_reconcile_v3.py' | sha256sum -c -
+          python3 -m py_compile reconcile_v3.py
+          python3 reconcile_v3.py --self-test
+          for i in 1 2 3 4 5; do
+            python3 -m unittest discover -s . -p test_reconcile_v3.py -q
+            echo "v3 guarded timeout/legacy migration round $i PASS"
+          done
+          echo '165/165 LOCAL_ONLY; NO_VPS_EXECUTION'
