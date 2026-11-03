@@ -54,6 +54,13 @@ class ClassificationTests(unittest.TestCase):
     def test_not_altering_v10_service(self):self.assertNotIn('systemctl restart',Path(r.__file__).read_text())
     def test_agent_pin_immutable(self):self.assertIn('/7219554c0c21ed4031e0856b3749e7fca5b8cd23/',r.AGENT_URL)
 
+class TimeoutTests(unittest.TestCase):
+    def test_15min(self):self.assertEqual(r.effective_timeout_seconds('15min'),900)
+    def test_900s(self):self.assertEqual(r.effective_timeout_seconds('900s'),900)
+    def test_15min0s(self):self.assertEqual(r.effective_timeout_seconds('15min 0s'),900)
+    def test_bad(self):self.assertIsNone(r.effective_timeout_seconds('infinity'))
+    def test_wrong_260(self):self.assertNotEqual(r.effective_timeout_seconds('4min20s'),900)
+
 class MutationTests(unittest.TestCase):
     def test_backup_exact_bytes(self):
         with tempfile.TemporaryDirectory() as td,patch.object(r,'BACKUP',Path(td)/'backup'):
@@ -98,7 +105,7 @@ class MainIntegrationTests(unittest.TestCase):
         self.timer_running=False
         t=patch.object(r,'systemd_state',side_effect=lambda unit:'active' if 'timer' in unit and self.timer_running else 'inactive')
         t.start();self.addCleanup(t.stop)
-        for attr,fx in [('protected_ok',lambda:None),('proc',lambda *a,**kw:''),('fetch_trusted_agent',lambda:self.new)]:
+        for attr,fx in [('protected_ok',lambda:None),('proc',lambda *a,**kw:'15min' if 'TimeoutStartUSec' in a else ''),('fetch_trusted_agent',lambda:self.new)]:
             t=patch.object(r,attr,side_effect=fx);t.start();self.addCleanup(t.stop)
         self.started=0
         def fake_first():
@@ -136,6 +143,13 @@ class MainIntegrationTests(unittest.TestCase):
             with self.assertRaisesRegex(r.Stop,'SIMULATED_FAIL'):self.call()
         self.assertEqual(r.AGENT.read_bytes(),self.old)
         self.assertEqual(r.SERVICE.read_text(),r.UNIT_SERVICE_260)
+        self.assertFalse(self.timer_running)
+    def test_effective_timeout_override_rolls_back(self):
+        r.AGENT.write_bytes(self.new)
+        with patch.object(r,'proc',side_effect=lambda *a,**kw:'4min20s' if 'TimeoutStartUSec' in a else ''):
+            with self.assertRaisesRegex(r.Stop,'EFFECTIVE_SYSTEMD_TIMEOUT_NOT_900_SECONDS'):self.call()
+        self.assertEqual(r.SERVICE.read_text(),r.UNIT_SERVICE_260)
+        self.assertEqual(r.AGENT.read_bytes(),self.new)
         self.assertFalse(self.timer_running)
     def test_unknown_agent_prevents_any_mutation(self):
         r.AGENT.write_bytes(b'invalid')
