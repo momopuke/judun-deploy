@@ -180,6 +180,24 @@ def ensure_known_unit(path,raw,allowed):
     print('SC_VPS_UNKNOWN_UNIT_FINGERPRINT',json.dumps(unit_diagnostic(path,raw,allowed),sort_keys=True),flush=True)
     raise Stop(f'UNKNOWN_UNIT_CONTENTS:{path.name}')
 
+def effective_timeout_seconds(text:str)->float|None:
+    """Parse bounded systemd pretty time (e.g. 900s, 15min, 15min 0s)."""
+    value=text.replace(' ','')
+    if not value or len(value)>64:return None
+    pieces=list(re.finditer(r'(\d+)(min|ms|us|h|s)',value))
+    if not pieces or ''.join(x.group(0) for x in pieces)!=value:return None
+    factor={'h':3600,'min':60,'s':1,'ms':.001,'us':.000001}
+    total=sum(int(x.group(1))*factor[x.group(2)] for x in pieces)
+    return total if 0<=total<=31536000 else None
+
+
+def verify_effective_timeout():
+    value=proc('systemctl','show','sc-vps-autodeploy.service','-p','TimeoutStartUSec','--value')
+    seconds=effective_timeout_seconds(value)
+    if seconds!=900:raise Stop('EFFECTIVE_SYSTEMD_TIMEOUT_NOT_900_SECONDS')
+    print('SC_VPS_EFFECTIVE_TIMEOUT_VERIFIED_900s',flush=True)
+
+
 def service_variant(raw:bytes|None)->str:
     """Classify exact effective directives; never normalize unknown keys/commands."""
     if raw is None:
@@ -374,6 +392,7 @@ def main():
                 atomic_update_existing(SERVICE,sv,new)
                 changed.append((SERVICE,sv,new))
                 proc('systemctl','daemon-reload')
+                verify_effective_timeout()
                 print('SC_VPS_TIMEOUT_FIXED_260s_TO_900s',flush=True)
             if mode=='RESTORE_MISSING_MANAGED_UNITS':
                 if sv is None:install_missing_unit(SERVICE,UNIT_SERVICE)
@@ -385,6 +404,7 @@ def main():
             if systemd_state('sc-vps-autodeploy.timer')!='active':raise Stop('TIMER_INACTIVE_POSTCHECK')
             if valid_state(safe_read(STATE,12000))!='STATUS_PASS':raise Stop('READ_ONLY_STATUS_INCOMPLETE')
             if service_variant(safe_read(SERVICE,8192))!='CURRENT':raise Stop('TIMEOUT_NOT_UPDATED')
+            verify_effective_timeout()
             if digest(safe_read(AGENT,30000))!=AGENT_SHA256:raise Stop('AGENT_NOT_CURRENT')
             print('ENROLLMENT_RECOVERED_AND_VERIFIED',flush=True)
             return 0
