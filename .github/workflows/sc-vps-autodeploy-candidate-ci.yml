@@ -1,0 +1,60 @@
+name: SC VPS signed auto-deploy candidate QA (no server access)
+on:
+  push:
+    branches: [vps-maintenance]
+    paths:
+      - 'vps-maintenance/autodeploy/review/**'
+      - 'vps-maintenance/autodeploy/channel.json'
+      - 'vps-maintenance/autodeploy/channel.sig.b64'
+      - '.github/workflows/sc-vps-autodeploy-candidate-ci.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  offline_audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify signed channel, source hashes, pinned bootstrap, and code syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd vps-maintenance/autodeploy
+          python3 -m py_compile review/pull_agent_v5.py
+          python3 review/pull_agent_v5.py --check
+          bash -n review/bootstrap_v5.sh
+          base64 -d channel.sig.b64 >/tmp/sc-vps.sig
+          openssl pkeyutl -verify -pubin -inkey release-signing-public.pem -rawin -in channel.json -sigfile /tmp/sc-vps.sig
+          python3 - <<'PY'
+          import hashlib, json, pathlib, re
+          root=pathlib.Path('.')
+          m=json.loads((root/'channel.json').read_text())
+          assert m['schema']=='sc-vps-signed-release/v1'
+          assert m['sequence']==1 and m['operation']=='status'
+          assert m['git_commit']=='59d1f4b37f20457c071600e797d2c43369d46a6b'
+          for n,digest in m['files'].items():
+              p=root/'releases'/m['release_id']/n
+              assert p.is_file(), n
+              assert hashlib.sha256(p.read_bytes()).hexdigest()==digest, n
+          agent=(root/'review/pull_agent_v5.py').read_bytes()
+          shell=(root/'review/bootstrap_v5.sh').read_text()
+          sha=hashlib.sha256(agent).hexdigest()
+          assert "AGENT_SHA256='"+sha+"'" in shell
+          assert 'TimeoutStartSec=900s' in shell
+          assert 'SIGNED_READ_ONLY_STATUS_PASS' in shell
+          assert shell.index('systemctl start sc-vps-autodeploy.service') < shell.index('systemctl enable --now sc-vps-autodeploy.timer')
+          assert 'FIRST_RELEASE_MUST_BE_READ_ONLY_STATUS' in agent.decode()
+          assert 'UNRESOLVED_PREVIOUS_RELEASE_REQUIRES_RECONCILIATION' in agent.decode()
+          print('SC_VPS_OFFLINE_SIGNED_CANDIDATE_PASS')
+          PY
+      - name: Run five rounds of signed v10 safety tests (never deploy)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd vps-maintenance/autodeploy/releases/SC-VPS-v10-20261104-a1
+          for n in 1 2 3 4 5; do
+              PYTHONPATH=. PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -p test_v10.py -q
+              echo "v10 local round $n PASS"
+          done
+          echo 'VPS_SERVER_NOT_ACCESSED'
