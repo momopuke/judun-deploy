@@ -58,3 +58,12 @@ jobs:
               echo "v10 local round $n PASS"
           done
           echo 'VPS_SERVER_NOT_ACCESSED'
+      - name: Five rounds of v5 signed-agent fail-closed tests (never deploy)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd vps-maintenance/autodeploy/review
+          for n in 1 2 3 4 5; do
+              PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s . -p test_pull_agent_v5.py -q
+              echo "v5 signing and watchdog round $n PASS"
+          done
