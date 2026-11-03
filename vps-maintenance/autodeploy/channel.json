@@ -1,6 +1,6 @@
 {
   "schema": "sc-vps-signed-release/v1",
-  "sequence": 1,
+  "sequence": 2,
   "release_id": "SC-VPS-v10-20261104-a1",
   "git_commit": "59d1f4b37f20457c071600e797d2c43369d46a6b",
   "version": 10,
