@@ -1,4 +1,4 @@
-name: SC VPS signed auto-deploy candidate QA (no server access)
+name: SC VPS signed auto-deploy release QA (no server access)
 on:
   push:
     branches: [vps-maintenance]
@@ -31,7 +31,7 @@ jobs:
           root=pathlib.Path('.')
           m=json.loads((root/'channel.json').read_text())
           assert m['schema']=='sc-vps-signed-release/v1'
-          assert m['sequence']==2 and m['operation']=='status'
+          assert m['sequence']==3 and m['operation']=='apply'
           assert m['git_commit']=='59d1f4b37f20457c071600e797d2c43369d46a6b'
           for n,digest in m['files'].items():
               p=root/'releases'/m['release_id']/n
@@ -88,7 +88,7 @@ jobs:
           assert 'FIRST_RELEASE_MUST_BE_READ_ONLY_STATUS' in source.decode()
           assert 'UNRESOLVED_PREVIOUS_RELEASE_REQUIRES_RECONCILIATION' in source.decode()
           assert 'TARGET_PARENT_UNSAFE' in source.decode()
-          assert json.loads((root/'channel.json').read_text())['operation']=='status'
+          assert json.loads((root/'channel.json').read_text())['operation']=='apply'
           print('OFFICIAL_SC_VPS_PINNED_AGENT_QA_PASS')
           PY
           for n in 1 2 3 4 5; do

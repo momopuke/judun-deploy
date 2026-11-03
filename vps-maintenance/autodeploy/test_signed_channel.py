@@ -14,10 +14,10 @@ class SignedChannel(unittest.TestCase):
                             (BASE/'channel.sig.b64').read_bytes(),
                             BASE/'release-signing-public.pem')
 
-    def test_signed_read_only_seq2_recovery(self):
+    def test_signed_guarded_seq3_apply(self):
         doc = self.signed()
-        self.assertEqual(doc['sequence'], 2)
-        self.assertEqual(doc['operation'], 'status')
+        self.assertEqual(doc['sequence'], 3)
+        self.assertEqual(doc['operation'], 'apply')
         self.assertRegex(doc['git_commit'], r'^[a-f0-9]{40}$')
         self.assertEqual(doc['version'], 10)
 
@@ -34,8 +34,8 @@ class SignedChannel(unittest.TestCase):
 
     def test_reject_unsigned_manifest_change(self):
         raw = (BASE/'channel.json').read_bytes()
-        self.assertIn(b'"operation": "status"', raw)
-        mutated = raw.replace(b'"operation": "status"', b'"operation": "apply"')
+        self.assertIn(b'"operation": "apply"', raw)
+        mutated = raw.replace(b'"operation": "apply"', b'"operation": "rollback"')
         with self.assertRaises(agent.Rejected):
             agent.verify(mutated, (BASE/'channel.sig.b64').read_bytes(),
                          BASE/'release-signing-public.pem')
