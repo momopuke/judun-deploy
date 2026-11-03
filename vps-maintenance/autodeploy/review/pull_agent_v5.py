@@ -164,6 +164,10 @@ def install_code(doc:dict,src:Path,work:Path):
     try:
         for name in sorted(doc['files']):
             dst=target/name
+            # Reject pre-existing symlinked/non-directory parents (e.g.
+            # target/tests -> /somewhere/else). Never write outside target.
+            if dst.parent.is_symlink() or (dst.parent.exists() and not dst.parent.is_dir()):
+                raise Rejected('TARGET_PARENT_UNSAFE')
             dst.parent.mkdir(mode=0o700,parents=True,exist_ok=True)
             if dst.exists() or dst.is_symlink():
                 if dst.is_symlink() or not dst.is_file():raise Rejected('TARGET_SYMLINK_OR_NOT_FILE')
