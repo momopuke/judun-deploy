@@ -162,7 +162,7 @@ jobs:
         run: |
           set -euo pipefail
           cd vps-maintenance/autodeploy/review
-          echo '6b9908ce08324999296a6fa737e3300748efa618ab64be2682fcc97627b2719f  reconcile_v5.py' | sha256sum -c -
+          echo '7cafdeccee1ef3deab269399d840f85d988eb642e1f70bb219c802c2cc09c332  reconcile_v5.py' | sha256sum -c -
           echo 'bbe9bdb693e971d962482c197ac49bbb63e59a9f91a5b4e87743b205c0b367c4  test_refusal_v5.py' | sha256sum -c -
           echo '90b4ca6879e7214b1083908d3c2cfc470bca26b7ad12c804cd833e45fc25f8e6  test_watchdogs_v5.py' | sha256sum -c -
           python3 -m py_compile reconcile_v5.py
