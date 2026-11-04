@@ -24,7 +24,7 @@ jobs:
           src=pathlib.Path('vps-maintenance/autodeploy/releases/SC-VPS-v13-20261104-c1/SC_VPS_Rescue_v13.py').read_text()
           url=next(ast.literal_eval(n.value) for n in ast.parse(src).body
                    if isinstance(n,ast.Assign) and any(getattr(t,'id',None)=='UPLINK' for t in n.targets))
-          assert re.fullmatch(r'https://ntfy\\.sh/scvps-rpt-[0-9a-f]{40}',url)
+          assert re.fullmatch(r'https://ntfy\.sh/scvps-rpt-[0-9a-f]{40}',url)
           for attempt in range(24):
               try:
                   req=urllib.request.Request(url+'/json?poll=1&since=latest',headers={'User-Agent':'SCVPS-receiver/1'})
