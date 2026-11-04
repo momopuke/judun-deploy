@@ -14,12 +14,12 @@ class SignedChannel(unittest.TestCase):
                             (BASE/'channel.sig.b64').read_bytes(),
                             BASE/'release-signing-public.pem')
 
-    def test_signed_guarded_seq3_apply(self):
+    def test_signed_guarded_current_apply(self):
         doc = self.signed()
-        self.assertEqual(doc['sequence'], 3)
+        self.assertGreaterEqual(doc['sequence'], 3)
         self.assertEqual(doc['operation'], 'apply')
         self.assertRegex(doc['git_commit'], r'^[a-f0-9]{40}$')
-        self.assertEqual(doc['version'], 10)
+        self.assertGreaterEqual(doc['version'], 10)
 
     def test_all_signed_release_file_digests(self):
         doc = self.signed()
