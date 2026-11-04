@@ -1,0 +1,53 @@
+name: SC VPS v13 source staging (source verification only)
+on:
+  push:
+    branches: [vps-maintenance]
+    paths:
+      - 'vps-maintenance/autodeploy/staging/v13-source.gz.b64'
+      - 'vps-maintenance/autodeploy/staging/v13-test.gz.b64'
+permissions:
+  contents: write
+jobs:
+  unpack-and-pin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - name: Decode bounded stage and verify plaintext SHA256 before commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64,gzip,hashlib
+          root=Path('vps-maintenance/autodeploy')
+          out=root/'releases'/'SC-VPS-v13-20261104-c1'
+          entries={
+            'v13-source.gz.b64':('SC_VPS_Rescue_v13.py','e7dd7470c970850152a0c23ece2a972b8d18d8f7e8f6bada711a53630a479492'),
+            'v13-test.gz.b64':('tests/test_v13.py','e551940886b4101c104fe8aeedf5ce548750ed61be2147cd60e130717d716637')
+          }
+          for inp,(dest,expected) in entries.items():
+              txt=(root/'staging'/inp).read_text()
+              raw=gzip.decompress(base64.b64decode(txt,validate=True))
+              assert 0<len(raw)<50000
+              assert hashlib.sha256(raw).hexdigest()==expected,dest
+              p=out/dest
+              p.parent.mkdir(parents=True,exist_ok=True)
+              p.write_bytes(raw)
+              print('STAGED_SHA256_PASS',dest)
+          PY
+          python3 -m py_compile vps-maintenance/autodeploy/releases/SC-VPS-v13-20261104-c1/SC_VPS_Rescue_v13.py
+          (cd vps-maintenance/autodeploy/releases/SC-VPS-v13-20261104-c1 && python3 -m unittest discover -s tests -p test_v13.py -q)
+      - name: Publish verified plaintext sources to maintenance branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'scvps-staging-bot'
+          git config user.email 'scvps-staging-bot@users.noreply.github.com'
+          git add vps-maintenance/autodeploy/releases/SC-VPS-v13-20261104-c1/
+          if git diff --cached --quiet; then
+              echo STAGED_ALREADY_PRESENT
+          else
+              git commit -m 'SC VPS v13: materialize SHA256 verified telemetry sources'
+              git push origin HEAD:vps-maintenance
+          fi
