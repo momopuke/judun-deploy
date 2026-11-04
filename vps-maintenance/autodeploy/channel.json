@@ -1,18 +1,19 @@
 {
   "schema": "sc-vps-signed-release/v1",
-  "sequence": 4,
-  "release_id": "SC-VPS-v11-20261104-b1",
-  "git_commit": "2d8f85a7e107207bc06e432f02fa1d8ac1d5ae68",
-  "version": 11,
+  "sequence": 5,
+  "release_id": "SC-VPS-v12-20261104-a1",
+  "git_commit": "3a897439d70e447bcc6b12cc935d19b1a6bc5415",
+  "version": 12,
   "operation": "apply",
   "files": {
     "SC_VPS_Base_ReadOnly.py": "20dd09582838f06c608ec8f678763668e89fa728217d5abfb3de3d750ac3591c",
     "SC_VPS_Metrics_ReadOnly.py": "8c57e40ba7c6c66215fd3087beb9810eb24a0bd1833c97bafa1a5e79112078d3",
     "SC_VPS_Rescue_v10.py": "2c19c689126ea6db76186fad26dd5b7f553000d335ad208aab17191f7c89c040",
     "SC_VPS_Rescue_v11.py": "88973256b93869d1f9388aefae7fb68bde6bd63b908c96657dd7e5b82c9e9c68",
+    "SC_VPS_Rescue_v12.py": "a36efb06338e5c3a4e47d6285a0d20b0ca6608d3a96b9ac4209e540fccb2c7bc",
     "SC_VPS_Rescue_v8.py": "754071bc73fe97b87225963eaf4c56db27b25a6a6abac6d9d7172632ea25e99e",
     "SC_VPS_Rescue_v9.py": "95a489fa93f757ad64c34aef254dcfeba2192cd84e2ffba98ca0147b3b3207c9",
-    "SHA256SUMS": "2c6d2a73ba4b7404b2591081aeb4fd92408eb0c26a5c092e798c8a54aef2af33",
-    "tests/test_v11.py": "700eeb01bf0e70c31464f61c7bfdddd93ae26d601a3fee47ec9cc0cf2ccae3be"
+    "tests/test_v12.py": "1495f19f41214009c7be96a983c86d532239c6df342a7ad5e3f1b6c211b49019",
+    "SHA256SUMS": "69175900292f0f4ad9215b4b98b84ac829057b69ddc1f64fb98fea43d5affa36"
   }
 }
