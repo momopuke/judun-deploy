@@ -1,0 +1,52 @@
+name: SC VPS v16 read-only CPU profiler source five-round QA
+on:
+  push:
+    branches: [vps-maintenance]
+    paths:
+      - 'vps-maintenance/autodeploy/staging/v16-source.gz.b64'
+      - 'vps-maintenance/autodeploy/staging/v16-test.gz.b64'
+      - '.github/workflows/sc-vps-v16-staging.yml'
+permissions:
+  contents: write
+jobs:
+  verify-v16:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify SHA256 source, compile and test 190 regression cases
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import base64,gzip,hashlib,shutil
+          from pathlib import Path
+          base=Path('vps-maintenance/autodeploy')
+          release=base/'releases'/'SC-VPS-v16-20261104-f1'
+          for key,(target,expected) in {
+            'v16-source.gz.b64':('SC_VPS_Rescue_v16.py','ce318f89039799a2ef8651187da77e92caeef163e8cb1114394d9d85d91e5bc7'),
+            'v16-test.gz.b64':('tests/test_v16.py','8c81621bd286ac67b023efbfd036975a61941c45cbb2e4c434c6e72bb44cfdcc')
+          }.items():
+              raw=gzip.decompress(base64.b64decode((base/'staging'/key).read_text().strip(),validate=True))
+              assert 0<len(raw)<18000 and hashlib.sha256(raw).hexdigest()==expected,key
+              p=release/target;p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(raw)
+              print('V16_SOURCE_SHA256_PASS',target)
+          dep=base/'releases'/'SC-VPS-v15-20261104-e1'/'SC_VPS_Rescue_v15.py'
+          assert hashlib.sha256(dep.read_bytes()).hexdigest()=='bf4ca3710e352d76bf437cd72dce7aa5783b03505f2a08d76db64ea378d3d697'
+          shutil.copy2(dep,release/'SC_VPS_Rescue_v15.py')
+          PY
+          python3 -m py_compile vps-maintenance/autodeploy/releases/SC-VPS-v16-20261104-f1/SC_VPS_Rescue_v16.py
+          cd vps-maintenance/autodeploy/releases/SC-VPS-v16-20261104-f1
+          for i in 1 2 3 4 5; do
+             python3 -m unittest discover -s tests -p test_v16.py -q
+             echo "V16_TEST_ROUND_$i=PASS"
+          done
+      - name: Commit pinned audited source into v16 immutable release directory
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name scvps-staging-bot
+          git config user.email scvps-staging-bot@users.noreply.github.com
+          git add vps-maintenance/autodeploy/releases/SC-VPS-v16-20261104-f1/
+          if git diff --cached --quiet;then echo SOURCE_ALREADY_PRESENT
+          else git commit -m 'SC VPS v16 audited source and 190 offline tests';git push origin HEAD:vps-maintenance;fi
