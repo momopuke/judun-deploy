@@ -1,4 +1,4 @@
-name: SC VPS read latest encrypted V15 host receipt (no SSH)
+name: SC VPS read encrypted V15/V16 host receipts (no SSH)
 on:
   push:
     branches: [vps-maintenance]
@@ -42,11 +42,19 @@ jobs:
           if not candidates:raise SystemExit('NO_LIVE_HOST_ENCRYPTED_REPORT')
           v16=[i for i in candidates if i[1]=='SC VPS encrypted metrics v16']
           v15=[i for i in candidates if i[1]=='SC VPS encrypted metrics v15']
-          rec=max(v16 or v15 or candidates,key=lambda x:x[0])
-          print('V16_REPORT_AVAILABLE='+str(bool(v16)))
-          print('V15_REPORT_AVAILABLE='+str(bool(v15)))
+          # The v16 uploader inherits the v15 title: inspect the actual decrypted
+          # payload version instead of trusting the public relay title.
+          rec=max(candidates,key=lambda x:x[0])
+          recent=sorted(candidates,key=lambda x:x[0],reverse=True)[:8]
+          print('V16_TITLE_AVAILABLE='+str(bool(v16)))
+          print('V15_TITLE_AVAILABLE='+str(bool(v15)))
           print('HOST_RECEIPT_TIME_UNIX='+str(rec[0]))
           print('HOST_RECEIPT_TITLE='+str(rec[1])[:90])
           print('HOST_ENCRYPTED_REPORT_B64='+rec[2])
+          print('HOST_RECENT_COUNT='+str(len(recent)))
+          for idx,(epoch,title,msg) in enumerate(recent,1):
+              print('HOST_RECENT_'+str(idx)+'_TIME_UNIX='+str(epoch))
+              print('HOST_RECENT_'+str(idx)+'_TITLE='+str(title)[:90])
+              print('HOST_RECENT_'+str(idx)+'_ENCRYPTED_REPORT_B64='+msg)
           print('ENCRYPTED_RECEIPT_READ_PASS')
           PY
