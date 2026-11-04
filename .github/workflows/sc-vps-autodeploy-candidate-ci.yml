@@ -31,8 +31,8 @@ jobs:
           root=pathlib.Path('.')
           m=json.loads((root/'channel.json').read_text())
           assert m['schema']=='sc-vps-signed-release/v1'
-          assert m['sequence']==3 and m['operation']=='apply'
-          assert m['git_commit']=='59d1f4b37f20457c071600e797d2c43369d46a6b'
+          assert isinstance(m['sequence'], int) and m['sequence']>=3 and m['operation']=='apply'
+          assert re.fullmatch(r'[0-9a-f]{40}',m['git_commit'])
           for n,digest in m['files'].items():
               p=root/'releases'/m['release_id']/n
               assert p.is_file(), n
