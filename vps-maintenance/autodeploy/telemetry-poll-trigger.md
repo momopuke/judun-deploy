@@ -13,3 +13,5 @@ On-demand read-only V16 host CPU diagnosis acceptance poll UTC 2026-11-04T15:33:
 On-demand read-only V16/V15 host receipt poll UTC 2026-11-04T16:23:11Z.
 
 On-demand read-only V16/V15 host receipt poll UTC 2026-11-04T16:50:39Z.
+
+On-demand read-only V16/V15 host receipt poll 2026-11-05 01:26 Asia/Taipei (continuation), verify live host and cleanup counters; no server commands.
