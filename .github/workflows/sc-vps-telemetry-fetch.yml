@@ -1,4 +1,4 @@
-name: SC VPS fetch latest encrypted host report (no SSH)
+name: SC VPS read latest encrypted V15 host receipt (no SSH)
 on:
   push:
     branches: [vps-maintenance]
@@ -12,36 +12,39 @@ permissions:
 jobs:
   read-host:
     runs-on: ubuntu-latest
-    timeout-minutes: 13
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - name: Receive current host report over outbound encrypted relay
+      - name: Read bounded encrypted receipts, prefer V15 authenticated-key format
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           import ast,base64,json,pathlib,re,time,urllib.request
-          src=pathlib.Path('vps-maintenance/autodeploy/releases/SC-VPS-v13-20261104-c1/SC_VPS_Rescue_v13.py').read_text()
-          url=next(ast.literal_eval(n.value) for n in ast.parse(src).body
-                   if isinstance(n,ast.Assign) and any(getattr(t,'id',None)=='UPLINK' for t in n.targets))
-          assert re.fullmatch(r'https://ntfy\.sh/scvps-rpt-[0-9a-f]{40}',url)
-          for attempt in range(24):
+          src=pathlib.Path('vps-maintenance/autodeploy/releases/SC-VPS-v15-20261104-e1/SC_VPS_Rescue_v15.py').read_text()
+          uplink=next(ast.literal_eval(n.value) for n in ast.parse(src).body
+                      if isinstance(n,ast.Assign) and any(getattr(t,'id',None)=='UPLINK' for t in n.targets))
+          assert re.fullmatch(r'https://ntfy\.sh/scvps-rpt-[0-9a-f]{40}',uplink)
+          req=urllib.request.Request(uplink+'/json?poll=1&since=12h',headers={'User-Agent':'SCVPS-receiver-v15/1'})
+          with urllib.request.urlopen(req,timeout=25) as resp:
+              raw=resp.read(200000)
+          candidates=[]
+          for row in raw.decode('utf8').splitlines():
               try:
-                  req=urllib.request.Request(url+'/json?poll=1&since=latest',headers={'User-Agent':'SCVPS-receiver/1'})
-                  with urllib.request.urlopen(req,timeout=20) as res:
-                      body=res.read(6000).decode('utf8')
-                  for line in body.splitlines():
-                      item=json.loads(line)
-                      msg=item.get('message','')
-                      if item.get('event')=='message' and isinstance(msg,str) and len(msg)==684:
-                          assert len(base64.b64decode(msg,validate=True))==512
-                          assert abs(time.time()-int(item.get('time',0)))<7200
-                          print('V13_HOST_ENCRYPTED_REPORT_RECEIVED')
-                          print('V13_RELAY_RECEIVED_UNIX='+str(item['time']))
-                          print('V13_ENCRYPTED_REPORT_B64='+msg)
-                          raise SystemExit(0)
-              except (OSError,ValueError,KeyError,AssertionError) as e:
-                  print('TELEMETRY_RETRY',attempt,type(e).__name__)
-              if attempt<23:time.sleep(25)
-          raise SystemExit('V13_HOST_REPORT_NOT_RECEIVED')
+                  item=json.loads(row)
+                  msg=item.get('message','')
+                  epoch=int(item.get('time',0))
+                  if item.get('event')!='message' or not isinstance(msg,str) or len(msg)!=684:continue
+                  if len(base64.b64decode(msg,validate=True))!=512:continue
+                  if abs(time.time()-epoch)>43200:continue
+                  candidates.append((epoch,item.get('title',''),msg))
+              except (ValueError,TypeError,KeyError,AssertionError):continue
+          if not candidates:raise SystemExit('NO_LIVE_HOST_ENCRYPTED_REPORT')
+          v15=[i for i in candidates if i[1]=='SC VPS encrypted metrics v15']
+          rec=max(v15 or candidates,key=lambda x:x[0])
+          print('V15_REPORT_AVAILABLE='+str(bool(v15)))
+          print('V15_RECEIPT_TIME_UNIX='+str(rec[0]))
+          print('V15_RECEIPT_TITLE='+str(rec[1])[:90])
+          print('V15_ENCRYPTED_REPORT_B64='+rec[2])
+          print('ENCRYPTED_RECEIPT_READ_PASS')
           PY
