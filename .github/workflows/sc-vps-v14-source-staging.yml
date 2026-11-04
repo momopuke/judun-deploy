@@ -23,7 +23,7 @@ jobs:
           root=pathlib.Path('vps-maintenance/autodeploy')
           release=root/'releases'/'SC-VPS-v14-20261104-d1'
           artifacts={
-            'v14-source.gz.b64':('SC_VPS_Rescue_v14.py','18a280cacc944ab05cd5ea75b6af7ab4f514914e7c9527ffee76d66bc498b8fb'),
+            'v14-source.gz.b64':('SC_VPS_Rescue_v14.py','79ef1aaef2a68f5167640bc71581f58a3ab97df58a260f5e0add133669d9a908'),
             'v14-test.gz.b64':('tests/test_v14.py','0f9f014dedee5f24ba100b092ac5558e541963e0c47d6a3ffac56c2584438154'),
           }
           for name,(dest,expected) in artifacts.items():
@@ -33,6 +33,8 @@ jobs:
                   old=b's.st_uid==0'
                   assert raw.count(old)==1
                   raw=raw.replace(old,b's.st_uid==os.geteuid()')
+                  assert raw.count(b'fs.st_uid!=0')==1
+                  raw=raw.replace(b'fs.st_uid!=0',b'fs.st_uid!=os.geteuid()')
               assert len(raw)<30000 and hashlib.sha256(raw).hexdigest()==expected,dest
               out=release/dest;out.parent.mkdir(parents=True,exist_ok=True);out.write_bytes(raw)
               print('STAGED_SHA256_OK',dest)
