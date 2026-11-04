@@ -40,11 +40,13 @@ jobs:
                   candidates.append((epoch,item.get('title',''),msg))
               except (ValueError,TypeError,KeyError,AssertionError):continue
           if not candidates:raise SystemExit('NO_LIVE_HOST_ENCRYPTED_REPORT')
+          v16=[i for i in candidates if i[1]=='SC VPS encrypted metrics v16']
           v15=[i for i in candidates if i[1]=='SC VPS encrypted metrics v15']
-          rec=max(v15 or candidates,key=lambda x:x[0])
+          rec=max(v16 or v15 or candidates,key=lambda x:x[0])
+          print('V16_REPORT_AVAILABLE='+str(bool(v16)))
           print('V15_REPORT_AVAILABLE='+str(bool(v15)))
-          print('V15_RECEIPT_TIME_UNIX='+str(rec[0]))
-          print('V15_RECEIPT_TITLE='+str(rec[1])[:90])
-          print('V15_ENCRYPTED_REPORT_B64='+rec[2])
+          print('HOST_RECEIPT_TIME_UNIX='+str(rec[0]))
+          print('HOST_RECEIPT_TITLE='+str(rec[1])[:90])
+          print('HOST_ENCRYPTED_REPORT_B64='+rec[2])
           print('ENCRYPTED_RECEIPT_READ_PASS')
           PY
