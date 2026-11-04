@@ -5,6 +5,7 @@ on:
     paths:
       - 'vps-maintenance/autodeploy/staging/v13-source.gz.b64'
       - 'vps-maintenance/autodeploy/staging/v13-test.gz.b64'
+      - '.github/workflows/sc-vps-v13-source-staging.yml'
 permissions:
   contents: write
 jobs:
@@ -27,7 +28,7 @@ jobs:
             'v13-test.gz.b64':('tests/test_v13.py','e551940886b4101c104fe8aeedf5ce548750ed61be2147cd60e130717d716637')
           }
           for inp,(dest,expected) in entries.items():
-              txt=(root/'staging'/inp).read_text()
+              txt=(root/'staging'/inp).read_text().strip()
               raw=gzip.decompress(base64.b64decode(txt,validate=True))
               assert 0<len(raw)<50000
               assert hashlib.sha256(raw).hexdigest()==expected,dest
