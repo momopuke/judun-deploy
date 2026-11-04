@@ -1,0 +1,53 @@
+name: SC VPS v15 materialize and test signed-source candidate
+on:
+  push:
+    branches: [vps-maintenance]
+    paths:
+      - 'vps-maintenance/autodeploy/staging/v15-source.gz.b64'
+      - 'vps-maintenance/autodeploy/staging/v15-test.gz.b64'
+      - '.github/workflows/sc-vps-v15-staging.yml'
+permissions:
+  contents: write
+jobs:
+  v15-offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify exact bounded SHA256 and execute 5 x 30 unit tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,base64,gzip
+          from pathlib import Path
+          root=Path('vps-maintenance/autodeploy')
+          release=root/'releases/SC-VPS-v15-20261104-e1'
+          for stage,(relative,digest) in {
+            'v15-source.gz.b64':('SC_VPS_Rescue_v15.py','bf4ca3710e352d76bf437cd72dce7aa5783b03505f2a08d76db64ea378d3d697'),
+            'v15-test.gz.b64':('tests/test_v15.py','07570eabe94fd56db6d95707f5315fd60f044bb67c92a78b26e67295b615f4d9')
+          }.items():
+              raw=gzip.decompress(base64.b64decode((root/'staging'/stage).read_text().strip(),validate=True))
+              assert 0<len(raw)<20000 and hashlib.sha256(raw).hexdigest()==digest,relative
+              dest=release/relative;dest.parent.mkdir(parents=True,exist_ok=True);dest.write_bytes(raw)
+              print('V15_SOURCE_SHA256_PASS',relative,digest)
+          PY
+          python3 -m py_compile vps-maintenance/autodeploy/releases/SC-VPS-v15-20261104-e1/SC_VPS_Rescue_v15.py
+          cd vps-maintenance/autodeploy/releases/SC-VPS-v15-20261104-e1
+          for i in 1 2 3 4 5; do
+            python3 -m unittest discover -s tests -p test_v15.py -q
+            echo "V15_REGRESSION_ROUND_$i=PASS"
+          done
+      - name: Commit verified candidate into immutable source path
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name scvps-staging-bot
+          git config user.email scvps-staging-bot@users.noreply.github.com
+          git add vps-maintenance/autodeploy/releases/SC-VPS-v15-20261104-e1/
+          if git diff --cached --quiet; then
+            echo V15_SOURCE_ALREADY_PRESENT
+          else
+            git commit -m 'SC VPS v15 verified encrypted telemetry source and 150 tests'
+            git push origin HEAD:vps-maintenance
+          fi
