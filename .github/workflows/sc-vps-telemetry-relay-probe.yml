@@ -1,0 +1,30 @@
+name: SC VPS telemetry relay connectivity (test only)
+on:
+  push:
+    branches: [vps-maintenance]
+    paths:
+      - ".github/workflows/sc-vps-telemetry-relay-probe.yml"
+permissions:
+  contents: read
+jobs:
+  test-relay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Verify anonymous outbound publish and read roundtrip with synthetic data
+        shell: bash
+        run: |
+          set -euo pipefail
+          topic="scvps-test-${GITHUB_RUN_ID}-${RANDOM}"
+          nonce="roundtrip-${GITHUB_RUN_ID}-${RANDOM}"
+          curl -fsS --retry 2 --max-time 15 -H 'Content-Type: text/plain' -H 'X-Cache: yes' -d "$nonce" "https://ntfy.sh/$topic" >/dev/null
+          sleep 2
+          export TOPIC="$topic" NONCE="$nonce"
+          python3 - <<'PY'
+          import os,urllib.request,json
+          url='https://ntfy.sh/'+os.environ['TOPIC']+'/json?poll=1&since=all'
+          with urllib.request.urlopen(url,timeout=20) as r:
+              data=r.read(20000).decode()
+          assert any(json.loads(s).get('message')==os.environ['NONCE'] for s in data.splitlines() if s.strip())
+          print('RELAY_PUBLIC_TEST_ROUNDTRIP_PASS')
+          PY
