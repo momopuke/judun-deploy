@@ -34,8 +34,9 @@ class SignedChannel(unittest.TestCase):
 
     def test_reject_unsigned_manifest_change(self):
         raw = (BASE/'channel.json').read_bytes()
-        self.assertIn(b'"operation": "apply"', raw)
-        mutated = raw.replace(b'"operation": "apply"', b'"operation": "rollback"')
+        canonical = raw.replace(b' ', b'')
+        self.assertIn(b'"operation":"apply"', canonical)
+        mutated = raw.replace(b'"operation": "apply"', b'"operation": "rollback"') if b'"operation": "apply"' in raw else raw.replace(b'"operation":"apply"', b'"operation":"rollback"')
         with self.assertRaises(agent.Rejected):
             agent.verify(mutated, (BASE/'channel.sig.b64').read_bytes(),
                          BASE/'release-signing-public.pem')
