@@ -1,5 +1,6 @@
 """Safety-only offline tests for the signed SC VPS pull agent. Never run systemctl."""
 import importlib.util
+import hashlib
 import json
 import tempfile
 import unittest
@@ -15,6 +16,15 @@ SPEC.loader.exec_module(a)
 M=(ROOT/'channel.json').read_bytes()
 S=(ROOT/'channel.sig.b64').read_bytes()
 SOURCE=ROOT/'releases/SC-VPS-v10-20261104-a1'
+V10_NAMES=('SC_VPS_Base_ReadOnly.py','SC_VPS_Metrics_ReadOnly.py',
+          'SC_VPS_Rescue_v8.py','SC_VPS_Rescue_v9.py','SC_VPS_Rescue_v10.py',
+          'tests/test_v10.py','SHA256SUMS')
+def historical_manifest(signed_current, sequence, operation):
+    # Keep the release-1 test fixture independent of the moving signed channel.
+    return {**signed_current,'sequence':sequence,'operation':operation,'version':10,
+            'release_id':'SC-VPS-v10-20261104-a1',
+            'files':{name:hashlib.sha256((SOURCE/name).read_bytes()).hexdigest()
+                     for name in V10_NAMES}}
 SERV={'stripchat-browser-desktop.service':'active','line-openchat-guard.service':'active','stripchat-recorder':'true'}
 
 def fetch(url,limit):
@@ -39,7 +49,7 @@ class SignedDeploy(unittest.TestCase):
                   patch.object(a,'read_protected',return_value=SERV),
                   patch.object(a,'preflight_tests')]:
             p.start();self.addCleanup(p.stop)
-        patcher=patch.object(a,'verify',side_effect=lambda m,s:self.origverify(m,s,ROOT/'release-signing-public.pem'))
+        patcher=patch.object(a,'verify',side_effect=lambda m,s:historical_manifest(self.origverify(m,s,ROOT/'release-signing-public.pem'),1,'status'))
         patcher.start();self.addCleanup(patcher.stop)
     def state_data(self):return json.loads((self.state/'state.json').read_text())
     def enrolled(self):
@@ -48,12 +58,13 @@ class SignedDeploy(unittest.TestCase):
         original=self.origverify
         def signed_followup(m,s):
             doc=original(m,s,ROOT/'release-signing-public.pem')
-            return {**doc,'sequence':2,'operation':'apply'}
+            return historical_manifest(doc,2,'apply')
         self.addCleanup(patch.object(a,'verify').stop) if False else None
         p=patch.object(a,'verify',side_effect=signed_followup);p.start();self.addCleanup(p.stop)
-    def test_published_manifest_is_signed_status(self):
+    def test_published_manifest_is_signed_current(self):
         x=self.origverify(M,S,ROOT/'release-signing-public.pem')
-        self.assertEqual(x['operation'],'status');self.assertEqual(x['sequence'],1)
+        self.assertGreaterEqual(x['sequence'],3)
+        self.assertEqual(x['operation'],'apply')
     def test_tampered_signature_rejected(self):
         self.assertRaises(a.Rejected,self.origverify,M,S[:-1]+b'X',ROOT/'release-signing-public.pem')
     def test_initial_apply_denied(self):
