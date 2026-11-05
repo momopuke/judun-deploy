@@ -25,11 +25,16 @@ jobs:
           uplink=next(ast.literal_eval(n.value) for n in ast.parse(src).body
                       if isinstance(n,ast.Assign) and any(getattr(t,'id',None)=='UPLINK' for t in n.targets))
           assert re.fullmatch(r'https://ntfy\.sh/scvps-rpt-[0-9a-f]{40}',uplink)
-          req=urllib.request.Request(uplink+'/json?poll=1&since=1h',headers={'User-Agent':'SCVPS-receiver-v15/1'})
-          with urllib.request.urlopen(req,timeout=25) as resp:
-              raw=resp.read(200000)
+          rows=[]
+          for endpoint in (uplink,uplink.replace('https://ntfy.sh/','https://ntfy.envs.net/')):
+              req=urllib.request.Request(endpoint+'/json?poll=1&since=1h',headers={'User-Agent':'SCVPS-receiver-v18/1'})
+              try:
+                  with urllib.request.urlopen(req,timeout=20) as resp:
+                      rows.extend(resp.read(200000).decode('utf8').splitlines())
+              except Exception as exc:
+                  print('RELAY_READ_UNAVAILABLE='+type(exc).__name__)
           candidates=[]
-          for row in raw.decode('utf8').splitlines():
+          for row in rows:
               try:
                   item=json.loads(row)
                   msg=item.get('message','')
