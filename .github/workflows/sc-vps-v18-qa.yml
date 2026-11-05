@@ -1,0 +1,22 @@
+name: SC VPS v18 guarded maintenance tests (no host access)
+on:
+  push:
+    branches: [vps-maintenance]
+    paths:
+      - 'vps-maintenance/autodeploy/releases/SC-VPS-v18-20261105-h1/**'
+      - 'vps-maintenance/autodeploy/channel.json'
+      - '.github/workflows/sc-vps-v18-qa.yml'
+permissions:
+  contents: read
+jobs:
+  safety-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Five rounds of interruption, regression and verified-copy deletion tests
+        run: |
+          cd vps-maintenance/autodeploy/releases/SC-VPS-v18-20261105-h1
+          for round in 1 2 3 4 5; do
+            PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. python3 -m unittest discover -s tests -p test_v18.py -q || exit 1
+          done
