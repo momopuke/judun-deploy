@@ -17,3 +17,5 @@ On-demand read-only V16/V15 host receipt poll UTC 2026-11-04T16:50:39Z.
 On-demand read-only V16/V15 host receipt poll 2026-11-05 01:26 Asia/Taipei (continuation), verify live host and cleanup counters; no server commands.
 
 On-demand read-only V16/V15 encrypted host receipt poll 2026-11-04T18:07:15Z; no server commands.
+
+On-demand read-only V16/V15 host telemetry recheck requested 2026-11-05 09:23 Asia/Taipei; verify fresh encrypted receipts and v14 cleanup, no server mutation.
