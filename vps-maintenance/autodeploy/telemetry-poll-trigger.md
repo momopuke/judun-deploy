@@ -37,3 +37,5 @@ On-demand read-only V16/V15 host telemetry recheck requested 2026-11-05 09:23 As
 2026-11-05T03:05:50Z: verify sequence17 current measurements, actual policy p and guarded reconciliation outcome.
 
 2026-11-05T03:07:06Z: read the post-reconciliation current policy sample for signed sequence17.
+
+2026-11-05T03:12:00Z: scheduled read-only host encrypted telemetry check; preserve later signed releases.
