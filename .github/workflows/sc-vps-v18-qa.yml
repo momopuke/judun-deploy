@@ -3,7 +3,7 @@ on:
   push:
     branches: [vps-maintenance]
     paths:
-      - 'vps-maintenance/autodeploy/releases/SC-VPS-v18-20261105-h5/**'
+      - 'vps-maintenance/autodeploy/releases/SC-VPS-v18-20261105-h6/**'
       - 'vps-maintenance/autodeploy/channel.json'
       - '.github/workflows/sc-vps-v18-qa.yml'
 permissions:
@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Five rounds of interruption, regression and verified-copy deletion tests
         run: |
-          cd vps-maintenance/autodeploy/releases/SC-VPS-v18-20261105-h5
+          cd vps-maintenance/autodeploy/releases/SC-VPS-v18-20261105-h6
           for round in 1 2 3 4 5; do
             sudo -n env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. python3 -m unittest discover -s tests -p test_v18.py -q || exit 1
           done
