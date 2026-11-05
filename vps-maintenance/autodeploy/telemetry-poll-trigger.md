@@ -25,3 +25,5 @@ On-demand read-only V16/V15 host telemetry recheck requested 2026-11-05 09:23 As
 2026-11-05T02:29:47Z: read real-host sequence 12 repair receipt and protected states; do not infer deployment from CI.
 
 2026-11-05T02:38:22Z: read both encrypted relays for real sequence 14 acceptance and cleanup result.
+
+2026-11-05T02:45:23Z: verify fresh sequence15 coupled resource trial and post-trial protected workload state.
