@@ -35,3 +35,5 @@ On-demand read-only V16/V15 host telemetry recheck requested 2026-11-05 09:23 As
 2026-11-05T02:57:38Z: verify the first recurring stable-health packet after the 10-minute maintenance interval.
 
 2026-11-05T03:05:50Z: verify sequence17 current measurements, actual policy p and guarded reconciliation outcome.
+
+2026-11-05T03:07:06Z: read the post-reconciliation current policy sample for signed sequence17.
