@@ -18,5 +18,5 @@ jobs:
         run: |
           cd vps-maintenance/autodeploy/releases/SC-VPS-v18-20261105-h1
           for round in 1 2 3 4 5; do
-            PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. python3 -m unittest discover -s tests -p test_v18.py -q || exit 1
+            sudo -n env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. python3 -m unittest discover -s tests -p test_v18.py -q || exit 1
           done
