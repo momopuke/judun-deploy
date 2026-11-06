@@ -29,7 +29,7 @@ def decode(log,key,minimum=11,max_age=1800):
             if not isinstance(obj,dict):continue
             if type(obj.get('ts'))!=int or not -90<=now-obj['ts']<=max_age:continue
             if type(obj.get('seq'))!=int or obj['seq']<minimum:continue
-            if (obj.get('v'),obj.get('k')) not in ((17,'base'),(17,'detail'),(18,'maintenance')):continue
+            if (obj.get('v'),obj.get('k')) not in ((17,'base'),(17,'detail'),(18,'maintenance'),(19,'cpu_diag')):continue
             found.append(obj)
         except (ValueError,zlib.error):continue
     return sorted(found,key=lambda d:(d['ts'],d['k']),reverse=True)
