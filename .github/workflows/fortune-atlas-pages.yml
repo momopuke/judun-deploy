@@ -1,0 +1,45 @@
+name: FATE ATLAS static site publish
+on:
+  push:
+    branches: [gh-pages]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: fortune-atlas-pages
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify isolated site payload
+        shell: bash
+        run: |
+          test -s index.html
+          test -s version.json
+          test -f .nojekyll
+          test ! -e channel
+          test ! -e keys
+          test ! -e releases
+          python3 - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          html = Path('index.html').read_bytes()
+          data = json.loads(Path('version.json').read_text())
+          assert hashlib.sha256(html).hexdigest() == data['sha256_index_html']
+          assert data['version'] == '1.0.1'
+          print('FATE_ATLAS_SOURCE_INTEGRITY_PASS')
+          PY
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - name: Deploy only FATE ATLAS website
+        id: deploy
+        uses: actions/deploy-pages@v4
