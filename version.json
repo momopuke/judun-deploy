@@ -4,6 +4,8 @@
   "release_date": "2026-11-07",
   "sha256_index_html": "a75043bf80f7ef562628a7e5d1b09cb7851feda3ad6cb9677d962f944f072d59",
   "source_branch": "gh-pages",
-  "deployment_status": "source_published_hosting_unverified",
-  "hosted_url": null
+  "deployment_status": "live_https_verified",
+  "hosted_url": "https://momopuke.github.io/judun-deploy/",
+  "verified_at": "2026-11-08T01:52:06Z",
+  "verification_run_url": "https://github.com/momopuke/judun-deploy/actions/runs/42436066760"
 }
