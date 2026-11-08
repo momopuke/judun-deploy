@@ -43,3 +43,41 @@ jobs:
       - name: Deploy only FATE ATLAS website
         id: deploy
         uses: actions/deploy-pages@v4
+      - name: Verify public HTTPS site and exact published version
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, time, urllib.request
+          from pathlib import Path
+          base = 'https://momopuke.github.io/judun-deploy/'
+          local = Path('index.html').read_bytes()
+          expected_hash = hashlib.sha256(local).hexdigest()
+          last_error = None
+          for attempt in range(18):
+              try:
+                  def fetch(path):
+                      req = urllib.request.Request(base + path, headers={
+                          'User-Agent': 'FateAtlas-Live-Verification/1',
+                          'Cache-Control': 'no-cache'
+                      })
+                      with urllib.request.urlopen(req, timeout=12) as response:
+                          assert response.status == 200
+                          return response.read()
+                  remote = fetch('index.html?v=' + str(attempt))
+                  manifest = json.loads(fetch('version.json?v=' + str(attempt)))
+                  assert hashlib.sha256(remote).hexdigest() == expected_hash, 'Online HTML SHA mismatch'
+                  assert manifest['sha256_index_html'] == expected_hash, 'Manifest SHA mismatch'
+                  assert 'window.__fortuneTest' in remote.decode('utf-8')
+                  assert 'shareReport' in remote.decode('utf-8')
+                  assert manifest['version'] == '1.0.1'
+                  print('LIVE_HTTPS_VERIFIED', base)
+                  print('LIVE_VERSION', manifest['version'])
+                  print('LIVE_INDEX_SHA256', expected_hash)
+                  break
+              except Exception as exc:
+                  last_error = repr(exc)
+                  print('LIVE_CHECK_RETRY', attempt + 1, last_error)
+                  if attempt == 17:
+                      raise SystemExit('LIVE_HTTPS_VERIFICATION_FAILED: ' + last_error)
+                  time.sleep(5)
+          PY
