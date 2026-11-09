@@ -33,9 +33,25 @@ jobs:
           html = Path('index.html').read_bytes()
           data = json.loads(Path('version.json').read_text())
           assert hashlib.sha256(html).hexdigest() == data['sha256_index_html']
-          assert data['version'] == '1.0.1'
+          assert data['version'] == '1.2.0'
+          assert hashlib.sha256(Path('engines-v1.2.0.js').read_bytes()).hexdigest() == data['sha256_engine']
           print('FATE_ATLAS_SOURCE_INTEGRITY_PASS')
           PY
+      - name: Fetch audited fixed-version Ziwei engine
+        shell: bash
+        run: |
+          curl -fLSs --retry 3 -o iztro-v2.6.5.min.js 'https://cdn.jsdelivr.net/npm/iztro@2.6.5/dist/iztro-v2.6.5.min.js'
+          echo '6d7993c30d76b4720ccd6c981893738e1c5d3d8c925115ea910c1a161c41882b  iztro-v2.6.5.min.js' | sha256sum -c -
+          node - <<'NODE'
+          global.self=global;
+          global.iztro=require('./iztro-v2.6.5.min.js');
+          global.crypto=require('node:crypto').webcrypto;
+          const e=require('./engines-v1.2.0.js');
+          const z=e.ziweiBirth('1990-01-01','12:20','male','Asia/Taipei');
+          if(z.status!=='ok'||z.palaces.length!==12||z.stars!==14)throw Error('Ziwei sample mismatch');
+          if(e.palaceCount!==64||e.DECK.length!==78)throw Error('Engine integrity failure');
+          console.log('FATE_ENGINES_DEPLOY_PASS');
+          NODE
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
@@ -69,7 +85,9 @@ jobs:
                   assert manifest['sha256_index_html'] == expected_hash, 'Manifest SHA mismatch'
                   assert 'window.__fortuneTest' in remote.decode('utf-8')
                   assert 'shareReport' in remote.decode('utf-8')
-                  assert manifest['version'] == '1.0.1'
+                  assert manifest['version'] == '1.2.0'
+                  assert hashlib.sha256(fetch('engines-v1.2.0.js?v=' + str(attempt))).hexdigest() == manifest['sha256_engine'], 'Online engine SHA mismatch'
+                  assert hashlib.sha256(fetch('iztro-v2.6.5.min.js?v=' + str(attempt))).hexdigest() == manifest['vendor']['sha256'], 'Online Ziwei vendor SHA mismatch'
                   print('LIVE_HTTPS_VERIFIED', base)
                   print('LIVE_VERSION', manifest['version'])
                   print('LIVE_INDEX_SHA256', expected_hash)
