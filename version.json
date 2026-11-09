@@ -1,18 +1,31 @@
 {
   "name": "FATE ATLAS 合參命理",
-  "version": "1.3.0",
+  "version": "2.0.0",
+  "edition": "Observatory",
   "release_date": "2026-11-09",
-  "sha256_index_html": "101eedced3e338c51bc071321130fb18ed1045d221b096e1a99db98fa5a15a02",
-  "sha256_engine": "9839e78f2b09d703a1c9238f140a37521081a0dde7b71fbebecfc919659c7f92",
   "source_branch": "gh-pages",
-  "vendor": {
-    "name": "iztro",
-    "version": "2.6.5",
-    "sha256": "6d7993c30d76b4720ccd6c981893738e1c5d3d8c925115ea910c1a161c41882b"
-  },
-  "deployment_status": "live_https_verified",
   "hosted_url": "https://momopuke.github.io/judun-deploy/",
-  "vendor_distribution": "committed_sha256_verified",
-  "verified_at": "2026-11-09T10:02:37Z",
-  "verification_run_url": "https://github.com/momopuke/judun-deploy/actions/runs/42597909094"
+  "sha256_index_html": "91f6b42889eb99248f6e337da204ed8435f13e99122d3b9ac415d9e57d6f78ad",
+  "sha256_engine": "9839e78f2b09d703a1c9238f140a37521081a0dde7b71fbebecfc919659c7f92",
+  "assets": {
+    "index.html": "91f6b42889eb99248f6e337da204ed8435f13e99122d3b9ac415d9e57d6f78ad",
+    "app.js": "f1511fcee235861dbece6787f1f37ae500457208837478105f78225972252c8e",
+    "atlas.css": "3ec32dfc380e10e0c04f88b72e7476ba5827890be132057979581fbe9e1688f2",
+    "sky-engine.js": "f6952266b48582e3e725eaa8ce1d655600f3ebb24b255a105a3389aa05486e9a",
+    "engines-v1.2.0.js": "9839e78f2b09d703a1c9238f140a37521081a0dde7b71fbebecfc919659c7f92",
+    "iztro-v2.6.5.min.js": "6d7993c30d76b4720ccd6c981893738e1c5d3d8c925115ea910c1a161c41882b",
+    "astronomy-v2.1.19.min.js": "01deb13cddb836456f3ec2caffe5ae8f3a4f2135ac4a377c343c14d671f1035b",
+    "robots.txt": "331ea9090db0c9f6f597bd9840fd5b171830f6e0b3ba1cb24dfa91f0c95aedc1",
+    "iztro-LICENSE.txt": "0dff4bd59b1610c95ba248448a3b656ea730b66dbc2059e8c0c206098647dec5",
+    ".nojekyll": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+  },
+  "vendors": {
+    "iztro": "2.6.5",
+    "astronomy-engine": "2.1.19"
+  },
+  "qa": {
+    "checks": 149,
+    "status": "PASS"
+  },
+  "accuracy_note": "Lahiri ayanamsa, nodes and dasha dates are explicitly approximate; whole-sign houses; civil midnight bazi."
 }

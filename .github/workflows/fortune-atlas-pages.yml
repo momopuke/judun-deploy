@@ -1,4 +1,4 @@
-name: FATE ATLAS static site publish
+name: FATE ATLAS v2 publish and verify
 on:
   push:
     branches: [gh-pages]
@@ -18,84 +18,62 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - name: Verify isolated site payload
-        shell: bash
+      - name: Validate release assets and all twelve engines
         run: |
-          test -s index.html
-          test -s version.json
-          test -f .nojekyll
-          test ! -e channel
-          test ! -e keys
-          test ! -e releases
           python3 - <<'PY'
-          import hashlib, json
+          import hashlib,json
           from pathlib import Path
-          html = Path('index.html').read_bytes()
-          data = json.loads(Path('version.json').read_text())
-          assert hashlib.sha256(html).hexdigest() == data['sha256_index_html']
-          assert data['version'] == '1.3.0'
-          assert hashlib.sha256(Path('engines-v1.2.0.js').read_bytes()).hexdigest() == data['sha256_engine']
-          print('FATE_ATLAS_SOURCE_INTEGRITY_PASS')
+          data=json.loads(Path('version.json').read_text())
+          assert data['version']=='2.0.0'
+          for name,sha in data['assets'].items():
+              assert hashlib.sha256(Path(name).read_bytes()).hexdigest()==sha,name
+          print('ALL_SOURCE_HASHES_PASS')
           PY
-      - name: Fetch audited fixed-version Ziwei engine
-        shell: bash
+          node --check app.js
+          node --check sky-engine.js
+          node qa-engine.cjs
+      - name: Stage the exact static payload
         run: |
-          curl -fLSs --retry 3 -o iztro-v2.6.5.min.js 'https://cdn.jsdelivr.net/npm/iztro@2.6.5/dist/iztro-v2.6.5.min.js'
-          echo '6d7993c30d76b4720ccd6c981893738e1c5d3d8c925115ea910c1a161c41882b  iztro-v2.6.5.min.js' | sha256sum -c -
-          node - <<'NODE'
-          global.self=global;
-          global.iztro=require('./iztro-v2.6.5.min.js');
-          global.crypto=require('node:crypto').webcrypto;
-          const e=require('./engines-v1.2.0.js');
-          const z=e.ziweiBirth('1990-01-01','12:20','male','Asia/Taipei');
-          if(z.status!=='ok'||z.palaces.length!==12||z.stars!==14)throw Error('Ziwei sample mismatch');
-          if(e.palaceCount!==64||e.DECK.length!==78)throw Error('Engine integrity failure');
-          console.log('FATE_ENGINES_DEPLOY_PASS');
-          NODE
+          python3 - <<'PY'
+          import json,shutil
+          from pathlib import Path
+          target=Path('_site')
+          target.mkdir()
+          data=json.loads(Path('version.json').read_text())
+          for name in [*data['assets'],'version.json']:
+              shutil.copy2(name,target/name)
+          PY
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: .
-      - name: Deploy only FATE ATLAS website
+          path: _site
+      - name: Deploy FATE ATLAS
         id: deploy
         uses: actions/deploy-pages@v4
-      - name: Verify public HTTPS site and exact published version
-        shell: bash
+      - name: Verify actual HTTPS asset hashes
         run: |
           python3 - <<'PY'
-          import hashlib, json, time, urllib.request
+          import hashlib,json,time,urllib.request
           from pathlib import Path
-          base = 'https://momopuke.github.io/judun-deploy/'
-          local = Path('index.html').read_bytes()
-          expected_hash = hashlib.sha256(local).hexdigest()
-          last_error = None
-          for attempt in range(18):
+          base='https://momopuke.github.io/judun-deploy/'
+          expected=json.loads(Path('version.json').read_text())
+          for attempt in range(16):
               try:
-                  def fetch(path):
-                      req = urllib.request.Request(base + path, headers={
-                          'User-Agent': 'FateAtlas-Live-Verification/1',
-                          'Cache-Control': 'no-cache'
-                      })
-                      with urllib.request.urlopen(req, timeout=12) as response:
-                          assert response.status == 200
-                          return response.read()
-                  remote = fetch('index.html?v=' + str(attempt))
-                  manifest = json.loads(fetch('version.json?v=' + str(attempt)))
-                  assert hashlib.sha256(remote).hexdigest() == expected_hash, 'Online HTML SHA mismatch'
-                  assert manifest['sha256_index_html'] == expected_hash, 'Manifest SHA mismatch'
-                  assert 'window.__fortuneTest' in remote.decode('utf-8')
-                  assert 'shareReport' in remote.decode('utf-8')
-                  assert manifest['version'] == '1.3.0'
-                  assert hashlib.sha256(fetch('engines-v1.2.0.js?v=' + str(attempt))).hexdigest() == manifest['sha256_engine'], 'Online engine SHA mismatch'
-                  assert hashlib.sha256(fetch('iztro-v2.6.5.min.js?v=' + str(attempt))).hexdigest() == manifest['vendor']['sha256'], 'Online Ziwei vendor SHA mismatch'
-                  print('LIVE_HTTPS_VERIFIED', base)
-                  print('LIVE_VERSION', manifest['version'])
-                  print('LIVE_INDEX_SHA256', expected_hash)
+                  def fetch(name):
+                      req=urllib.request.Request(base+name+'?v=2.0.0-'+str(attempt),headers={'User-Agent':'FateAtlas-Release-QA','Cache-Control':'no-cache'})
+                      with urllib.request.urlopen(req,timeout=15) as r:
+                          assert r.status==200
+                          return r.read()
+                  live=json.loads(fetch('version.json'))
+                  assert live['version']=='2.0.0'
+                  for name,sha in expected['assets'].items():
+                      assert hashlib.sha256(fetch(name)).hexdigest()==sha,name
+                  assert live['assets']==expected['assets']
+                  print('LIVE_HTTPS_ALL_ASSETS_VERIFIED',base)
+                  print('LIVE_VERSION',live['version'])
                   break
-              except Exception as exc:
-                  last_error = repr(exc)
-                  print('LIVE_CHECK_RETRY', attempt + 1, last_error)
-                  if attempt == 17:
-                      raise SystemExit('LIVE_HTTPS_VERIFICATION_FAILED: ' + last_error)
+              except Exception as e:
+                  print('RETRY',attempt+1,repr(e))
+                  if attempt==15:raise
                   time.sleep(5)
           PY

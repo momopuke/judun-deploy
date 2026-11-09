@@ -1,7 +1,7 @@
-name: FATE ATLAS v1.2 Engine QA
+name: FATE ATLAS v2 engine regression
 on:
   push:
-    branches: [fortune-atlas-v1-2-dev]
+    branches: [gh-pages]
   workflow_dispatch:
 permissions:
   contents: read
@@ -10,45 +10,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify staged source and release manifest SHA
-        shell: bash
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import hashlib,json
-          info=json.loads(Path('version.json').read_text())
-          for name,key in [('index.html','sha256_index_html'),('engines-v1.2.0.js','sha256_engine')]:
-              actual=hashlib.sha256(Path(name).read_bytes()).hexdigest()
-              assert actual==info[key],(name,actual,info[key])
-              print('STAGING_HASH_PASS',name,actual)
-          PY
-      - name: Compare fixed iztro 2.6.5 vendor hashes
-        run: |
-          curl -fLSs --retry 2 -o /tmp/iztro-jsdelivr.js 'https://cdn.jsdelivr.net/npm/iztro@2.6.5/dist/iztro-v2.6.5.min.js'
-          curl -fLSs --retry 2 -o /tmp/iztro-unpkg.js 'https://unpkg.com/iztro@2.6.5/dist/iztro-v2.6.5.min.js'
-          sha256sum /tmp/iztro-jsdelivr.js /tmp/iztro-unpkg.js
-          cmp /tmp/iztro-jsdelivr.js /tmp/iztro-unpkg.js
-          node - <<'NODE'
-          global.self=global;
-          const iztro=require('/tmp/iztro-jsdelivr.js');
-          const a=iztro.astro.bySolar('1990-1-1',6,'男',true,'zh-TW');
-          console.log('IZTRO_VERSION',iztro.version,'KEYS',Object.keys(a).slice(0,18));
-          console.log('PALACES',a.palaces?.length,'BIRTH',a.solarDate,'STAR',a.palaces?.[0]?.majorStars?.[0]?.name);
-          if(a.palaces?.length!==12)process.exit(2);
-          global.iztro=iztro;
-          global.crypto=require('node:crypto').webcrypto;
-          const e=require('./engines-v1.2.0.js');
-          const z=e.ziweiBirth('1990-01-01','12:20','male','Asia/Taipei');
-          console.log('FATE_ZIWEI',z.status,z.palaces?.length,z.stars,z.palaces?.find(p=>p.name.includes('命'))?.stars);
-          if(z.status!=='ok'||z.palaces.length!==12||z.stars<10)process.exit(3);
-          if(e.palaceCount!==64||e.DECK.length!==78)process.exit(4);
-          for(let n=0;n<64;n++){
-            const lines=Array.from({length:6},(_,i)=>(n>>i)&1?7:8);
-            const r=e.najia(lines,'丙');
-            if(r.lines.length!==6||!r.lines.some(x=>x.mark==='世')||!r.lines.some(x=>x.mark==='應'))process.exit(5);
-          }
-          const b=e.baziExtension({day:'丙寅',month:'丙子',year:'己巳'},'12:20','Asia/Taipei');
-          if(b.hour!=='甲午')process.exit(6);
-          for(let n=0;n<50;n++){const d=e.tarotDraw(10);if(new Set(d.cards.map(x=>x.id)).size!==10)process.exit(7)}
-          console.log('FATE_ENGINE_QA_PASS');
-          NODE
+      - run: node qa-engine.cjs
