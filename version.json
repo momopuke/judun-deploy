@@ -10,7 +10,9 @@
     "version": "2.6.5",
     "sha256": "6d7993c30d76b4720ccd6c981893738e1c5d3d8c925115ea910c1a161c41882b"
   },
-  "deployment_status": "pending_external_verification",
+  "deployment_status": "live_https_verified",
   "hosted_url": "https://momopuke.github.io/judun-deploy/",
-  "vendor_distribution": "committed_sha256_verified"
+  "vendor_distribution": "committed_sha256_verified",
+  "verified_at": "2026-11-09T10:02:37Z",
+  "verification_run_url": "https://github.com/momopuke/judun-deploy/actions/runs/42597909094"
 }
