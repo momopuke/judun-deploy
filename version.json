@@ -1,15 +1,15 @@
 {
   "name": "FATE ATLAS 合參命理",
-  "version": "2.2.0",
-  "edition": "Prism",
+  "version": "2.3.0",
+  "edition": "Field Notes",
   "release_date": "2026-11-10",
   "source_branch": "gh-pages",
   "hosted_url": "https://momopuke.github.io/judun-deploy/",
-  "sha256_index_html": "e038041e91a883ec24dc7b4b927219511d7f02d7c99364767da43d3b5ef45cda",
+  "sha256_index_html": "82e70daac7c7ae4b250ac0fe2bd1459ee5f85decece0c05b2b4c46424eae8676",
   "sha256_engine": "9839e78f2b09d703a1c9238f140a37521081a0dde7b71fbebecfc919659c7f92",
   "assets": {
-    "index.html": "e038041e91a883ec24dc7b4b927219511d7f02d7c99364767da43d3b5ef45cda",
-    "app.js": "d2d881475f26f0947bef9338f10278e647eaedd187c14f55798123308f1301e3",
+    "index.html": "82e70daac7c7ae4b250ac0fe2bd1459ee5f85decece0c05b2b4c46424eae8676",
+    "app.js": "18e098b342d0a5fcbd03aab5ebb0557b25289e6179b3b22ef8cdf1c925d7b06c",
     "atlas.css": "0d13736eb29b8f2e99886c926cd265691aac76de4bb177580ecbd454439a8734",
     "sky-engine.js": "f6952266b48582e3e725eaa8ce1d655600f3ebb24b255a105a3389aa05486e9a",
     "engines-v1.2.0.js": "9839e78f2b09d703a1c9238f140a37521081a0dde7b71fbebecfc919659c7f92",
@@ -19,14 +19,27 @@
     "iztro-LICENSE.txt": "0dff4bd59b1610c95ba248448a3b656ea730b66dbc2059e8c0c206098647dec5",
     ".nojekyll": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
     "game.css": "0bda139141fe70f7b817d0b0bf2556bcc01dc91220701bb48ffcb34befacc6a1",
-    "discovery-engine.js": "45534f1b00990e29ddcbfef4934d40bc5c21d28bd0d8a7a668f4d6dc6286e6c7"
+    "discovery-engine.js": "8745719b58fdb9b5f9b8b0cbb730c5b4ba846d76b8c5596ae1e2ace3cb5ec8bd",
+    "experience.css": "4c14c6eaeebf665d516d6187c45d75d2f6eaae254cf58320097f97bbf6dd6c91",
+    "assets/schools/bazi.webp": "e54aec9e34b7d36883451e6b603d613830f1bb4ca6534e03899308754b43584b",
+    "assets/schools/iching.webp": "089503b637934a0b2fdef4e735d70117c8d64224a1733101fbfa6b36d4dc9bbe",
+    "assets/schools/liuyao.webp": "810ea38ffc0db4d4c646363607060c36ad8a83db253e5aae7ed453f94f35fb27",
+    "assets/schools/maya.webp": "654ccc5e6cffe3a7dde119060449a046bac60a5e15ad62398490afcb1a6b7e7e",
+    "assets/schools/meihua.webp": "9e3a906f91a44833dd1a7d6ecc856930f3f1c418b83aec8ae972f55ad9f376f7",
+    "assets/schools/nineStar.webp": "ab3dd29950cd5850731a36e0cdbd5724e95587ba1ea3776565e3712c66478454",
+    "assets/schools/numerology.webp": "9173c93afc6d9c587fb6f1ad84081cbbfc5d8cf6eee7595a0a8d80ca8c637bff",
+    "assets/schools/tarotBirth.webp": "ac51147e630b867963cb5d3bb00fa0bd49d83058e59ed92b909d1e044d38fc2b",
+    "assets/schools/tarotDraw.webp": "98fbfb981e9d9928c1bc8d3ae3d1bfedb4e16cd05901dc4dd7935a8cb406894a",
+    "assets/schools/vedic.webp": "32dc71ea6895acd922a916f8d375a2d40f7e8428f08288690d5f2e854e369398",
+    "assets/schools/western.webp": "8425ed8c7a2e9b51db2d61acd5401ef3afcb2e7209869976c41520eb2350835b",
+    "assets/schools/ziwei.webp": "88711c2c699f4115e72743dec7885a4f8f8db7e81d6429954531602ba11614c0"
   },
   "vendors": {
     "iztro": "2.6.5",
     "astronomy-engine": "2.1.19"
   },
   "qa": {
-    "checks": 166,
+    "checks": 186,
     "status": "PASS"
   },
   "accuracy_note": "Lahiri ayanamsa, nodes and dasha dates are explicitly approximate; whole-sign houses; civil midnight bazi."

@@ -1,0 +1,90 @@
+{
+  "version": "2.3.0",
+  "generator": "Built-in image generation",
+  "assets": [
+    {
+      "id": "western",
+      "file": "assets/schools/western.webp",
+      "prompt": "Use case: photorealistic-natural. Asset type: landscape 3:2 chapter cover photograph for a Traditional Chinese astrology website. Restrained premium editorial photography, believable real-world setting, natural daylight, honest physical materials, slightly deep warm colors, clear focal subject occupying most of frame, uncluttered background, only 1-3 supporting objects. No fantasy illustration, no magical glow, no floating objects, no cosmic background, no surreal architecture, no decorative overload, no logos, no watermarks, no title text. This is a symbolic chapter cover, not the user's calculated chart. Subject: A single large, physical circular western ASTROLOGY zodiac chart printed on ivory card, photographed from directly above on rich COBALT BLUE velvet. All twelve traditional zodiac glyphs around the outer ring clearly visible, a sun and moon symbol inside. A woman's hand in a plain navy sleeve lightly holding its edge. One brass pointer only. Contemporary realistic tabletop photograph, dominant cobalt blue, ivory and subtle gold; no observatory sphere and no people faces. The zodiac circle dominates 85 percent of image.",
+      "source_type": "AI-generated photographic-style illustration",
+      "use": "Symbolic school cover; never used as a calculated chart"
+    },
+    {
+      "id": "ziwei",
+      "file": "assets/schools/ziwei.webp",
+      "prompt": "Use case: photorealistic-natural. Asset type: landscape 3:2 chapter cover photograph for a Traditional Chinese astrology website. Restrained premium editorial photography, believable real-world setting, natural daylight, honest physical materials, slightly deep warm colors, clear focal subject occupying most of frame, uncluttered background, only 1-3 supporting objects. No fantasy illustration, no magical glow, no floating objects, no cosmic background, no surreal architecture, no decorative overload, no logos, no watermarks, no title text. This is a symbolic chapter cover, not the user's calculated chart. Subject: Close view of a dignified traditional Chinese Ziwei celestial emperor deity statue inside a real modest Taiwanese temple shrine. Purple ceremonial robe, emperor's crown, seated figure, aged carved wood with muted gold leaf and visible texture. Only a simple dark red temple wall behind, soft daylight from the side. Documentary photograph of an actual religious sculpture, not a living fantasy character.",
+      "source_type": "AI-generated photographic-style illustration",
+      "use": "Symbolic school cover; never used as a calculated chart"
+    },
+    {
+      "id": "bazi",
+      "file": "assets/schools/bazi.webp",
+      "prompt": "Use case: photorealistic-natural. Asset type: landscape 3:2 chapter cover photograph for a Traditional Chinese astrology website. Restrained premium editorial photography, believable real-world setting, natural daylight, honest physical materials, slightly deep warm colors, clear focal subject occupying most of frame, uncluttered background, only 1-3 supporting objects. No fantasy illustration, no magical glow, no floating objects, no cosmic background, no surreal architecture, no decorative overload, no logos, no watermarks, no title text. This is a symbolic chapter cover, not the user's calculated chart. Subject: Close documentary photograph of a traditional Chinese fortune teller's hands arranging eight large black Chinese character tiles in FOUR clearly separated vertical pairs on a walnut table. The four upper tiles read 甲 丙 戊 庚, the four lower tiles read 子 寅 辰 申, two rows and four columns. A simple old calendar at edge, nothing else. Four pillars of destiny / Ba Zi theme, real ink and wood texture, no luminous pillars.",
+      "source_type": "AI-generated photographic-style illustration",
+      "use": "Symbolic school cover; never used as a calculated chart"
+    },
+    {
+      "id": "vedic",
+      "file": "assets/schools/vedic.webp",
+      "prompt": "Use case: photorealistic-natural. Asset type: landscape 3:2 chapter cover photograph for a Traditional Chinese astrology website. Restrained premium editorial photography, believable real-world setting, natural daylight, honest physical materials, slightly deep warm colors, clear focal subject occupying most of frame, uncluttered background, only 1-3 supporting objects. No fantasy illustration, no magical glow, no floating objects, no cosmic background, no surreal architecture, no decorative overload, no logos, no watermarks, no title text. This is a symbolic chapter cover, not the user's calculated chart. Subject: Portrait of an elderly Indian Jyotish astrologer in a plain ivory kurta, seated at a small wooden desk in a real sandstone courtyard, studying one sheet with a simple North Indian diamond astrology chart. Natural face and hands, ochre stone, muted saffron cloth, no deity costume, no extra ornaments. The diamond chart is large and visible in foreground.",
+      "source_type": "AI-generated photographic-style illustration",
+      "use": "Symbolic school cover; never used as a calculated chart"
+    },
+    {
+      "id": "iching",
+      "file": "assets/schools/iching.webp",
+      "prompt": "Use case: photorealistic-natural. Asset type: landscape 3:2 chapter cover photograph for a Traditional Chinese astrology website. Restrained premium editorial photography, believable real-world setting, natural daylight, honest physical materials, slightly deep warm colors, clear focal subject occupying most of frame, uncluttered background, only 1-3 supporting objects. No fantasy illustration, no magical glow, no floating objects, no cosmic background, no surreal architecture, no decorative overload, no logos, no watermarks, no title text. This is a symbolic chapter cover, not the user's calculated chart. Subject: A real open Chinese stitched Book of Changes on deep INDIGO BLUE linen, viewed close from above. One page has a SINGLE very large six-line hexagram rendered as black ink horizontal solid and broken lines, the other page a restrained black-and-white yin-yang symbol. A small bundle of yarrow stalks along one edge. Ivory rice paper, ink blue color identity, documentary fine-art photography. No wooden table, no people, no coins.",
+      "source_type": "AI-generated photographic-style illustration",
+      "use": "Symbolic school cover; never used as a calculated chart"
+    },
+    {
+      "id": "tarotDraw",
+      "file": "assets/schools/tarotDraw.webp",
+      "prompt": "Use case: photorealistic-natural. Asset type: 3:2 website cover photograph. A physical tarot deck on a real deep BURGUNDY felt table, with exactly three large face-up tarot cards in a neat row. The card illustrations contain ONLY a gold sun disk, a silver crescent moon and a gold five-pointed star respectively; geometric celestial symbols, no human figures on the cards. Cream cardstock, elegant printed border, tactile worn edges, natural window light, restrained composition with no other props. No people, no hands, no nudity, no bodies, no magic glow, no fantasy scenery, no floating objects, no title typography. Strong obvious topic: a real three-card tarot spread.",
+      "source_type": "AI-generated photographic-style illustration",
+      "use": "Symbolic school cover; never used as a calculated chart"
+    },
+    {
+      "id": "numerology",
+      "file": "assets/schools/numerology.webp",
+      "prompt": "Use case: photorealistic-natural. Asset type: landscape 3:2 chapter cover photograph for a Traditional Chinese astrology website. Restrained premium editorial photography, believable real-world setting, natural daylight, honest physical materials, slightly deep warm colors, clear focal subject occupying most of frame, uncluttered background, only 1-3 supporting objects. No fantasy illustration, no magical glow, no floating objects, no cosmic background, no surreal architecture, no decorative overload, no logos, no watermarks, no title text. This is a symbolic chapter cover, not the user's calculated chart. Subject: Modern studio tabletop photograph, dominant deep PLUM VIOLET backdrop with clean ivory wooden number tiles. A person's hand places a very large tile numeral 3 in foreground. A single small white paper behind reads 1990-01-01, and an unobtrusive pencil. Sharp physical numbers and tactile paper, simple composition, side daylight. Numerology birthdate to life path 3 is the obvious topic; no ancient study, no brown wood background.",
+      "source_type": "AI-generated photographic-style illustration",
+      "use": "Symbolic school cover; never used as a calculated chart"
+    },
+    {
+      "id": "meihua",
+      "file": "assets/schools/meihua.webp",
+      "prompt": "Use case: photorealistic-natural. Asset type: landscape 3:2 chapter cover photograph for a Traditional Chinese astrology website. Restrained premium editorial photography, believable real-world setting, natural daylight, honest physical materials, slightly deep warm colors, clear focal subject occupying most of frame, uncluttered background, only 1-3 supporting objects. No fantasy illustration, no magical glow, no floating objects, no cosmic background, no surreal architecture, no decorative overload, no logos, no watermarks, no title text. This is a symbolic chapter cover, not the user's calculated chart. Subject: A real Chinese scholar in plain linen clothing seated at a wooden window table, looking at a single branch of red plum blossoms in a simple ceramic vase. One open notebook prominently shows two large three-line trigrams drawn in black ink. Quiet real traditional study, overcast winter window light, sparse composition with plum branch and trigrams immediately visible.",
+      "source_type": "AI-generated photographic-style illustration",
+      "use": "Symbolic school cover; never used as a calculated chart"
+    },
+    {
+      "id": "liuyao",
+      "file": "assets/schools/liuyao.webp",
+      "prompt": "Use case: photorealistic-natural. Asset type: landscape 3:2 chapter cover photograph for a Traditional Chinese astrology website. Restrained premium editorial photography, believable real-world setting, natural daylight, honest physical materials, slightly deep warm colors, clear focal subject occupying most of frame, uncluttered background, only 1-3 supporting objects. No fantasy illustration, no magical glow, no floating objects, no cosmic background, no surreal architecture, no decorative overload, no logos, no watermarks, no title text. This is a symbolic chapter cover, not the user's calculated chart. Subject: Three old bronze Chinese coins with square holes being released by one real hand onto dark CINNABAR RED felt, beside one narrow cream paper with exactly six ink horizontal solid or broken lines stacked vertically. Close overhead composition with coins and six lines dominating 80 percent of image. Dramatic realistic studio photograph with deep red and bronze identity, no extra props, no magic, no wood desk, not a book.",
+      "source_type": "AI-generated photographic-style illustration",
+      "use": "Symbolic school cover; never used as a calculated chart"
+    },
+    {
+      "id": "nineStar",
+      "file": "assets/schools/nineStar.webp",
+      "prompt": "Use case: photorealistic-natural. Asset type: landscape 3:2 chapter cover photograph for a Traditional Chinese astrology website. Restrained premium editorial photography, believable real-world setting, natural daylight, honest physical materials, slightly deep warm colors, clear focal subject occupying most of frame, uncluttered background, only 1-3 supporting objects. No fantasy illustration, no magical glow, no floating objects, no cosmic background, no surreal architecture, no decorative overload, no logos, no watermarks, no title text. This is a symbolic chapter cover, not the user's calculated chart. Subject: A real square 3 by 3 Luo Shu board carved from dark green jade on a quiet stone table in a Japanese courtyard. Exactly nine ivory number inlays in grid reading top row 4 9 2, middle row 3 5 7, bottom row 8 1 6. Bamboo softly blurred behind. Clear close-up of one simple tangible board, no stars, no clouds, no extra decorations.",
+      "source_type": "AI-generated photographic-style illustration",
+      "use": "Symbolic school cover; never used as a calculated chart"
+    },
+    {
+      "id": "tarotBirth",
+      "file": "assets/schools/tarotBirth.webp",
+      "prompt": "Use case: photorealistic-natural. Asset type: landscape 3:2 chapter cover photograph for a Traditional Chinese astrology website. Restrained premium editorial photography, believable real-world setting, natural daylight, honest physical materials, slightly deep warm colors, clear focal subject occupying most of frame, uncluttered background, only 1-3 supporting objects. No fantasy illustration, no magical glow, no floating objects, no cosmic background, no surreal architecture, no decorative overload, no logos, no watermarks, no title text. This is a symbolic chapter cover, not the user's calculated chart. Subject: Real editorial photo of ONE large Empress tarot card, Roman numeral III visible, standing upright beside a small desk calendar whose date clearly reads 1 JAN 1990. A woman's hand gently holds the single card by edge. Distinctive dusty ROSE PINK and wine red real room background, soft daylight, cream printed cardstock and physical pink calendar, no mystical glow. Birthdate plus single major-arcana card is the clear topic, no multiple-card spread.",
+      "source_type": "AI-generated photographic-style illustration",
+      "use": "Symbolic school cover; never used as a calculated chart"
+    },
+    {
+      "id": "maya",
+      "file": "assets/schools/maya.webp",
+      "prompt": "Use case: photorealistic-natural. Asset type: landscape 3:2 chapter cover photograph for a Traditional Chinese astrology website. Restrained premium editorial photography, believable real-world setting, natural daylight, honest physical materials, slightly deep warm colors, clear focal subject occupying most of frame, uncluttered background, only 1-3 supporting objects. No fantasy illustration, no magical glow, no floating objects, no cosmic background, no surreal architecture, no decorative overload, no logos, no watermarks, no title text. This is a symbolic chapter cover, not the user's calculated chart. Subject: A real weathered ancient Maya carved limestone stela standing in front of one low stepped Maya temple at a quiet Mexican archaeological site. Close view makes the carved calendrical glyphs prominent, green vegetation and warm stone in soft morning daylight. Archaeological travel photography, no fantasy, no Aztec Sun Stone, no glowing glyphs, very few elements.",
+      "source_type": "AI-generated photographic-style illustration",
+      "use": "Symbolic school cover; never used as a calculated chart"
+    }
+  ]
+}
