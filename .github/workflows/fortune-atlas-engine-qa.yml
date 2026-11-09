@@ -10,6 +10,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Verify staged source and release manifest SHA
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,json
+          info=json.loads(Path('version.json').read_text())
+          for name,key in [('index.html','sha256_index_html'),('engines-v1.2.0.js','sha256_engine')]:
+              actual=hashlib.sha256(Path(name).read_bytes()).hexdigest()
+              assert actual==info[key],(name,actual,info[key])
+              print('STAGING_HASH_PASS',name,actual)
+          PY
       - name: Compare fixed iztro 2.6.5 vendor hashes
         run: |
           curl -fLSs --retry 2 -o /tmp/iztro-jsdelivr.js 'https://cdn.jsdelivr.net/npm/iztro@2.6.5/dist/iztro-v2.6.5.min.js'
