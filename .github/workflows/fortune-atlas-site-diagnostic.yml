@@ -1,0 +1,25 @@
+name: FATE ATLAS public URL diagnostics
+on:
+  push:
+    branches: [fortune-atlas-v1-2-dev]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check-urls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Inspect GitHub Pages metadata and public responses
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo 'PAGES_METADATA'
+          curl -LsS -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" -w '\nMETADATA_HTTP %{http_code}\n' https://api.github.com/repos/momopuke/judun-deploy/pages | head -c 3200
+          echo 'SITE_HTTP_RESULTS'
+          for endpoint in '' 'index.html' 'version.json' 'engines-v1.2.0.js' 'iztro-v2.6.5.min.js'; do
+            echo "PATH:/$endpoint"
+            curl -LsS --max-time 12 -o /tmp/fate-test-body -w 'HTTP %{http_code} | effective %{url_effective} | type %{content_type} | bytes %{size_download}\n' "https://momopuke.github.io/judun-deploy/$endpoint"
+            head -c 160 /tmp/fate-test-body | tr '\n' ' '
+            echo ''
+          done
