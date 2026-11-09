@@ -1,11 +1,15 @@
 {
   "name": "FATE ATLAS 合參命理",
-  "version": "1.0.1",
-  "release_date": "2026-11-07",
-  "sha256_index_html": "a75043bf80f7ef562628a7e5d1b09cb7851feda3ad6cb9677d962f944f072d59",
+  "version": "1.2.0",
+  "release_date": "2026-11-09",
+  "sha256_index_html": "4de79df2d165c4f6c90b0491f267413e50bdc467ca305ff808c9e866b2de160e",
+  "sha256_engine": "9839e78f2b09d703a1c9238f140a37521081a0dde7b71fbebecfc919659c7f92",
   "source_branch": "gh-pages",
-  "deployment_status": "live_https_verified",
-  "hosted_url": "https://momopuke.github.io/judun-deploy/",
-  "verified_at": "2026-11-08T01:52:06Z",
-  "verification_run_url": "https://github.com/momopuke/judun-deploy/actions/runs/42436066760"
+  "vendor": {
+    "name": "iztro",
+    "version": "2.6.5",
+    "sha256": "6d7993c30d76b4720ccd6c981893738e1c5d3d8c925115ea910c1a161c41882b"
+  },
+  "deployment_status": "candidate_qa",
+  "hosted_url": "https://momopuke.github.io/judun-deploy/"
 }
