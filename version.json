@@ -1,8 +1,8 @@
 {
   "name": "FATE ATLAS 合參命理",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "release_date": "2026-11-09",
-  "sha256_index_html": "4de79df2d165c4f6c90b0491f267413e50bdc467ca305ff808c9e866b2de160e",
+  "sha256_index_html": "101eedced3e338c51bc071321130fb18ed1045d221b096e1a99db98fa5a15a02",
   "sha256_engine": "9839e78f2b09d703a1c9238f140a37521081a0dde7b71fbebecfc919659c7f92",
   "source_branch": "gh-pages",
   "vendor": {
