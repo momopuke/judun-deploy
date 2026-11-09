@@ -1,15 +1,15 @@
 {
   "name": "FATE ATLAS 合參命理",
-  "version": "2.1.0",
-  "edition": "Luminous",
+  "version": "2.2.0",
+  "edition": "Prism",
   "release_date": "2026-11-10",
   "source_branch": "gh-pages",
   "hosted_url": "https://momopuke.github.io/judun-deploy/",
-  "sha256_index_html": "d8f2626ae81b0768c562eeb0144ab7ea58b2c64c0bf8970c4f26347dda77586b",
+  "sha256_index_html": "e038041e91a883ec24dc7b4b927219511d7f02d7c99364767da43d3b5ef45cda",
   "sha256_engine": "9839e78f2b09d703a1c9238f140a37521081a0dde7b71fbebecfc919659c7f92",
   "assets": {
-    "index.html": "d8f2626ae81b0768c562eeb0144ab7ea58b2c64c0bf8970c4f26347dda77586b",
-    "app.js": "4cd0d22b11c1aacc76989c0bcc8992729a519594069d778371affb0d96061064",
+    "index.html": "e038041e91a883ec24dc7b4b927219511d7f02d7c99364767da43d3b5ef45cda",
+    "app.js": "f1168399940c734c77fb7dbb9330a0e2a8a81ee16545372205e06019850ff04c",
     "atlas.css": "0d13736eb29b8f2e99886c926cd265691aac76de4bb177580ecbd454439a8734",
     "sky-engine.js": "f6952266b48582e3e725eaa8ce1d655600f3ebb24b255a105a3389aa05486e9a",
     "engines-v1.2.0.js": "9839e78f2b09d703a1c9238f140a37521081a0dde7b71fbebecfc919659c7f92",
@@ -17,14 +17,16 @@
     "astronomy-v2.1.19.min.js": "01deb13cddb836456f3ec2caffe5ae8f3a4f2135ac4a377c343c14d671f1035b",
     "robots.txt": "331ea9090db0c9f6f597bd9840fd5b171830f6e0b3ba1cb24dfa91f0c95aedc1",
     "iztro-LICENSE.txt": "0dff4bd59b1610c95ba248448a3b656ea730b66dbc2059e8c0c206098647dec5",
-    ".nojekyll": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    ".nojekyll": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+    "game.css": "0bda139141fe70f7b817d0b0bf2556bcc01dc91220701bb48ffcb34befacc6a1",
+    "discovery-engine.js": "45534f1b00990e29ddcbfef4934d40bc5c21d28bd0d8a7a668f4d6dc6286e6c7"
   },
   "vendors": {
     "iztro": "2.6.5",
     "astronomy-engine": "2.1.19"
   },
   "qa": {
-    "checks": 149,
+    "checks": 166,
     "status": "PASS"
   },
   "accuracy_note": "Lahiri ayanamsa, nodes and dasha dates are explicitly approximate; whole-sign houses; civil midnight bazi."

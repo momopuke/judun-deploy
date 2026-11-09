@@ -6,8 +6,15 @@ const ids={};function element(id){return ids[id]||(ids[id]={value:'',innerHTML:'
 element('dob').value='1990-01-01';element('topic').value='overview';
 let exportedBlob;const doc={body:{appendChild(){}},createElement(){return {click(){},remove(){}}},getElementById:element,querySelectorAll(){return[]},querySelector(){return null}};
 const c={console,Date,Intl,crypto,btoa,atob,Blob,URL:{createObjectURL(b){exportedBlob=b;return 'blob:test'},revokeObjectURL(){}},document:doc,location:{hash:'',protocol:'https:',hostname:'example.test'},alert(){},setTimeout(){},navigator:{},history:{}};c.window=c;c.self=c;vm.createContext(c);
-for(const f of ['iztro-v2.6.5.min.js','engines-v1.2.0.js','astronomy-v2.1.19.min.js','sky-engine.js','app.js'])vm.runInContext(fs.readFileSync(__dirname+'/'+f,'utf8'),c,{filename:f});
+for(const f of ['iztro-v2.6.5.min.js','engines-v1.2.0.js','astronomy-v2.1.19.min.js','sky-engine.js','discovery-engine.js','app.js'])vm.runInContext(fs.readFileSync(__dirname+'/'+f,'utf8'),c,{filename:f});
 const sky=c.FateSky,app=c.__fortuneTest,e=c.FateEngine;
+const discovery=c.FateDiscovery;
+for(let i=0;i<12;i++){const start=i*437+31,p=discovery.plan(i,start,5,i%2?9:-9),relative=((-p.target%360)+360)%360;ok(relative>=i*30&&relative<(i+1)*30&&p.target>=start+1800,'Wheel pointer lands inside selected sector '+i)}
+ok(discovery.selectedAt(-15)===0&&discovery.selectedAt(345)===0&&discovery.selectedAt(375)===11,'Wheel wrap-around geometry');
+ok(discovery.plan(0,0,5,0).target===2145&&discovery.plan(11,0,5,0).target===1815,'Independent wheel landing fixtures');
+let invalidWheel=false;try{discovery.plan(12)}catch{invalidWheel=true}ok(invalidWheel,'Invalid wheel sector rejected');
+let draws=0;const rejection={crypto:{getRandomValues(a){a[0]=draws++===0?4294967295:11}}};vm.createContext(rejection);vm.runInContext(fs.readFileSync(__dirname+'/discovery-engine.js','utf8'),rejection);ok(rejection.FateDiscovery.randomIndex(12)===11&&draws===2,'Modulo-biased random draw is rejected');
+ok(Array.from({length:100},()=>discovery.randomIndex()).every(i=>i>=0&&i<12),'All random choices are valid algorithms');
 ok(sky.civilTime('1990-01-01','12:20','Asia/Taipei').iso==='1990-01-01T04:20:00.000Z','Taipei civil to UTC');
 ok(sky.civilTime('2026-03-08','02:30','America/New_York').status==='gap','DST gap blocked');
 ok(sky.civilTime('2026-11-01','01:30','America/New_York').status==='ambiguous','DST fold requires choice');
@@ -60,4 +67,4 @@ const original={birth:'1990-01-01',advanced:{lat:25.033,lon:121.5654},text:'中�
 element('birthtime').value='12:20';app.castCoins();app.castPlum();app.drawTarot(10);result=app.compute(app.dateParts('1990-01-01'));
 ok(Object.values(result.ready).every(Boolean),'All twelve modules have real input/event results');
 app.rebalance('ziwei',24);app.rebalance('western',20);app.rebalance('vedic',20);app.renderReport(false);ok(element('reportInner').innerHTML.includes('你的行星星圖')&&element('reportInner').innerHTML.includes('十二宮')&&!element('reportInner').innerHTML.includes('undefined'),'Full report combines real charts and events');
-element('downloadHtml').listeners.click();ok(exportedBlob?.type==='text/html;charset=utf-8','Standalone HTML export created');exportedBlob.text().then(html=>{ok(html.includes('你的行星星圖')&&html.includes('ATLAS NO. 02')&&html.includes('<style>'),'HTML includes report and full styling');ok(!html.includes('<script')&&!html.includes('<link rel=')&&!html.includes('src=\"./'),'Export has no external code dependency');console.log(JSON.stringify({status:'PASS',checks,version:'2.1.0',all_systems:12},null,2))}).catch(e=>{console.error(e);process.exitCode=1});
+element('downloadHtml').listeners.click();ok(exportedBlob?.type==='text/html;charset=utf-8','Standalone HTML export created');exportedBlob.text().then(html=>{ok(html.includes('你的行星星圖')&&html.includes('ATLAS NO. 02')&&html.includes('<style>'),'HTML includes report and full styling');ok(!html.includes('<script')&&!html.includes('<link rel=')&&!html.includes('src=\"./'),'Export has no external code dependency');console.log(JSON.stringify({status:'PASS',checks,version:'2.2.0',all_systems:12},null,2))}).catch(e=>{console.error(e);process.exitCode=1});
