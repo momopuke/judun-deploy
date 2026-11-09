@@ -1,0 +1,25 @@
+name: FATE ATLAS v1.2 Engine QA
+on:
+  push:
+    branches: [fortune-atlas-v1-2-dev]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  engine-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compare fixed iztro 2.6.5 vendor hashes
+        run: |
+          curl -fLSs --retry 2 -o /tmp/iztro-jsdelivr.js 'https://cdn.jsdelivr.net/npm/iztro@2.6.5/dist/iztro-v2.6.5.min.js'
+          curl -fLSs --retry 2 -o /tmp/iztro-unpkg.js 'https://unpkg.com/iztro@2.6.5/dist/iztro-v2.6.5.min.js'
+          sha256sum /tmp/iztro-jsdelivr.js /tmp/iztro-unpkg.js
+          cmp /tmp/iztro-jsdelivr.js /tmp/iztro-unpkg.js
+          node - <<'NODE'
+          const iztro=require('/tmp/iztro-jsdelivr.js');
+          const a=iztro.astro.bySolar('1990-1-1',6,'男',true,'zh-TW');
+          console.log('IZTRO_VERSION',iztro.version,'KEYS',Object.keys(a).slice(0,18));
+          console.log('PALACES',a.palaces?.length,'BIRTH',a.solarDate,'STAR',a.palaces?.[0]?.majorStars?.[0]?.name);
+          if(a.palaces?.length!==12)process.exit(2);
+          NODE
