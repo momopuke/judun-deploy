@@ -1,0 +1,37 @@
+name: FATE ATLAS one-time audited vendor sync
+on:
+  push:
+    branches: [fortune-atlas-v1-2-dev]
+    paths:
+      - .github/workflows/fortune-atlas-vendor-once.yml
+permissions:
+  contents: write
+jobs:
+  install-vendor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Pin and commit audited Ziwei bundle on isolated gh-pages branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin gh-pages
+          git checkout -B gh-pages origin/gh-pages
+          test -s index.html
+          test ! -e channel
+          test ! -e keys
+          test ! -e releases
+          curl -fLSs --retry 3 --max-time 50 -o iztro-v2.6.5.min.js 'https://cdn.jsdelivr.net/npm/iztro@2.6.5/dist/iztro-v2.6.5.min.js'
+          echo '6d7993c30d76b4720ccd6c981893738e1c5d3d8c925115ea910c1a161c41882b  iztro-v2.6.5.min.js' | sha256sum -c -
+          git config user.name 'FATE Atlas Release Bot'
+          git config user.email 'fate-atlas-release-bot@users.noreply.github.com'
+          git add -- iztro-v2.6.5.min.js
+          if git diff --cached --quiet; then echo 'PINNED_VENDOR_ALREADY_PRESENT'; else
+            git commit -m 'Add SHA256-pinned iztro 2.6.5 vendor for reliable GitHub Pages auto publish'
+            git push origin HEAD:gh-pages
+            echo 'FATE_VENDOR_SYNC_PUSH_PASS'
+          fi
