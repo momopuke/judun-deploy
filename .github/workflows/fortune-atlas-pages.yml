@@ -33,7 +33,7 @@ jobs:
           html = Path('index.html').read_bytes()
           data = json.loads(Path('version.json').read_text())
           assert hashlib.sha256(html).hexdigest() == data['sha256_index_html']
-          assert data['version'] == '1.2.0'
+          assert data['version'] == '1.3.0'
           assert hashlib.sha256(Path('engines-v1.2.0.js').read_bytes()).hexdigest() == data['sha256_engine']
           print('FATE_ATLAS_SOURCE_INTEGRITY_PASS')
           PY
@@ -85,7 +85,7 @@ jobs:
                   assert manifest['sha256_index_html'] == expected_hash, 'Manifest SHA mismatch'
                   assert 'window.__fortuneTest' in remote.decode('utf-8')
                   assert 'shareReport' in remote.decode('utf-8')
-                  assert manifest['version'] == '1.2.0'
+                  assert manifest['version'] == '1.3.0'
                   assert hashlib.sha256(fetch('engines-v1.2.0.js?v=' + str(attempt))).hexdigest() == manifest['sha256_engine'], 'Online engine SHA mismatch'
                   assert hashlib.sha256(fetch('iztro-v2.6.5.min.js?v=' + str(attempt))).hexdigest() == manifest['vendor']['sha256'], 'Online Ziwei vendor SHA mismatch'
                   print('LIVE_HTTPS_VERIFIED', base)
