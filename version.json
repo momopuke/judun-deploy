@@ -10,6 +10,7 @@
     "version": "2.6.5",
     "sha256": "6d7993c30d76b4720ccd6c981893738e1c5d3d8c925115ea910c1a161c41882b"
   },
-  "deployment_status": "candidate_qa",
-  "hosted_url": "https://momopuke.github.io/judun-deploy/"
+  "deployment_status": "pending_external_verification",
+  "hosted_url": "https://momopuke.github.io/judun-deploy/",
+  "vendor_distribution": "committed_sha256_verified"
 }
