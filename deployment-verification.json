@@ -1,0 +1,7 @@
+{
+  "version": "3.2.0",
+  "status": "awaiting-publication",
+  "checks": 553,
+  "browser_qa": "Chrome desktop and 375px iframe; full guided journey and origin-return checks passed",
+  "physical_iphone_safari": "not tested"
+}

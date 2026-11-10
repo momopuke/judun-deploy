@@ -5,7 +5,7 @@ const ok=(test,msg)=>{assert.ok(test,msg);checks++};
 const ids={};function element(id){return ids[id]||(ids[id]={value:'',innerHTML:'',textContent:'',style:{},dataset:{},open:false,showModal(){this.open=true},close(){this.open=false},focus(){},hidden:false,options:[],selectedOptions:[{textContent:'全面分析'}],listeners:{},addEventListener(n,f){this.listeners[n]=f},querySelectorAll(){return[]},querySelector(){return null},scrollIntoView(){},classList:{toggle(){}}});}
 element('dob').value='1990-01-01';element('topic').value='overview';
 let exportedBlob;const doc={body:{appendChild(){}},createElement(){return {click(){},remove(){}}},getElementById:element,querySelectorAll(){return[]},querySelector(){return null}};
-const c={console,Date,Intl,crypto,btoa,atob,Blob,URL:{createObjectURL(b){exportedBlob=b;return 'blob:test'},revokeObjectURL(){}},document:doc,location:{hash:'',protocol:'https:',hostname:'example.test'},alert(){},setTimeout(){},navigator:{},history:{}};c.window=c;c.self=c;vm.createContext(c);
+const c={console,Date,Intl,crypto,btoa,atob,Blob,URL:{createObjectURL(b){exportedBlob=b;return 'blob:test'},revokeObjectURL(){}},document:doc,location:{hash:'',protocol:'https:',hostname:'example.test'},alert(){},clearTimeout(){},setTimeout(){},navigator:{},history:{}};c.window=c;c.self=c;vm.createContext(c);
 for(const f of ['iztro-v2.6.5.min.js','engines-v1.2.0.js','astronomy-v2.1.19.min.js','sky-engine.js','discovery-engine.js','interpretation-engine.js','app.js'])vm.runInContext(fs.readFileSync(__dirname+'/'+f,'utf8'),c,{filename:f});
 const sky=c.FateSky,app=c.__fortuneTest,e=c.FateEngine;
 const discovery=c.FateDiscovery;
@@ -148,5 +148,27 @@ app.showView('album',false);element('chartDialog').open=true;element('chartDialo
 ok(app.getNavigationState().birthOrigin.chart==='ziwei'&&app.getNavigationState().birthOrigin.chartScroll===123,'Birth editor retains the exact school and dialog position');
 // Restore route without opening a modal in the lightweight DOM test; actual reopening is browser-verified.
 app.showView('home',false);ok(!app.getNavigationState().birthOrigin,'Explicit navigation clears obsolete birth-return state');
+
+// Guided journey: only explicit ritual actions create random events.
+element('dob').value='1990-01-01';element('topic').value='career';element('readingQuestion').value='現在適合換工作嗎？';element('readingQuestion').listeners.change();
+ok(app.prepareJourney()&&app.getNavigationState().currentView==='ritual','Valid birthday advances into the guided ritual');
+ok(!app.getState().coin&&!app.getState().tarotDrawn,'Entering the ritual never silently casts or draws');
+ok(app.ritualQueue().map(x=>x.kind).join(',')==='tarot,coin','Career questions request only their recommended independent events');
+app.performRitual();const guidedCards=app.getState().tarotDrawn;
+ok(guidedCards.cards.length===3&&!app.getState().coin,'First explicit action draws three cards and does not silently cast coins');
+app.showView('profile',false);app.prepareJourney();
+ok(app.getState().tarotDrawn===guidedCards&&app.ritualQueue().find(x=>!x.done).kind==='coin','Returning to the birthday and continuing preserves the cards and resumes the remaining ritual');
+app.performRitual();const guidedCoin=app.getState().coin;
+ok(guidedCoin.lines.length===6&&app.ritualQueue().every(x=>x.done),'Second explicit action completes the six-line event');
+app.performRitual();ok(app.getNavigationState().currentView==='report'&&app.getState().tarotDrawn===guidedCards&&app.getState().coin===guidedCoin,'Reading the result preserves both independent events');
+app.showView('home',false);element('topic').value='year';element('readingQuestion').value='2027 年整體運勢如何？';element('readingQuestion').listeners.change();app.prepareJourney();app.skipRitual();
+ok(!app.getState().tarotDrawn&&!app.getState().coin&&app.getNavigationState().currentView==='report','Skip goes directly to the report without fabricating random events');
+ok(app.getWeights().tarotDraw===0&&Object.values(app.getWeights()).reduce((s,n)=>s+n,0)===100,'Skipped methods receive zero allocation and remaining methods sum to 100');
+app.showView('home',false);element('readingQuestion').value='最近財運要注意什麼？';element('readingQuestion').listeners.change();app.showView('report',false);
+ok(element('reportInner').innerHTML.includes('最近財運要注意什麼？')&&!element('reportInner').innerHTML.includes('2027 年整體運勢如何？'),'Restoring a report after a changed question cannot show the previous question');
+app.showView('finish',false);ok(element('finishAction').textContent.length>0&&element('finishQuestion').textContent==='最近財運要注意什麼？','The final takeaway comes from the same current consultation');
+element('dob').value='';ok(app.prepareJourney()===false&&app.getNavigationState().currentView==='profile','An invalid birthday keeps the visitor at the editable birthday step');
+element('dob').value='1990-01-01';element('topic').value='career';element('readingQuestion').value='現在適合換工作嗎？';element('readingQuestion').listeners.change();app.startConsultation();
+
 const excerpts={qian:rq,dayou:rd,tarot:tr,numerology:I.interpret('numerology',ready,{topic:'career'},events)};fs.writeFileSync(__dirname+'/reading-qa-samples.json',JSON.stringify(excerpts,null,2));
-element('downloadHtml').listeners.click();ok(exportedBlob?.type==='text/html;charset=utf-8','Standalone HTML export created');exportedBlob.text().then(html=>{ok(html.includes('data-consultation')&&html.includes('共同提醒')&&html.includes('<style>')&&!html.includes('advanced-start'),'HTML includes report and full styling');ok(!html.includes('<script')&&!html.includes('<link rel=')&&!html.includes('src=\"./'),'Export has no external code dependency');ok(!html.includes('<button'),'Offline saved reading has no nonfunctional navigation buttons');fs.mkdirSync(__dirname+'/examples',{recursive:true});fs.writeFileSync(__dirname+'/examples/1990-01-01-career-reading.html',html);console.log(JSON.stringify({status:'PASS',checks,version:'3.1.1',all_systems:12},null,2))}).catch(e=>{console.error(e);process.exitCode=1});
+element('downloadHtml').listeners.click();ok(exportedBlob?.type==='text/html;charset=utf-8','Standalone HTML export created');exportedBlob.text().then(html=>{ok(html.includes('data-consultation')&&html.includes('共同提醒')&&html.includes('<style>')&&!html.includes('advanced-start'),'HTML includes report and full styling');ok(!html.includes('<script')&&!html.includes('<link rel=')&&!html.includes('src=\"./'),'Export has no external code dependency');ok(!html.includes('<button'),'Offline saved reading has no nonfunctional navigation buttons');fs.mkdirSync(__dirname+'/examples',{recursive:true});fs.writeFileSync(__dirname+'/examples/1990-01-01-career-reading.html',html);console.log(JSON.stringify({status:'PASS',checks,version:'3.2.0',all_systems:12},null,2))}).catch(e=>{console.error(e);process.exitCode=1});
