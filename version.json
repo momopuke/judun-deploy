@@ -1,15 +1,15 @@
 {
   "name": "FATE ATLAS 合參命理",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "edition": "Interpretation",
   "release_date": "2026-11-10",
   "source_branch": "gh-pages",
   "hosted_url": "https://momopuke.github.io/judun-deploy/",
-  "sha256_index_html": "87de3485b9feab23d5e743e6f0a9c71846a35c257ac53e55265605ef3941d0f9",
+  "sha256_index_html": "1275be2c83bab042cf826de4b3dedb5fc04e14e97893e004e95b4c50d7223046",
   "sha256_engine": "9839e78f2b09d703a1c9238f140a37521081a0dde7b71fbebecfc919659c7f92",
   "assets": {
-    "index.html": "87de3485b9feab23d5e743e6f0a9c71846a35c257ac53e55265605ef3941d0f9",
-    "app.js": "7a9a70954c3622f56b4c9bf4886657f91fa62317f658d05f4dc216a377c1699f",
+    "index.html": "1275be2c83bab042cf826de4b3dedb5fc04e14e97893e004e95b4c50d7223046",
+    "app.js": "8101cd563542d9c00ff592c74e4814d1ed1a1a5490fe1eec2d6ab22c71e29184",
     "atlas.css": "0d13736eb29b8f2e99886c926cd265691aac76de4bb177580ecbd454439a8734",
     "sky-engine.js": "68d06103e3a7ebd955920a4679fe54f4832587244aa0780be5604ca95073e82f",
     "engines-v1.2.0.js": "9839e78f2b09d703a1c9238f140a37521081a0dde7b71fbebecfc919659c7f92",
@@ -20,7 +20,7 @@
     ".nojekyll": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
     "game.css": "0bda139141fe70f7b817d0b0bf2556bcc01dc91220701bb48ffcb34befacc6a1",
     "discovery-engine.js": "5b2b6dca65337036eb7fc0bfc94f3e05cc200d2b3c58e0dfc21b5a7d2dc4be66",
-    "experience.css": "918bd945e231ed56287b45d12ef3b3fa10a456e2eb1ba49c0e56d829384f143b",
+    "experience.css": "3a31f1f6987a3f0bbd788c6cb9b747d36d372e743b2948535e25bf89348963a5",
     "assets/schools/bazi.webp": "e54aec9e34b7d36883451e6b603d613830f1bb4ca6534e03899308754b43584b",
     "assets/schools/iching.webp": "089503b637934a0b2fdef4e735d70117c8d64224a1733101fbfa6b36d4dc9bbe",
     "assets/schools/liuyao.webp": "810ea38ffc0db4d4c646363607060c36ad8a83db253e5aae7ed453f94f35fb27",
@@ -52,5 +52,10 @@
     "hexagrams": 64,
     "tarot_cards": 78,
     "scope_limits": "Maya is calendar reference only. Full bazi strength/useful gods, Ziwei annual transformations, Liuyao use-god strength and hexagram-specific line texts remain incomplete."
+  },
+  "wheel_layout": {
+    "desktop_max_scene_px": 780,
+    "mobile_frame_inset": "1%",
+    "mobile_center_diameter": "34%"
   }
 }
