@@ -1,17 +1,17 @@
 {
   "name": "FATE ATLAS 合參命理",
-  "version": "2.3.0",
-  "edition": "Field Notes",
+  "version": "3.0.0",
+  "edition": "Interpretation",
   "release_date": "2026-11-10",
   "source_branch": "gh-pages",
   "hosted_url": "https://momopuke.github.io/judun-deploy/",
-  "sha256_index_html": "82e70daac7c7ae4b250ac0fe2bd1459ee5f85decece0c05b2b4c46424eae8676",
+  "sha256_index_html": "87de3485b9feab23d5e743e6f0a9c71846a35c257ac53e55265605ef3941d0f9",
   "sha256_engine": "9839e78f2b09d703a1c9238f140a37521081a0dde7b71fbebecfc919659c7f92",
   "assets": {
-    "index.html": "82e70daac7c7ae4b250ac0fe2bd1459ee5f85decece0c05b2b4c46424eae8676",
-    "app.js": "18e098b342d0a5fcbd03aab5ebb0557b25289e6179b3b22ef8cdf1c925d7b06c",
+    "index.html": "87de3485b9feab23d5e743e6f0a9c71846a35c257ac53e55265605ef3941d0f9",
+    "app.js": "7a9a70954c3622f56b4c9bf4886657f91fa62317f658d05f4dc216a377c1699f",
     "atlas.css": "0d13736eb29b8f2e99886c926cd265691aac76de4bb177580ecbd454439a8734",
-    "sky-engine.js": "f6952266b48582e3e725eaa8ce1d655600f3ebb24b255a105a3389aa05486e9a",
+    "sky-engine.js": "68d06103e3a7ebd955920a4679fe54f4832587244aa0780be5604ca95073e82f",
     "engines-v1.2.0.js": "9839e78f2b09d703a1c9238f140a37521081a0dde7b71fbebecfc919659c7f92",
     "iztro-v2.6.5.min.js": "6d7993c30d76b4720ccd6c981893738e1c5d3d8c925115ea910c1a161c41882b",
     "astronomy-v2.1.19.min.js": "01deb13cddb836456f3ec2caffe5ae8f3a4f2135ac4a377c343c14d671f1035b",
@@ -19,7 +19,7 @@
     "iztro-LICENSE.txt": "0dff4bd59b1610c95ba248448a3b656ea730b66dbc2059e8c0c206098647dec5",
     ".nojekyll": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
     "game.css": "0bda139141fe70f7b817d0b0bf2556bcc01dc91220701bb48ffcb34befacc6a1",
-    "discovery-engine.js": "8745719b58fdb9b5f9b8b0cbb730c5b4ba846d76b8c5596ae1e2ace3cb5ec8bd",
+    "discovery-engine.js": "5b2b6dca65337036eb7fc0bfc94f3e05cc200d2b3c58e0dfc21b5a7d2dc4be66",
     "experience.css": "918bd945e231ed56287b45d12ef3b3fa10a456e2eb1ba49c0e56d829384f143b",
     "assets/schools/bazi.webp": "e54aec9e34b7d36883451e6b603d613830f1bb4ca6534e03899308754b43584b",
     "assets/schools/iching.webp": "089503b637934a0b2fdef4e735d70117c8d64224a1733101fbfa6b36d4dc9bbe",
@@ -32,15 +32,25 @@
     "assets/schools/tarotDraw.webp": "98fbfb981e9d9928c1bc8d3ae3d1bfedb4e16cd05901dc4dd7935a8cb406894a",
     "assets/schools/vedic.webp": "32dc71ea6895acd922a916f8d375a2d40f7e8428f08288690d5f2e854e369398",
     "assets/schools/western.webp": "8425ed8c7a2e9b51db2d61acd5401ef3afcb2e7209869976c41520eb2350835b",
-    "assets/schools/ziwei.webp": "88711c2c699f4115e72743dec7885a4f8f8db7e81d6429954531602ba11614c0"
+    "assets/schools/ziwei.webp": "88711c2c699f4115e72743dec7885a4f8f8db7e81d6429954531602ba11614c0",
+    "interpretation-engine.js": "c1f189c790d8ed78dfd648077c15e64b462eaf1c19c7fd0ad6889eecbd149171",
+    "interpretation.css": "bb5ce74b63a97106e7fbe31287b600b0cbe7dd938ade2e772753d474dd1a799e"
   },
   "vendors": {
     "iztro": "2.6.5",
     "astronomy-engine": "2.1.19"
   },
   "qa": {
-    "checks": 186,
+    "checks": 509,
     "status": "PASS"
   },
-  "accuracy_note": "Lahiri ayanamsa, nodes and dasha dates are explicitly approximate; whole-sign houses; civil midnight bazi."
+  "accuracy_note": "Lahiri ayanamsa, nodes and dasha dates are explicitly approximate; whole-sign houses; civil midnight bazi.",
+  "interpretation": {
+    "version": "3.0.0",
+    "mode": "authored rules grounded in computed results",
+    "free_text": "topic context and quoted question; not unrestricted semantic reasoning",
+    "hexagrams": 64,
+    "tarot_cards": 78,
+    "scope_limits": "Maya is calendar reference only. Full bazi strength/useful gods, Ziwei annual transformations, Liuyao use-god strength and hexagram-specific line texts remain incomplete."
+  }
 }

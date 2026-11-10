@@ -5,7 +5,7 @@ const bodies=['Sun','Moon','Mercury','Venus','Mars','Jupiter','Saturn','Uranus',
 const names=['太陽','月亮','水星','金星','火星','木星','土星','天王星','海王星','冥王星'];
 const glyphs=['☉','☽','☿','♀','♂','♃','♄','♅','♆','♇'];
 const signs=['牡羊','金牛','雙子','巨蟹','獅子','處女','天秤','天蠍','射手','摩羯','水瓶','雙魚'];
-const nakshatras=['婁宿 Ashwini','胃宿 Bharani','昴宿 Krittika','畢宿 Rohini','觜宿 Mrigashira','參宿 Ardra','井宿 Punarvasu','鬼宿 Pushya','柳宿 Ashlesha','星宿 Magha','張宿 Purva Phalguni','翼宿 Uttara Phalguni','軫宿 Hasta','角宿 Chitra','亢宿 Swati','氐宿 Vishakha','房宿 Anuradha','心宿 Jyeshtha','尾宿 Mula','箕宿 Purva Ashadha','斗宿 Uttara Ashadha','女宿 Shravana','虛宿 Dhanishta','危宿 Shatabhisha','室宿 Purva Bhadrapada','壁宿 Uttara Bhadrapada','奎宿 Revati'];
+const nakshatras=['Ashwini','Bharani','Krittika','Rohini','Mrigashira','Ardra','Punarvasu','Pushya','Ashlesha','Magha','Purva Phalguni','Uttara Phalguni','Hasta','Chitra','Swati','Vishakha','Anuradha','Jyeshtha','Mula','Purva Ashadha','Uttara Ashadha','Shravana','Dhanishta','Shatabhisha','Purva Bhadrapada','Uttara Bhadrapada','Revati'];
 const lords=['計都','金星','太陽','月亮','火星','羅睺','木星','土星','水星'],years=[7,20,6,10,7,18,16,19,17];
 function partsAt(date,tz){const f=new Intl.DateTimeFormat('en-GB',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(date);const g=t=>Number(f.find(x=>x.type===t)?.value);return [g('year'),g('month'),g('day'),g('hour'),g('minute'),g('second')];}
 function civilTime(iso,clock,tz,fold=''){

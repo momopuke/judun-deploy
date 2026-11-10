@@ -6,7 +6,7 @@
  function selectedAt(rotation){return Math.floor(mod(-rotation,360)/30);}
  function plan(index,start=0,turns=5,jitter=0){if(!Number.isInteger(index)||index<0||index>=12||!Number.isFinite(start)||!Number.isInteger(turns)||turns<3||!Number.isFinite(jitter)||Math.abs(jitter)>10)throw Error('Invalid wheel plan');const landing=mod(360-index*30-15+jitter,360),target=start+turns*360+mod(landing-mod(start,360),360);return {index,id:ids[index],start,target};}
  function actionFor(id){if(!ids.includes(id))throw Error('Unknown method');return id==='tarotDraw'?'tarot':['iching','liuyao'].includes(id)?'coin':id==='meihua'?'plum':'birth';}
- function eligible(ready={}){return ids.filter(id=>ready[id]===true||actionFor(id)!=='birth');}
+ function eligible(ready={}){return ids.filter(id=>id!=='maya'&&(ready[id]===true||actionFor(id)!=='birth'));}
  root.FateDiscovery={ids,randomIndex,plan,selectedAt,actionFor,eligible};
  if(typeof module==='object'&&module.exports)module.exports=root.FateDiscovery;
 })(typeof window==='object'?window:globalThis);
