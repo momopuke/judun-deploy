@@ -1,15 +1,15 @@
 {
   "name": "FATE ATLAS 合參命理",
-  "version": "3.7.1",
-  "edition": "Simple three-step flow and evidence-bound everyday readings",
+  "version": "3.8.0",
+  "edition": "Midnight ritual, homepage wheel and visible life stories",
   "release_date": "2026-11-11",
   "source_branch": "gh-pages",
-  "hosted_url": "https://momopuke.github.io/judun-deploy/",
-  "sha256_index_html": "4ca524a1aa82892373e59822daa46e77ff52721de5ae4b4c643b5227cbc3a680",
+  "hosted_url": "https://momopuke.github.io/judun-deploy/?v=3.8.0",
+  "sha256_index_html": "d39988c897e4cdb6c76c56228154018e628c49721039223a43d269631c412645",
   "sha256_engine": "9839e78f2b09d703a1c9238f140a37521081a0dde7b71fbebecfc919659c7f92",
   "assets": {
-    "index.html": "4ca524a1aa82892373e59822daa46e77ff52721de5ae4b4c643b5227cbc3a680",
-    "app.js": "d90812b1575c23be114a9021f98546e8769c24a0555e06227cc99950e6fdf3b1",
+    "index.html": "d39988c897e4cdb6c76c56228154018e628c49721039223a43d269631c412645",
+    "app.js": "07db9b8efb93fd2c821c6dd30b9c06ebbbe712da78f659a1927988b823cbc0af",
     "atlas.css": "0d13736eb29b8f2e99886c926cd265691aac76de4bb177580ecbd454439a8734",
     "sky-engine.js": "68d06103e3a7ebd955920a4679fe54f4832587244aa0780be5604ca95073e82f",
     "engines-v1.2.0.js": "9839e78f2b09d703a1c9238f140a37521081a0dde7b71fbebecfc919659c7f92",
@@ -33,22 +33,25 @@
     "assets/schools/vedic.webp": "32dc71ea6895acd922a916f8d375a2d40f7e8428f08288690d5f2e854e369398",
     "assets/schools/western.webp": "8425ed8c7a2e9b51db2d61acd5401ef3afcb2e7209869976c41520eb2350835b",
     "assets/schools/ziwei.webp": "88711c2c699f4115e72743dec7885a4f8f8db7e81d6429954531602ba11614c0",
-    "interpretation-engine.js": "ed3716dd1e555950a63c810c919040e12c9864240db162a486a5690dbcfed1df",
+    "interpretation-engine.js": "5f7932d2864494a88ed4b9e061183a717125f44e7b89cde68b32e2c64940e3df",
     "interpretation.css": "f08cf7e92dd970e212728243e5a0c191ddb6c5501de2013b8b6e2c243c9d1df9",
     "journey.css": "ec39ec6ecd9f15b626f19b9c42c4243771dcc9750df8e885dd80bcf4d0ad1e08",
     "visual-refresh.css": "9e3d7bb860df6cbc5ea83955665ed560f9ee25814e75785bbb199d97b16f668d",
-    "life-reading.js": "045364438b35203141ea3f38b53a7439cec9942f8431b74866b4039d7b79bd01",
+    "life-reading.js": "aa3e1ed6ffc78cbec212e75d4e83ed7e06fb8814f615c87552d813047b19afc7",
     "reading-refine.css": "f83af5e8ef1be36383dd3d75396555092496faa261dabc834ae55429d51f5795",
-    "simple-flow.css": "5d4dc7cc722a1c8707b45016c0530f05798e987c0715735c47167ab4d2c48a99"
+    "simple-flow.css": "5d4dc7cc722a1c8707b45016c0530f05798e987c0715735c47167ab4d2c48a99",
+    "mystic.css": "bb658bd658c40c8c7e3ac1b9eae3e668fa8a9c7ac0e3c4514bc25598f408a948",
+    "mystic-interactions.js": "24fdc5c8e26deee6012ea982fb62c7011cb519052dc42e193f0183631d081ab8"
   },
   "vendors": {
     "iztro": "2.6.5",
     "astronomy-engine": "2.1.19"
   },
   "qa": {
-    "engine_and_flow_checks": 633,
-    "desktop_browser": "passed",
-    "mobile_390px": "selection and required-input UI passed",
+    "engine_and_reading_checks": 645,
+    "ceremony_checks": 12,
+    "browser_desktop": "passed",
+    "browser_390px": "passed",
     "live_https": "verified by release workflow"
   },
   "accuracy_note": "Lahiri ayanamsa, nodes and dasha dates are explicitly approximate; whole-sign houses; civil midnight bazi.",
@@ -102,9 +105,11 @@
   ],
   "direct_school_selection": "Selected school retained through birthday and birth editing; missing birth time is never fabricated",
   "visual_explanation": {
-    "style": "warm cream, soft gradients and symbolic ornaments",
-    "binding": "actual school, evidence and interpretation rule",
-    "stories": "strict school/tag/topic match only; no fallback"
+    "style": "midnight plum, antique gold, symbolic vignettes",
+    "default_visible": true,
+    "binding": "actual calculated evidence and authored symbolic rule",
+    "stories": 9,
+    "story_matching": "actual interpretation tag and topic; sourced reflection, not a matching natal chart"
   },
   "navigation": {
     "top_level": [
@@ -114,7 +119,26 @@
       "自由探索",
       "出生資料"
     ],
-    "collapsed_menu": false,
-    "mobile": "all five links visible in two rows"
+    "directories": "hover/focus on desktop; arrow tap on mobile",
+    "primary_buttons": "direct navigation preserved"
+  },
+  "ceremony": {
+    "duration_ms": 2200,
+    "reduced_motion_ms": 80,
+    "skippable": true,
+    "completion": "exactly once",
+    "scenes": [
+      "tarot",
+      "coins",
+      "stars",
+      "pillars",
+      "numbers",
+      "plum"
+    ]
+  },
+  "homepage_wheel": {
+    "default_visible": true,
+    "desktop": "beside combined controls",
+    "mobile": "below introduction"
   }
 }

@@ -11,3 +11,12 @@
 | 葛飾北齋 | 七十及八十歲前後持續探索富士山和水的表現，晚年產出重要版畫與繪畫 | [三得利美術館／大英博物館合作展](https://www.suntory.com/sma/exhibition/2022_2/display.html) |
 
 頁面的「換成今天，問自己一句」為本網站的編輯提問，不是人物原話。漫畫是虛構生活情境，不描繪上述人物的真實事件。
+
+## v3.8.0 新增的已核對來源
+
+- 屠呦呦：諾貝爾獎科學背景；重讀文獻、冷萃與青蒿素。https://www.nobelprize.org/prizes/medicine/2015/advanced-information/
+- 凱瑟琳・強森：NASA 官方傳記；1962 年葛倫任務前複核計算。https://www.nasa.gov/centers-and-facilities/langley/katherine-johnson-biography/
+- 凱勒與蘇利文：美國盲人基金會年表；1887 年 water 觸覺教學。https://www.afb.org/about-afb/history/helen-keller/biography-and-chronology/chronology
+- C. J. 沃克：美國國家公園管理局歷史教案；逐戶銷售、培訓代表與學校。https://www.nps.gov/articles/two-american-entrepreneurs-madam-c-j-walker-and-j-c-penney-teaching-with-historic-places.htm
+
+選用人物依本次已計算的象徵規則與題材；命盤及成就不作類比，故事僅供生活借鏡。

@@ -1,15 +1,19 @@
 {
-  "version": "3.7.1",
-  "url": "https://momopuke.github.io/judun-deploy/",
-  "source_validation": "633 checks passed locally",
+  "version": "3.8.0",
+  "url": "https://momopuke.github.io/judun-deploy/?v=3.8.0",
+  "source_validation": {
+    "engine_and_reading_checks": 645,
+    "ceremony_checks": 12
+  },
   "browser_qa": [
-    "desktop combined",
-    "direct tarot without birthday",
-    "birthday method input",
-    "switch method preserving data",
-    "browser back restores method",
-    "390px selection no horizontal overflow",
-    "required Ziwei inputs"
+    "desktop homepage wheel",
+    "real pointer hover directory",
+    "ceremony opens and automatically completes",
+    "skip ceremony reaches result",
+    "life explanation and sourced story visible by default",
+    "390px no horizontal overflow",
+    "390px first tap opens school directory",
+    "390px no-birthday tarot ceremony and skip"
   ],
-  "live_verification": "GitHub Pages workflow verifies every asset SHA-256 after deployment"
+  "live_verification": "Release workflow checks every HTTPS asset hash"
 }
