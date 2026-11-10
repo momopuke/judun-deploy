@@ -5,10 +5,10 @@
   "release_date": "2026-11-10",
   "source_branch": "gh-pages",
   "hosted_url": "https://momopuke.github.io/judun-deploy/",
-  "sha256_index_html": "8d1f47726aebaea2fe489bbe5c66bdcf46ef004fdcb931b434b2d940774fb250",
+  "sha256_index_html": "a0be2fb573c79fa1f05216e226298aebff45ce8806fd32095ff4efc81c08a9f0",
   "sha256_engine": "9839e78f2b09d703a1c9238f140a37521081a0dde7b71fbebecfc919659c7f92",
   "assets": {
-    "index.html": "8d1f47726aebaea2fe489bbe5c66bdcf46ef004fdcb931b434b2d940774fb250",
+    "index.html": "a0be2fb573c79fa1f05216e226298aebff45ce8806fd32095ff4efc81c08a9f0",
     "app.js": "732026ed14074e6dce437bb9371819974a06ec573fb6c4c96edddbdd849c1b33",
     "atlas.css": "0d13736eb29b8f2e99886c926cd265691aac76de4bb177580ecbd454439a8734",
     "sky-engine.js": "68d06103e3a7ebd955920a4679fe54f4832587244aa0780be5604ca95073e82f",
