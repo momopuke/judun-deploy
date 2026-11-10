@@ -124,7 +124,7 @@ ok(yearConsult.year.number===4&&yearConsult.lenses.find(l=>l.id==='numerology').
 const xss=I.renderConsultation(I.consultation(ready,{topic:'career',question:'<script>alert(1)</script>'},events));
 ok(!xss.includes('<script>')&&xss.includes('&lt;script&gt;'),'New question-first report escapes arbitrary question text');
 const htmlConsult=I.renderConsultation(consult);
-ok(htmlConsult.includes('共同提醒')&&htmlConsult.includes('不同看法')&&htmlConsult.includes('你可以怎麼做')&&htmlConsult.includes('<details class="consult-weight-choice">'),'Synthesis and weight explanation are visible and reviewable');
+ok(htmlConsult.includes('reading-crosscheck')&&htmlConsult.includes('reading-lead')&&htmlConsult.includes('<details class="reading-evidence">')&&htmlConsult.includes('<details class="consult-weight-choice">'),'Synthesis and weight explanation are visible and reviewable');
 ok(yearConsult.lenses.find(l=>l.id==='tarotBirth').basis==='死神','Annual tarot uses 2027 target year (1+1+2027=2029 -> 13), not current birth calculation');
 ok(I.inferTopic('2027年整體運勢如何？')==='year'&&I.inferTopic('今年想創業怎麼開始？')==='career','Year outlook and a business question remain distinct intents');
 const noBirth=structuredClone(ready);noBirth.ready.ziwei=false;noBirth.ready.bazi=false;noBirth.ready.western=false;
@@ -170,5 +170,19 @@ app.showView('finish',false);ok(element('finishAction').textContent.length>0&&el
 element('dob').value='';ok(app.prepareJourney()===false&&app.getNavigationState().currentView==='profile','An invalid birthday keeps the visitor at the editable birthday step');
 element('dob').value='1990-01-01';element('topic').value='career';element('readingQuestion').value='現在適合換工作嗎？';element('readingQuestion').listeners.change();app.startConsultation();
 
+// Reading hierarchy and deduplication retain distinct information and source evidence.
+const duplicateReading={...consult,answer:'先把薪資、工時與成長機會列清楚再比較。',first:'先把薪資、工時與成長機會列清楚再比較',watch:'忽略實際工時'};
+const brief=I.readingPresentation(duplicateReading),briefHtml=I.renderConsultation(duplicateReading);
+ok(!brief.showAction&&!briefHtml.includes('data-primary-action'),'An action already stated in the answer is not shown a second time');
+ok(briefHtml.split('先把薪資、工時與成長機會列清楚再比較').length===2,'The repeated action occurs exactly once in the whole rendered reading');
+const uniqueBrief=I.readingPresentation({...duplicateReading,first:'先找一個實際職缺比較條件'});
+ok(uniqueBrief.showAction&&uniqueBrief.action==='先找一個實際職缺比較條件','A genuinely distinct next step remains visible');
+ok(I.repeatedReadingText('先談清楚：分工與報酬。','先談清楚分工與報酬')&&!I.repeatedReadingText('先談清楚','先換工作'),'Punctuation is ignored without merging unrelated short advice');
+const emptyBrief=I.readingPresentation({...duplicateReading,watch:duplicateReading.answer});ok(emptyBrief.risk==='','A caution identical to the answer is not repeated');
+ok(!/<details class="reading-evidence"[^>]*\bopen/.test(briefHtml)&&duplicateReading.lenses.every(l=>briefHtml.includes(l.basis.replace(/&/g,'&amp;'))),'Evidence remains inspectable and closed by default');
+ok(!briefHtml.includes('consult-lenses')&&!briefHtml.includes('synthesis-grid'),'Old parallel advice cards are replaced rather than added beneath the brief');
+const annualBrief=I.renderConsultation(yearConsult);ok(annualBrief.includes('reading-year-details')&&!annualBrief.includes('annual-outlook')&&!annualBrief.includes('extra-year'),'Annual areas do not repeat the full annual headline and introduction');
+const emptyReading=I.consultation(ready,{topic:'career'},events,zeros);ok(!I.renderConsultation(emptyReading).includes('undefined'),'A reading with no available weighted source renders without fabricated content');
+ok(!I.readingPresentation(yearConsult).answer.startsWith('2027 年的重點')&&I.readingPresentation(yearConsult).answer.includes(yearConsult.year.title),'Annual brief removes the repeated year prefix while retaining the actual annual focus');
 const excerpts={qian:rq,dayou:rd,tarot:tr,numerology:I.interpret('numerology',ready,{topic:'career'},events)};fs.writeFileSync(__dirname+'/reading-qa-samples.json',JSON.stringify(excerpts,null,2));
-element('downloadHtml').listeners.click();ok(exportedBlob?.type==='text/html;charset=utf-8','Standalone HTML export created');exportedBlob.text().then(html=>{ok(html.includes('data-consultation')&&html.includes('共同提醒')&&html.includes('<style>')&&!html.includes('advanced-start'),'HTML includes report and full styling');ok(!html.includes('<script')&&!html.includes('<link rel=')&&!html.includes('src=\"./'),'Export has no external code dependency');ok(!html.includes('<button'),'Offline saved reading has no nonfunctional navigation buttons');fs.mkdirSync(__dirname+'/examples',{recursive:true});fs.writeFileSync(__dirname+'/examples/1990-01-01-career-reading.html',html);console.log(JSON.stringify({status:'PASS',checks,version:'3.2.0',all_systems:12},null,2))}).catch(e=>{console.error(e);process.exitCode=1});
+element('downloadHtml').listeners.click();ok(exportedBlob?.type==='text/html;charset=utf-8','Standalone HTML export created');exportedBlob.text().then(html=>{ok(html.includes('data-consultation')&&html.includes('reading-crosscheck')&&html.includes('<style>')&&!html.includes('advanced-start'),'HTML includes report and full styling');ok(!html.includes('<script')&&!html.includes('<link rel=')&&!html.includes('src=\"./'),'Export has no external code dependency');ok(!html.includes('<button'),'Offline saved reading has no nonfunctional navigation buttons');fs.mkdirSync(__dirname+'/examples',{recursive:true});fs.writeFileSync(__dirname+'/examples/1990-01-01-career-reading.html',html);console.log(JSON.stringify({status:'PASS',checks,version:'3.3.0',all_systems:12},null,2))}).catch(e=>{console.error(e);process.exitCode=1});

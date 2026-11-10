@@ -1,15 +1,15 @@
 {
   "name": "FATE ATLAS 合參命理",
-  "version": "3.2.0",
-  "edition": "Guided five-step journey",
+  "version": "3.3.0",
+  "edition": "Editorial reading",
   "release_date": "2026-11-10",
   "source_branch": "gh-pages",
   "hosted_url": "https://momopuke.github.io/judun-deploy/",
-  "sha256_index_html": "4c87f8aade21ef80986c29d9aa69f8fbd988eed4f8f4110f6d7a656b438f1bb1",
+  "sha256_index_html": "c38bfa39857ce955923b54c666f2e105271160c7d2a539e1e1eab1dac1b8bc7d",
   "sha256_engine": "9839e78f2b09d703a1c9238f140a37521081a0dde7b71fbebecfc919659c7f92",
   "assets": {
-    "index.html": "4c87f8aade21ef80986c29d9aa69f8fbd988eed4f8f4110f6d7a656b438f1bb1",
-    "app.js": "0e46f2f6b9d3dd4f0eec52221e9f19a2b022e41deee784c35a639338c6b46840",
+    "index.html": "c38bfa39857ce955923b54c666f2e105271160c7d2a539e1e1eab1dac1b8bc7d",
+    "app.js": "976d7efc225a2da50e6ee38d047c7ecc8dbdb69934785b28c23c68ff6658ad49",
     "atlas.css": "0d13736eb29b8f2e99886c926cd265691aac76de4bb177580ecbd454439a8734",
     "sky-engine.js": "68d06103e3a7ebd955920a4679fe54f4832587244aa0780be5604ca95073e82f",
     "engines-v1.2.0.js": "9839e78f2b09d703a1c9238f140a37521081a0dde7b71fbebecfc919659c7f92",
@@ -33,8 +33,8 @@
     "assets/schools/vedic.webp": "32dc71ea6895acd922a916f8d375a2d40f7e8428f08288690d5f2e854e369398",
     "assets/schools/western.webp": "8425ed8c7a2e9b51db2d61acd5401ef3afcb2e7209869976c41520eb2350835b",
     "assets/schools/ziwei.webp": "88711c2c699f4115e72743dec7885a4f8f8db7e81d6429954531602ba11614c0",
-    "interpretation-engine.js": "45dbc0cc1d2946aef3661407a4c8f7495a07e245428bd781449d58675e23d043",
-    "interpretation.css": "a563c2f9c5fd97cd20d9f5cbb458d35bf50287fa7893d604db3360134b9bb76c",
+    "interpretation-engine.js": "f39011b5548a6563f27b06c5cba7604ae217f31cbf67d062f317c059326c90e4",
+    "interpretation.css": "f08cf7e92dd970e212728243e5a0c191ddb6c5501de2013b8b6e2c243c9d1df9",
     "journey.css": "ec39ec6ecd9f15b626f19b9c42c4243771dcc9750df8e885dd80bcf4d0ad1e08"
   },
   "vendors": {
@@ -42,7 +42,7 @@
     "astronomy-engine": "2.1.19"
   },
   "qa": {
-    "checks": 553,
+    "checks": 563,
     "status": "PASS"
   },
   "accuracy_note": "Lahiri ayanamsa, nodes and dasha dates are explicitly approximate; whole-sign houses; civil midnight bazi.",
@@ -70,5 +70,6 @@
     "automatic_weights": "Question subtype and input completeness; changes leading method and action"
   },
   "birth_editor": "Return to the exact originating page or school modal, preserving question and events",
-  "ux_flow": "Choose question → birthday → optional explicit rituals → consultation → takeaway; shared back/forward navigation"
+  "ux_flow": "Choose question → birthday → optional explicit rituals → consultation → takeaway; shared back/forward navigation",
+  "reading_layout": "One answer, one non-repeated action, one caution, concise cross-system synthesis; evidence closed by default"
 }

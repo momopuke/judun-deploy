@@ -1,4 +1,4 @@
-# 合參 FATE ATLAS v3.2.0
+# 合參 FATE ATLAS v3.3.0
 
 正式網址：https://momopuke.github.io/judun-deploy/
 
@@ -33,3 +33,7 @@ Chrome 桌機與 375px iframe 手機尺寸的五步流程、必填生日、可�
 - `version.json`：正式資產 SHA-256 清單。
 - `.github/workflows`：發布、回歸及正式 HTTPS 雜湊驗收。
 - `UX-REVIEW.md`、`deployment-verification.json`：本版驗收與發布紀錄。
+
+## 解讀排版 v3.3.0
+
+保留五步導覽。解讀採單一主卡：一句結論、不同於結論的下一步、留意事項、精簡的跨派共同點或分歧。結論已含有的行動不再重複。各派只展示實際依據與說明，合併收進預設關閉的依據區；流年分項與月份按需展開。保留題型自動配重、原始資料及離線保存。563 項檢查。
