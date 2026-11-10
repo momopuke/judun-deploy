@@ -1,23 +1,57 @@
 {
-  "version": "3.2.0",
-  "status": "published-and-verified",
+  "version": "3.3.0",
+  "release_date_taipei": "2026-11-10",
   "url": "https://momopuke.github.io/judun-deploy/",
-  "asset_source_commit": "46bf2908294b9228ba0d659c339450e49c7cb656",
-  "workflow_run": 42779746822,
-  "workflow_url": "https://github.com/momopuke/judun-deploy/actions/runs/42779746822",
-  "checks": 553,
-  "live_https_asset_hashes": {
-    "count": 28,
-    "status": "PASS",
-    "evidence": "Verify actual HTTPS asset hashes job step concluded success"
+  "commit_sha": "7826241dc9115755f5c445bc71302da306b95e55",
+  "tree_sha": "ace3ed46dd8adb16be879cb46b3fe4fbad4e81c8",
+  "source_files": 37,
+  "runtime_assets": 28,
+  "engine_checks": 563,
+  "workflow": {
+    "run_id": 42788009149,
+    "job_id": 129734006764,
+    "status": "success",
+    "markers": [
+      "2026-11-10T09:07:20.6945016Z ALL_SOURCE_HASHES_PASS",
+      "2026-11-10T09:07:38.2072755Z LIVE_HTTPS_ALL_ASSETS_VERIFIED https://momopuke.github.io/judun-deploy/",
+      "2026-11-10T09:07:38.2073238Z LIVE_VERSION 3.3.0"
+    ]
   },
-  "browser_qa": {
-    "desktop": "PASS",
-    "mobile_375px_iframe": "PASS",
-    "production_journey": "PASS: all five steps, skip ritual, return from takeaway to consultation",
-    "origin_return": "PASS: profile, report, Ziwei school dialog",
-    "cards_preserved": "PASS",
-    "physical_iphone_safari": "not tested"
+  "browser": {
+    "desktop_live_version": "3.3.0",
+    "desktop_width": 1348,
+    "desktop_scroll_width": 1348,
+    "desktop_question": "現在適合換工作嗎？",
+    "desktop_sources": [
+      "bazi",
+      "tarotDraw"
+    ],
+    "default_evidence_closed": true,
+    "mobile_width": 375,
+    "mobile_scroll_width": 375,
+    "mobile_answer_font_px": 27,
+    "mobile_annual_year": 2027,
+    "mobile_annual_sections_closed": true,
+    "evidence_expands_with_actual_sources": true,
+    "weights_remain_available": true,
+    "report_to_takeaway_and_back": true,
+    "original_five_step_journey_preserved": true
   },
-  "limitations": "No real visitor completion-rate study; the checks verify functionality, not divination accuracy."
+  "reading_layout": {
+    "primary": "one editorial panel",
+    "hierarchy": [
+      "answer",
+      "distinct next step",
+      "caution",
+      "compact cross-system comparison"
+    ],
+    "duplicate_action_removed": true,
+    "system_advice_not_repeated_as_parallel_cards": true,
+    "annual_intro_not_repeated": true
+  },
+  "export": {
+    "programmatic_standalone_export": "PASS",
+    "browser_download": "tool timed out; not claimed as verified in this run"
+  },
+  "scope": "Question weights and traditional symbolic interpretation scope unchanged. This release reorganizes and deduplicates the presentation; it does not establish predictive accuracy."
 }

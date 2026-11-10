@@ -1,15 +1,15 @@
 {
   "name": "FATE ATLAS 合參命理",
-  "version": "3.3.0",
-  "edition": "Editorial reading",
+  "version": "3.4.0",
+  "edition": "Illustrated reading and distinct entry routes",
   "release_date": "2026-11-10",
   "source_branch": "gh-pages",
   "hosted_url": "https://momopuke.github.io/judun-deploy/",
-  "sha256_index_html": "c38bfa39857ce955923b54c666f2e105271160c7d2a539e1e1eab1dac1b8bc7d",
+  "sha256_index_html": "d02e4eb820b231bd73928b7efca47bcdf47124fd1d3e9e49a26e97abee5cbc64",
   "sha256_engine": "9839e78f2b09d703a1c9238f140a37521081a0dde7b71fbebecfc919659c7f92",
   "assets": {
-    "index.html": "c38bfa39857ce955923b54c666f2e105271160c7d2a539e1e1eab1dac1b8bc7d",
-    "app.js": "976d7efc225a2da50e6ee38d047c7ecc8dbdb69934785b28c23c68ff6658ad49",
+    "index.html": "d02e4eb820b231bd73928b7efca47bcdf47124fd1d3e9e49a26e97abee5cbc64",
+    "app.js": "dda617f61cd11cc491974eafe7e41de2a7e467a5f877b5129b12d2f2ce5cc4e6",
     "atlas.css": "0d13736eb29b8f2e99886c926cd265691aac76de4bb177580ecbd454439a8734",
     "sky-engine.js": "68d06103e3a7ebd955920a4679fe54f4832587244aa0780be5604ca95073e82f",
     "engines-v1.2.0.js": "9839e78f2b09d703a1c9238f140a37521081a0dde7b71fbebecfc919659c7f92",
@@ -33,16 +33,17 @@
     "assets/schools/vedic.webp": "32dc71ea6895acd922a916f8d375a2d40f7e8428f08288690d5f2e854e369398",
     "assets/schools/western.webp": "8425ed8c7a2e9b51db2d61acd5401ef3afcb2e7209869976c41520eb2350835b",
     "assets/schools/ziwei.webp": "88711c2c699f4115e72743dec7885a4f8f8db7e81d6429954531602ba11614c0",
-    "interpretation-engine.js": "f39011b5548a6563f27b06c5cba7604ae217f31cbf67d062f317c059326c90e4",
+    "interpretation-engine.js": "68cdf393d8133423d2c15258e233512373d534bdd29ad1f458275541a1608a1b",
     "interpretation.css": "f08cf7e92dd970e212728243e5a0c191ddb6c5501de2013b8b6e2c243c9d1df9",
-    "journey.css": "ec39ec6ecd9f15b626f19b9c42c4243771dcc9750df8e885dd80bcf4d0ad1e08"
+    "journey.css": "ec39ec6ecd9f15b626f19b9c42c4243771dcc9750df8e885dd80bcf4d0ad1e08",
+    "visual-refresh.css": "f7e828d453ae876110f40ce3e7229e0f5d8b1001db4a85802a58eb1bcf888f8a"
   },
   "vendors": {
     "iztro": "2.6.5",
     "astronomy-engine": "2.1.19"
   },
   "qa": {
-    "checks": 563,
+    "checks": 567,
     "status": "PASS"
   },
   "accuracy_note": "Lahiri ayanamsa, nodes and dasha dates are explicitly approximate; whole-sign houses; civil midnight bazi.",
@@ -55,9 +56,11 @@
     "scope_limits": "Maya is calendar reference only. Full bazi strength/useful gods, Ziwei annual transformations, Liuyao use-god strength and hexagram-specific line texts remain incomplete."
   },
   "wheel_layout": {
-    "desktop_max_scene_px": 780,
+    "desktop_max_scene_px": 720,
     "mobile_frame_inset": "1%",
-    "mobile_center_diameter": "34%"
+    "mobile_center_diameter": "34%",
+    "home_max_scene_px": 670,
+    "viewport_sizing": "Home and exploration wheel scale to available viewport height; no overlay on pointer or center"
   },
   "consultation": {
     "perspectives": [
@@ -71,5 +74,9 @@
   },
   "birth_editor": "Return to the exact originating page or school modal, preserving question and events",
   "ux_flow": "Choose question → birthday → optional explicit rituals → consultation → takeaway; shared back/forward navigation",
-  "reading_layout": "One answer, one non-repeated action, one caution, concise cross-system synthesis; evidence closed by default"
+  "reading_layout": "One answer, one non-repeated action, one caution, concise cross-system synthesis; evidence closed by default",
+  "homepage_modes": [
+    "combined multi-system consultation",
+    "random single-school reading"
+  ]
 }

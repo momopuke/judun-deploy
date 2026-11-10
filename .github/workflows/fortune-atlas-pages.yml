@@ -1,4 +1,4 @@
-name: FATE ATLAS v3.3 publish and verify
+name: FATE ATLAS v3.4 publish and verify
 on:
   push:
     branches: [gh-pages]
@@ -24,7 +24,7 @@ jobs:
           import hashlib,json
           from pathlib import Path
           data=json.loads(Path('version.json').read_text())
-          assert data['version']=='3.3.0'
+          assert data['version']=='3.4.0'
           for name,sha in data['assets'].items():
               assert hashlib.sha256(Path(name).read_bytes()).hexdigest()==sha,name
               if name.endswith('.webp'):
@@ -65,12 +65,12 @@ jobs:
           for attempt in range(16):
               try:
                   def fetch(name):
-                      req=urllib.request.Request(base+name+'?v=3.3.0-'+str(attempt),headers={'User-Agent':'FateAtlas-Release-QA','Cache-Control':'no-cache'})
+                      req=urllib.request.Request(base+name+'?v=3.4.0-'+str(attempt),headers={'User-Agent':'FateAtlas-Release-QA','Cache-Control':'no-cache'})
                       with urllib.request.urlopen(req,timeout=15) as r:
                           assert r.status==200
                           return r.read()
                   live=json.loads(fetch('version.json'))
-                  assert live['version']=='3.3.0'
+                  assert live['version']=='3.4.0'
                   for name,sha in expected['assets'].items():
                       assert hashlib.sha256(fetch(name)).hexdigest()==sha,name
                   assert live['assets']==expected['assets']
