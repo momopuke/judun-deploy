@@ -1,57 +1,57 @@
 {
-  "version": "3.3.0",
+  "version": "3.4.0",
   "release_date_taipei": "2026-11-10",
   "url": "https://momopuke.github.io/judun-deploy/",
-  "commit_sha": "7826241dc9115755f5c445bc71302da306b95e55",
-  "tree_sha": "ace3ed46dd8adb16be879cb46b3fe4fbad4e81c8",
-  "source_files": 37,
-  "runtime_assets": 28,
-  "engine_checks": 563,
+  "commit_sha": "37983b7cce303824b9d4da314876cccf42f9b304",
+  "tree_sha": "ed0caae1da48bcd86c49ff7198a7ce5e0f104e64",
+  "source_files": 38,
+  "runtime_assets": 29,
+  "engine_checks": 567,
   "workflow": {
-    "run_id": 42788009149,
-    "job_id": 129734006764,
+    "run_id": 42792435357,
+    "job_id": 129748972563,
     "status": "success",
     "markers": [
-      "2026-11-10T09:07:20.6945016Z ALL_SOURCE_HASHES_PASS",
-      "2026-11-10T09:07:38.2072755Z LIVE_HTTPS_ALL_ASSETS_VERIFIED https://momopuke.github.io/judun-deploy/",
-      "2026-11-10T09:07:38.2073238Z LIVE_VERSION 3.3.0"
+      "2026-11-10T09:38:49.1739640Z ALL_SOURCE_HASHES_PASS",
+      "2026-11-10T09:39:20.9331836Z LIVE_HTTPS_ALL_ASSETS_VERIFIED https://momopuke.github.io/judun-deploy/",
+      "2026-11-10T09:39:20.9332373Z LIVE_VERSION 3.4.0"
     ]
   },
   "browser": {
-    "desktop_live_version": "3.3.0",
-    "desktop_width": 1348,
-    "desktop_scroll_width": 1348,
-    "desktop_question": "現在適合換工作嗎？",
-    "desktop_sources": [
+    "desktop_live_version": "3.4.0",
+    "desktop_viewport": [
+      1363,
+      936
+    ],
+    "desktop_horizontal_overflow": 0,
+    "desktop_home_wheel_bottom": 842.75,
+    "desktop_spin_wheel_bottom": 843.640625,
+    "mobile_preview_content_width": 375,
+    "mobile_preview_height": 844,
+    "mobile_horizontal_overflow": 0,
+    "mobile_home_wheel_bottom": 698.75,
+    "mobile_spin_wheel_bottom": 576.625,
+    "random_route": "Birthday → spin → chosen single-school modal; liuyao desktop and meihua mobile verified",
+    "combined_route": "Question → birthday → explicit tarot draw → skip remaining ritual → combined report",
+    "live_combined_question": "現在適合換工作嗎？",
+    "live_combined_sources": [
       "bazi",
       "tarotDraw"
     ],
-    "default_evidence_closed": true,
-    "mobile_width": 375,
-    "mobile_scroll_width": 375,
-    "mobile_answer_font_px": 27,
-    "mobile_annual_year": 2027,
-    "mobile_annual_sections_closed": true,
-    "evidence_expands_with_actual_sources": true,
-    "weights_remain_available": true,
-    "report_to_takeaway_and_back": true,
-    "original_five_step_journey_preserved": true
+    "live_combined_cover": "assets/schools/bazi.webp",
+    "actual_device_limit": "Chrome desktop and 375px iframe only; not physical iPhone Safari"
   },
-  "reading_layout": {
-    "primary": "one editorial panel",
-    "hierarchy": [
-      "answer",
-      "distinct next step",
-      "caution",
-      "compact cross-system comparison"
+  "layout": {
+    "homepage_modes": [
+      "combined multi-system consultation",
+      "random single-school reading"
     ],
-    "duplicate_action_removed": true,
-    "system_advice_not_repeated_as_parallel_cards": true,
-    "annual_intro_not_repeated": true
+    "wheel_visibility": "Responsive scene dimensions on home and exploration; pointer above frame; no horizontal overflow",
+    "reading": "Dark green photographic cover, concise answer, distinct action/caution, compact synthesis, closed evidence"
   },
   "export": {
-    "programmatic_standalone_export": "PASS",
-    "browser_download": "tool timed out; not claimed as verified in this run"
+    "standalone_programmatic_checks": "PASS",
+    "browser_download": "Not retested in this release"
   },
-  "scope": "Question weights and traditional symbolic interpretation scope unchanged. This release reorganizes and deduplicates the presentation; it does not establish predictive accuracy."
+  "scope": "Presentation and routing improvement; authored symbolic interpretation is not validated predictive evidence."
 }
