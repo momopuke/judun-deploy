@@ -1,15 +1,15 @@
 {
   "name": "FATE ATLAS 合參命理",
-  "version": "3.4.1",
-  "edition": "Larger complete wheel with tighter surrounding layout",
+  "version": "3.4.2",
+  "edition": "Large wheel with smooth pointer hover zoom",
   "release_date": "2026-11-10",
   "source_branch": "gh-pages",
   "hosted_url": "https://momopuke.github.io/judun-deploy/",
-  "sha256_index_html": "64e2880aea5ec1b6cd3831b378ddc0edd1afdc543fb90cda9dc0334420124bde",
+  "sha256_index_html": "f0153e5ac8d70aa9c0e857b8e4651159cc031c6554fbf5bca14f0bc1205ca380",
   "sha256_engine": "9839e78f2b09d703a1c9238f140a37521081a0dde7b71fbebecfc919659c7f92",
   "assets": {
-    "index.html": "64e2880aea5ec1b6cd3831b378ddc0edd1afdc543fb90cda9dc0334420124bde",
-    "app.js": "39e7f6a08cdd0dc07b2a2090ed0884031aee242fba10d2b4dc10a5e386a443c3",
+    "index.html": "f0153e5ac8d70aa9c0e857b8e4651159cc031c6554fbf5bca14f0bc1205ca380",
+    "app.js": "d02f7a88c54f34970b18752f8739b66417eeff79a1e9304fe4980f71ec9a3e17",
     "atlas.css": "0d13736eb29b8f2e99886c926cd265691aac76de4bb177580ecbd454439a8734",
     "sky-engine.js": "68d06103e3a7ebd955920a4679fe54f4832587244aa0780be5604ca95073e82f",
     "engines-v1.2.0.js": "9839e78f2b09d703a1c9238f140a37521081a0dde7b71fbebecfc919659c7f92",
@@ -36,7 +36,7 @@
     "interpretation-engine.js": "68cdf393d8133423d2c15258e233512373d534bdd29ad1f458275541a1608a1b",
     "interpretation.css": "f08cf7e92dd970e212728243e5a0c191ddb6c5501de2013b8b6e2c243c9d1df9",
     "journey.css": "ec39ec6ecd9f15b626f19b9c42c4243771dcc9750df8e885dd80bcf4d0ad1e08",
-    "visual-refresh.css": "5e47c14d818b4b931dbd36ea7db9261ab695f9562793a8ee9367d42c9c647da8"
+    "visual-refresh.css": "4962206ce4e3dc3651b4b1351cb17ca08acd482990d1657ee254bd61b359c478"
   },
   "vendors": {
     "iztro": "2.6.5",
@@ -64,7 +64,14 @@
     "home_viewport_reserve_px": 260,
     "exploration_viewport_reserve_px": 285,
     "desktop_frame_inset": "2%",
-    "mobile_home_side_margin_px": 4
+    "mobile_home_side_margin_px": 4,
+    "hover_zoom": {
+      "scale": 1.06,
+      "duration_ms": 280,
+      "origin": "bottom center",
+      "input": "fine pointer with hover, width >=651px",
+      "keyboard_focus": true
+    }
   },
   "consultation": {
     "perspectives": [

@@ -18,3 +18,5 @@ main:has(>#home:not([hidden]))>#journeyTop{display:none}#home.hero{align-items:s
 .exploration-wheel{padding-top:12px}.exploration-wheel .sec-head{margin-bottom:5px}.exploration-wheel .sec-head h2{font-size:30px;line-height:1.35;margin:0}.exploration-wheel .wheel-controls{margin-top:8px}
 @media(min-width:651px){#home .wheel-frame,.exploration-wheel .wheel-frame{inset:2%}}
 @media(max-width:650px){#home .random-entry{width:calc(100% + 28px);margin-inline:-14px}#home .random-entry .wheel-scene{width:100%}.exploration-wheel #heroSky{width:calc(100% + 32px);max-width:calc(100% + 32px);margin-inline:-16px}}
+@media(min-width:651px) and (hover:hover) and (pointer:fine){#home .wheel-scene,.exploration-wheel .wheel-scene{transform-origin:50% 100%;transition:transform .28s cubic-bezier(.2,.7,.3,1)}#home .wheel-scene:hover,#home .wheel-scene:focus-within,.exploration-wheel .wheel-scene:hover,.exploration-wheel .wheel-scene:focus-within{transform:scale(1.06)}}
+@media(prefers-reduced-motion:reduce){#home .wheel-scene,.exploration-wheel .wheel-scene{transition:none}}
