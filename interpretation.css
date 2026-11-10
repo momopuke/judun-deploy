@@ -13,3 +13,10 @@
 @media(max-width:650px){.consult-lenses{grid-template-columns:1fr}.auto-weight-list{max-width:none}}
 #yearChoice[hidden]{display:none}.report-wrap>.report-head{border-top:1px solid #bbc3ad;border-bottom:0;padding-top:24px;margin-top:20px}.consult-report-head{padding-top:0}.report-sheet{padding-top:5px}
 @media(max-width:650px){.report-wrap>.report-head .actions{flex-direction:row;flex-wrap:wrap;gap:8px}.report-wrap>.report-head .actions .btn{flex:1;font-size:13px!important;min-width:90px;padding:10px!important;min-height:44px!important}.report-sheet{padding-top:0}}
+
+/* Editing birth details returns to its original screen. */
+.input-head #birthBack{font-size:16px;min-height:44px;padding:10px 18px;white-space:nowrap}.birth-return-bar{display:flex;justify-content:flex-end;margin-top:25px;padding-top:20px;border-top:1px solid #b9c4aa}.birth-return-bar .btn{min-height:52px;font-size:19px;padding:14px 28px}
+@media(max-width:650px){.input-head{align-items:center;gap:12px}.input-head h2{font-size:25px}.input-head #birthBack{font-size:15px;padding:9px 13px}.birth-return-bar .btn{width:100%}}
+
+.birth-main-fields{margin-top:24px}.birth-advanced{margin-top:22px}.report-edit-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}.input-error{color:#f3b6a3!important;font-weight:600}#dob[aria-invalid="true"]{outline:2px solid #db856d;outline-offset:3px}
+@media(max-width:650px){.birth-main-fields{grid-template-columns:1fr}.consult-report-head{flex-wrap:wrap;gap:12px}.report-edit-actions{width:100%;justify-content:flex-start}.report-edit-actions .btn{flex:1}.birth-advanced summary{font-size:16px}}

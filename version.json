@@ -1,15 +1,15 @@
 {
   "name": "FATE ATLAS 合參命理",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "edition": "Everyday questions",
   "release_date": "2026-11-10",
   "source_branch": "gh-pages",
   "hosted_url": "https://momopuke.github.io/judun-deploy/",
-  "sha256_index_html": "cad250055f24ed31144ec041a356a4516af10cea712b6c2858d7b9b12cc2366a",
+  "sha256_index_html": "f0e0a31b951163540d955e68885bfc1c4967e347afaa418019be2975561fc91e",
   "sha256_engine": "9839e78f2b09d703a1c9238f140a37521081a0dde7b71fbebecfc919659c7f92",
   "assets": {
-    "index.html": "cad250055f24ed31144ec041a356a4516af10cea712b6c2858d7b9b12cc2366a",
-    "app.js": "736c8ba5fb7d4852ee5ea857d8ff93395872cc50a91466c9a27a3119d25f756e",
+    "index.html": "f0e0a31b951163540d955e68885bfc1c4967e347afaa418019be2975561fc91e",
+    "app.js": "5e548e57de5585ca3cc77698b20695ffe32fa86bcbf46da1c523da992e9f299c",
     "atlas.css": "0d13736eb29b8f2e99886c926cd265691aac76de4bb177580ecbd454439a8734",
     "sky-engine.js": "68d06103e3a7ebd955920a4679fe54f4832587244aa0780be5604ca95073e82f",
     "engines-v1.2.0.js": "9839e78f2b09d703a1c9238f140a37521081a0dde7b71fbebecfc919659c7f92",
@@ -34,14 +34,14 @@
     "assets/schools/western.webp": "8425ed8c7a2e9b51db2d61acd5401ef3afcb2e7209869976c41520eb2350835b",
     "assets/schools/ziwei.webp": "88711c2c699f4115e72743dec7885a4f8f8db7e81d6429954531602ba11614c0",
     "interpretation-engine.js": "45dbc0cc1d2946aef3661407a4c8f7495a07e245428bd781449d58675e23d043",
-    "interpretation.css": "8d0436088647d988e8a4ed2562ea89e7369d137ab8c7138f0bd38e2b3b58dbbb"
+    "interpretation.css": "a563c2f9c5fd97cd20d9f5cbb458d35bf50287fa7893d604db3360134b9bb76c"
   },
   "vendors": {
     "iztro": "2.6.5",
     "astronomy-engine": "2.1.19"
   },
   "qa": {
-    "checks": 535,
+    "checks": 541,
     "status": "PASS"
   },
   "accuracy_note": "Lahiri ayanamsa, nodes and dasha dates are explicitly approximate; whole-sign houses; civil midnight bazi.",
@@ -67,5 +67,7 @@
     "comparison": "actual focus tags; no forced consensus or probability",
     "annual": "Calendar-year numerology and tarot annual card; no full Ziwei annual judgment",
     "automatic_weights": "Question subtype and input completeness; changes leading method and action"
-  }
+  },
+  "birth_editor": "Return to origin screen or school modal; preserve question and events; support browser back",
+  "ux_flow": "Original-screen birth return, report edit shortcut, advanced fields folded, consistent report entry"
 }
