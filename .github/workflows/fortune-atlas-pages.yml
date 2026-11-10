@@ -1,21 +1,16 @@
-name: FATE ATLAS v3.7.0 publish and verify
+name: FATE ATLAS v3.7.1 verify deployed release
 on:
   push:
     branches: [gh-pages]
   workflow_dispatch:
 permissions:
   contents: read
-  pages: write
-  id-token: write
 concurrency:
   group: fortune-atlas-pages
   cancel-in-progress: false
 jobs:
-  publish:
+  verify:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - name: Validate release assets and all twelve engines
@@ -24,7 +19,7 @@ jobs:
           import hashlib,json
           from pathlib import Path
           data=json.loads(Path('version.json').read_text())
-          assert data['version']=='3.7.0'
+          assert data['version']=='3.7.1'
           for name,sha in data['assets'].items():
               assert hashlib.sha256(Path(name).read_bytes()).hexdigest()==sha,name
               if name.endswith('.webp'):
@@ -40,26 +35,9 @@ jobs:
           node --check interpretation-engine.js
           node --check sky-engine.js
           node qa-engine.cjs
-      - name: Stage the exact static payload
-        run: |
-          python3 - <<'PY'
-          import json,shutil
-          from pathlib import Path
-          target=Path('_site')
-          target.mkdir()
-          data=json.loads(Path('version.json').read_text())
-          for name in [*data['assets'],'version.json']:
-              (target/name).parent.mkdir(parents=True,exist_ok=True)
-              shutil.copy2(name,target/name)
-          PY
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: _site
-      - name: Deploy FATE ATLAS
-        id: deploy
-        uses: actions/deploy-pages@v4
-      - name: Verify actual HTTPS asset hashes
+      # The repository already publishes gh-pages through native Pages.
+      # Keep one publisher; this job validates that exact live payload.
+      - name: Wait for Pages and verify actual HTTPS asset hashes
         run: |
           python3 - <<'PY'
           import hashlib,json,time,urllib.request
@@ -69,12 +47,12 @@ jobs:
           for attempt in range(16):
               try:
                   def fetch(name):
-                      req=urllib.request.Request(base+name+'?v=3.7.0-'+str(attempt),headers={'User-Agent':'FateAtlas-Release-QA','Cache-Control':'no-cache'})
+                      req=urllib.request.Request(base+name+'?v=3.7.1-'+str(attempt),headers={'User-Agent':'FateAtlas-Release-QA','Cache-Control':'no-cache'})
                       with urllib.request.urlopen(req,timeout=15) as r:
                           assert r.status==200
                           return r.read()
                   live=json.loads(fetch('version.json'))
-                  assert live['version']=='3.7.0'
+                  assert live['version']=='3.7.1'
                   for name,sha in expected['assets'].items():
                       assert hashlib.sha256(fetch(name)).hexdigest()==sha,name
                   assert live['assets']==expected['assets']
