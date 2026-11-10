@@ -1,50 +1,50 @@
 {
-  "version": "3.4.1",
+  "version": "3.4.2",
   "release_date_taipei": "2026-11-10",
   "url": "https://momopuke.github.io/judun-deploy/",
-  "commit_sha": "e58ec444e8ef120077aaa8ffe5ed0402fc059cd1",
-  "tree_sha": "449da8acc44e8b639e1599fe921608dcf39ba094",
+  "commit_sha": "e86a025d0c1d269650eb32fbeec051b703093aa8",
+  "tree_sha": "59975f7c81d8bec91f891a42b85151e41e681c67",
   "source_files": 38,
   "runtime_assets": 29,
   "engine_checks": 567,
   "workflow": {
-    "run_id": 42793511263,
-    "job_id": 129752654992,
+    "run_id": 42794329738,
+    "job_id": 129755464583,
     "status": "success",
     "markers": [
-      "2026-11-10T09:46:36.3596951Z ALL_SOURCE_HASHES_PASS",
-      "2026-11-10T09:47:02.6969030Z LIVE_HTTPS_ALL_ASSETS_VERIFIED https://momopuke.github.io/judun-deploy/",
-      "2026-11-10T09:47:02.6970077Z LIVE_VERSION 3.4.1"
+      "2026-11-10T09:52:30.4813902Z ALL_SOURCE_HASHES_PASS",
+      "2026-11-10T09:52:42.6073972Z LIVE_HTTPS_ALL_ASSETS_VERIFIED https://momopuke.github.io/judun-deploy/",
+      "2026-11-10T09:52:42.6074747Z LIVE_VERSION 3.4.2"
     ]
   },
   "browser": {
-    "desktop_live_version": "3.4.1",
+    "desktop_live_version": "3.4.2",
     "desktop_viewport": [
       1363,
       936
     ],
-    "desktop_home_wheel_diameter": 648.96875,
-    "previous_home_wheel_diameter": 565.125,
-    "desktop_home_wheel_bottom": 857.578125,
+    "hover_scale": 1.06,
+    "hover_origin": "bottom center",
+    "default_wheel_diameter": 648.96875,
+    "hover_wheel_diameter": 687.9068,
+    "hover_wheel_bottom": 856.76724,
+    "hover_pointer_top": 156.67038,
+    "controls_unchanged": {
+      "top": 878.09375,
+      "bottom": 925.59375
+    },
     "desktop_horizontal_overflow": 0,
-    "short_desktop_preview": [
+    "mouseleave_restores_default": true,
+    "short_preview": [
       1265,
       720
     ],
-    "short_home_wheel_bottom": 645.90625,
-    "short_home_controls_bottom": 709.59375,
-    "short_spin_wheel_bottom": 646.8125,
-    "short_spin_controls_bottom": 705,
-    "mobile_preview": [
-      375,
-      844
-    ],
-    "mobile_home_wheel_diameter": 357.71875,
-    "mobile_home_wheel_bottom": 650,
-    "mobile_spin_wheel_diameter": 363.59375,
-    "mobile_spin_wheel_bottom": 562.796875,
-    "mobile_horizontal_overflow": 0,
+    "short_hover_wheel_bottom": 645.35497,
+    "short_hover_pointer_top": 168.95128,
+    "mobile_preview_width": 375,
+    "mobile_hover_transform": "none",
+    "mobile_wheel_diameter": 357.71875,
     "actual_device_limit": "Chrome desktop and iframe dimensions only; not physical iPhone Safari"
   },
-  "scope": "Wheel size and surrounding spacing only. Same distinct combined and single-school routes. Interpretive accuracy is not established by layout verification."
+  "scope": "Fine-pointer hover enlarges wheel smoothly by 6%; touch-sized layouts retain full-width wheel. No new interpretive accuracy claims."
 }
