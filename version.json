@@ -1,15 +1,15 @@
 {
   "name": "FATE ATLAS 合參命理",
-  "version": "3.0.1",
-  "edition": "Interpretation",
+  "version": "3.1.0",
+  "edition": "Everyday questions",
   "release_date": "2026-11-10",
   "source_branch": "gh-pages",
   "hosted_url": "https://momopuke.github.io/judun-deploy/",
-  "sha256_index_html": "1275be2c83bab042cf826de4b3dedb5fc04e14e97893e004e95b4c50d7223046",
+  "sha256_index_html": "cad250055f24ed31144ec041a356a4516af10cea712b6c2858d7b9b12cc2366a",
   "sha256_engine": "9839e78f2b09d703a1c9238f140a37521081a0dde7b71fbebecfc919659c7f92",
   "assets": {
-    "index.html": "1275be2c83bab042cf826de4b3dedb5fc04e14e97893e004e95b4c50d7223046",
-    "app.js": "8101cd563542d9c00ff592c74e4814d1ed1a1a5490fe1eec2d6ab22c71e29184",
+    "index.html": "cad250055f24ed31144ec041a356a4516af10cea712b6c2858d7b9b12cc2366a",
+    "app.js": "736c8ba5fb7d4852ee5ea857d8ff93395872cc50a91466c9a27a3119d25f756e",
     "atlas.css": "0d13736eb29b8f2e99886c926cd265691aac76de4bb177580ecbd454439a8734",
     "sky-engine.js": "68d06103e3a7ebd955920a4679fe54f4832587244aa0780be5604ca95073e82f",
     "engines-v1.2.0.js": "9839e78f2b09d703a1c9238f140a37521081a0dde7b71fbebecfc919659c7f92",
@@ -33,21 +33,21 @@
     "assets/schools/vedic.webp": "32dc71ea6895acd922a916f8d375a2d40f7e8428f08288690d5f2e854e369398",
     "assets/schools/western.webp": "8425ed8c7a2e9b51db2d61acd5401ef3afcb2e7209869976c41520eb2350835b",
     "assets/schools/ziwei.webp": "88711c2c699f4115e72743dec7885a4f8f8db7e81d6429954531602ba11614c0",
-    "interpretation-engine.js": "c1f189c790d8ed78dfd648077c15e64b462eaf1c19c7fd0ad6889eecbd149171",
-    "interpretation.css": "bb5ce74b63a97106e7fbe31287b600b0cbe7dd938ade2e772753d474dd1a799e"
+    "interpretation-engine.js": "45dbc0cc1d2946aef3661407a4c8f7495a07e245428bd781449d58675e23d043",
+    "interpretation.css": "8d0436088647d988e8a4ed2562ea89e7369d137ab8c7138f0bd38e2b3b58dbbb"
   },
   "vendors": {
     "iztro": "2.6.5",
     "astronomy-engine": "2.1.19"
   },
   "qa": {
-    "checks": 509,
+    "checks": 535,
     "status": "PASS"
   },
   "accuracy_note": "Lahiri ayanamsa, nodes and dasha dates are explicitly approximate; whole-sign houses; civil midnight bazi.",
   "interpretation": {
-    "version": "3.0.0",
-    "mode": "authored rules grounded in computed results",
+    "version": "3.1.0",
+    "mode": "question-directed authored symbolic rules with automatic available-input allocation",
     "free_text": "topic context and quoted question; not unrestricted semantic reasoning",
     "hexagrams": 64,
     "tarot_cards": 78,
@@ -57,5 +57,15 @@
     "desktop_max_scene_px": 780,
     "mobile_frame_inset": "1%",
     "mobile_center_diameter": "34%"
+  },
+  "consultation": {
+    "perspectives": [
+      "birth chart",
+      "personal calendar year",
+      "independent tarot draw"
+    ],
+    "comparison": "actual focus tags; no forced consensus or probability",
+    "annual": "Calendar-year numerology and tarot annual card; no full Ziwei annual judgment",
+    "automatic_weights": "Question subtype and input completeness; changes leading method and action"
   }
 }

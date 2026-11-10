@@ -3,9 +3,9 @@
  * Classical imagery is paraphrased; modern actions are editorial suggestions.
  */
 (function(root){'use strict';
-const VERSION='3.0.0';
+const VERSION='3.1.0';
 const NAMES={western:'西洋占星',ziwei:'紫微斗數',bazi:'八字四柱',vedic:'印度占星',iching:'易經六十四卦',tarotDraw:'傳統塔羅',numerology:'生命靈數',meihua:'梅花易數',liuyao:'六爻納甲',nineStar:'九星氣學',tarotBirth:'塔羅生日牌',maya:'馬雅曆法'};
-const TOPICS={overview:'目前方向',career:'事業與工作',love:'感情與關係',wealth:'財務與資源',year:'年度安排'};
+const TOPICS={overview:'近期方向',career:'工作與創業',love:'感情',wealth:'財運',year:'流年運勢'};
 const SOURCES={iching:{title:'《周易》經、彖、象（古典象義參考）',url:'https://ctext.org/book-of-changes/zh'},tarot:{title:'A. E. Waite, The Pictorial Key to the Tarot（RWS 象徵參考）',url:'https://en.wikisource.org/wiki/The_Pictorial_Key_to_the_Tarot'},ziwei:{title:'《紫微斗數全書》諸星與十二宮（傳統象徵參考）',url:'https://zh.wikisource.org/zh-hant/紫微斗數全書'},bazi:{title:'《三命通會》（十干與命理結構參考）',url:'https://zh.wikisource.org/zh-hant/三命通會'},western:{title:'Astrodienst Astrowiki（當代占星象徵參考）',url:'https://www.astro.com/astrowiki/en/Main_Page'}};
 // [主題, 可用之處, 容易失衡之處, 行動, tag]
 const P=(title,help,risk,act,tag='planning')=>({title,help,risk,act,tag});
@@ -120,10 +120,18 @@ career:{initiative:['用現有能力試接一個小任務或提出一份具體�
 love:{initiative:['提出一個具體邀請，觀察對方是否願意回應','看實際投入與後續安排，不靠猜測心意'],planning:['討論一件日常安排，把期待轉成可持續的承諾','下一次能否照約定做到'],structure:['把重要界線說清楚，同時詢問對方的界線','雙方是否都能接受，而非只有一方讓步'],cooperate:['選一個反覆分歧，輪流說需求再確認理解','先確認聽懂，再提出一個共同做法'],expression:['用自己的話說一項感受與一個請求','對方能否知道你希望什麼，而非只收到情緒'],care:['區分關心對方與替對方負責','確認雙方都保有自己的時間與選擇'],research:['把「我猜對方」改成一個能直接詢問的問題','以對方的說法和一致行動核對推測'],change:['改變一次互動方式，先試一個雙方都願意的小安排','觀察是否減少原本的摩擦'],learning:['共同理解一個溝通問題，試用一種新說法','核對彼此是否更容易表達與被理解'],closure:['說清楚一項不能繼續的互動，安排必要的距離或調整','以尊重界線和能否落實來判斷改變']},
 wealth:{initiative:['先做一個低成本測試，記錄每筆實際投入','核對投入上限內是否產生可驗證的價值'],planning:['整理固定支出、必要預留與可調整支出','確認每項承諾是否都有可用資源承接'],structure:['把共同支出、回報和責任寫清楚','用實際紀錄核對約定，不只靠口頭說法'],cooperate:['核對一項共同投入的分配與退出條件','每位參與者是否理解自己承擔的成本'],expression:['把服務或成果的價值說清楚，再核對對方願意付出的條件','用真實回饋校正價值，避免只靠想像定義需求'],care:['檢查哪些支出源自不好意思拒絕或過度照顧','在保留必要支持的前提下設定界線'],research:['把一個看好的機會寫成成本、假設與可能失敗原因','先找反證，補資訊後才決定是否投入'],change:['把新機會限制在可承受的小範圍內評估','記錄測試成本，達到上限就重新檢查'],learning:['學會看懂一項實際帳務或費用明細','能否獨立重算，而非只相信他人的結論'],closure:['停止一項長期沒有明確價值的可取消支出','核對停止後是否真的改善資源餘裕']},
 year:{initiative:['在接下來一個月啟動一個可完成的小計畫','月底核對成果，決定是否擴大'],planning:['把年度目標拆成下一個月的可交付事項','用完成情況調整節奏，而非用象徵推算吉日'],structure:['為年度計畫安排固定回顧與異常處理方式','每月能否清楚知道進度與下一步'],cooperate:['與重要合作對象確認今年要共同完成什麼','把願望轉成一個月內能共同實作的安排'],expression:['每月整理一項能公開或分享的成果','觀察哪些表達獲得了實際使用與回饋'],care:['把休息與照顧工作放進年度安排','確認計畫沒有依賴長期透支才跑得動'],research:['每月核對一個重要假設，保留變更紀錄','記下哪個證據改變了你的原先判斷'],change:['以分段試驗代替一次改變全年安排','每一階段結束就做保留或停止的決定'],learning:['選一項年度技能，安排每月實作','用作品和可重做程度驗收學習'],closure:['整理今年不再延續的承諾與計畫','把空出的資源重新安排到真正重要的目標']}};
+
+// Short actions shown in the everyday reading.
+for(const [tag,task] of Object.entries({"initiative": "先試一個小做法，看實際反應", "planning": "這週只完成一件最重要的事", "structure": "先把反覆卡住的一個步驟理順", "cooperate": "找對方談清楚期待與分工", "expression": "把想法做成別人看得懂的成果", "care": "少承擔一件不該全由你負責的事", "research": "先查清楚最不確定的一件事", "change": "保留原有安排，小步試一個新方向", "learning": "把最缺的一項能力練到能實際使用", "closure": "先收尾一件拖了很久的事"}))TOPIC_ACTION.overview[tag]=[task,"看實際結果，再決定下一步"];
+for(const [tag,task] of Object.entries({"initiative": "先爭取一個新任務，看看是否適合自己", "planning": "把薪資、工時與成長機會列清楚再比較", "structure": "先說清楚工作範圍、期限與報酬", "cooperate": "先談清楚分工與報酬，再答應合作", "expression": "拿出作品或案例，讓真正需要的人看見", "care": "把額外工作分清楚，別一直自己扛", "research": "先問做過的人，確認這份工作或生意的實況", "change": "先小規模試做，再決定是否換跑道", "learning": "先補足新工作最需要的一項能力", "closure": "先把舊工作交接好，再準備下一步"}))TOPIC_ACTION.career[tag]=[task,"看實際結果，再決定下一步"];
+for(const [tag,task] of Object.entries({"initiative": "提出一次具體邀約，看看對方是否願意投入", "planning": "約好一件日常小事，看看彼此能否做到", "structure": "把你的底線說清楚，也問問對方的底線", "cooperate": "先輪流說出需要，確認有沒有聽懂彼此", "expression": "直接說一個感受與一個請求", "care": "關心對方，也保留自己的時間與選擇", "research": "把猜測變成直接詢問，再看行動是否一致", "change": "換一種相處方式，看看能否少一點摩擦", "learning": "先改一種容易讓彼此誤會的說法", "closure": "談清楚不能繼續的相處方式，再看是否願意一起改"}))TOPIC_ACTION.love[tag]=[task,"看實際結果，再決定下一步"];
+for(const [tag,task] of Object.entries({"initiative": "先小額試做，記下每筆成本", "planning": "先整理固定支出與必要預留", "structure": "共同支出與責任先寫清楚", "cooperate": "先確認出資、分配與退出條件", "expression": "說清楚你能提供什麼，再確認有人願意付費", "care": "把人情支出設上限，別因不好意思一直答應", "research": "先看懂費用、條件和可能損失", "change": "新機會先小範圍測試，不急著加碼", "learning": "看懂一份真實帳單，找出可以調整的支出", "closure": "取消一項已經用不到的固定支出"}))TOPIC_ACTION.wealth[tag]=[task,"看實際結果，再決定下一步"];
+for(const [tag,task] of Object.entries({"initiative": "先啟動一個月內能完成的小計畫", "planning": "把今年最重要的一件事排進每月行程", "structure": "每月留一天檢查進度、調整安排", "cooperate": "找重要夥伴談好今年要一起完成什麼", "expression": "每月分享一項成果，看真正的回應", "care": "先把休息與家人的時間排進行程", "research": "每月查清楚一個重要疑問，再作下一步決定", "change": "分段試新做法，不一次改掉整年的安排", "learning": "選一項技能，每月練出一個實際成果", "closure": "把不再延續的事收好，留空間給新安排"}))TOPIC_ACTION.year[tag]=[task,"看實際結果，再決定下一步"];
+
 const clean=x=>typeof x==='string'?x.slice(0,300).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g,''):'';
 const escape=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function context(ctx={}){return {topic:Object.hasOwn(TOPICS,ctx.topic)?ctx.topic:'overview',question:clean(ctx.question).trim(),asOf:/^\d{4}-\d\d-\d\d$/.test(ctx.asOf||'')?ctx.asOf:new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())};}
-function inferTopic(q){if(/感情|戀|伴侶|復合|結婚|關係|喜歡|交往/.test(q))return'love';if(/投資|財務|金錢|支出|收入|股票|賺錢|預算/.test(q))return'wealth';if(/事業|工作|創業|轉職|求職|錄取|職涯|開店/.test(q))return'career';if(/今年|年度|明年/.test(q))return'year';return'overview';}
+function context(ctx={}){const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());const asOf=/^\d{4}-\d\d-\d\d$/.test(ctx.asOf||'')?ctx.asOf:today;const year=Number(ctx.year);return {topic:Object.hasOwn(TOPICS,ctx.topic)?ctx.topic:'overview',question:clean(ctx.question).trim(),asOf,weightMode:ctx.weightMode==='manual'?'manual':'auto',year:Number.isInteger(year)&&year>=1900&&year<=2200?year:Number(asOf.slice(0,4))};}
+function inferTopic(q){if(/今年|明年|年度|流年|20\d{2}/.test(q)&&/整體|流年|運勢|要注意/.test(q))return'year';if(/感情|戀|伴侶|復合|結婚|關係|喜歡|交往/.test(q))return'love';if(/投資|財務|金錢|支出|收入|股票|賺錢|預算/.test(q))return'wealth';if(/事業|工作|創業|轉職|求職|錄取|職涯|開店/.test(q))return'career';if(/今年|年度|明年/.test(q))return'year';return'overview';}
 function sign(lon){return SIGN[Math.floor(((lon%360)+360)%360/30)];}
 function interpret(id,c,ctx={},events={}){
  if(!Object.hasOwn(NAMES,id))throw Error('Unknown interpretation system');
@@ -186,7 +194,82 @@ function interpret(id,c,ctx={},events={}){
 function report(c,ctx,events,weights){const results=Object.keys(NAMES).filter(id=>c?.ready?.[id]&&(weights?.[id]??0)>0).map(id=>({...interpret(id,c,ctx,events),weight:weights[id]})).sort((a,b)=>b.weight-a.weight);const usable=results.filter(r=>r.profiles.length&&r.status!=='pending'),lead=usable[0],tags=new Set(usable.flatMap(r=>r.tags||[]));const tensions=[];
  if(tags.has('change')&&(tags.has('planning')||tags.has('structure')))tensions.push('本次同時有「維持結構／累積」與「改變／探索」的象徵。可先守住必要底盤，再做限量試驗；不把兩種觀點平均成一個虛構的運勢分數。');
  const x=context(ctx);return {topic:x.topic,question:x.question,headline:lead?lead.headline:'目前沒有足夠資料形成主題解讀',conclusion:lead?`依你設定的解讀權重，先以${lead.name}的觀點處理「${TOPICS[x.topic]}」：${lead.actions[1]?.task||lead.actions[0]?.task}。其餘流派提供補充與反證，權重不代表可信度或成功率。`:'先完成出生資料或一個抽牌／起卦事件。',results,lead:lead?.id,evidence:usable.slice(0,3).map(r=>{const a=r.evidence[r.anchorIndex||0];return {label:r.name+' · 解讀配置 '+r.weight+'%',observed:a.observed,rule:a.rule,meaning:a.meaning+'。在本題中可先做：'+(r.actions[1]?.task||r.actions[0]?.task)}}),tensions,actions:lead?[(lead.actions[1]||lead.actions[0]),...usable.slice(1).filter(r=>r.tags?.[0]!==lead.tags?.[0]).slice(0,2).map(r=>({when:r.name+'補充',task:r.actions[1]?.task||r.actions[0]?.task,check:'依據'+r.evidence[r.anchorIndex||0].observed+'；'+(r.actions[1]?.check||r.actions[0]?.check)}))]:[],limits:['多個生日算法使用同一組資料，不是多次獨立驗證；本版不宣稱多派同意就更準。','這份綜合解讀依各派可用資料與你設定的權重排序，沒有以未計算的流派支持結論。']};}
-function render(r,{compact=false}={}){if(!r)return'';const e=escape;return `<section class="interpretation" data-interpretation="${e(r.id||'combined')}" data-reading-status="${e(r.status||'combined')}"><div class="interpretation-intro"><span class="interpretation-label">${compact?e(r.name):'先說結論'} · ${e(TOPICS[r.topic]||'目前方向')}</span><h3>${e(r.headline)}</h3>${r.question?`<div class="asked-question"><small>你這次問的是</small><p>${e(r.question)}</p></div>`:''}<p class="interpretation-conclusion">${e(r.conclusion)}</p>${r.synthesis?`<p class="interpretation-synthesis">${e(r.synthesis)}</p>`:''}</div>${r.evidence?.length?`<div class="reasoning"><h4>為什麼這樣解讀</h4>${r.evidence.map(o=>`<article><span>${e(o.label)}</span><b>${e(o.observed)}</b><p>${e(o.meaning)}</p><small>判讀條件：${e(o.rule)}</small></article>`).join('')}</div>`:''}${r.strength?`<div class="interpretation-pair"><div><h4>可以運用的部分</h4><p>${e(r.strength)}</p></div><div><h4>容易卡住的部分</h4><p>${e(r.risk)}</p></div></div>`:''}${r.tensions?.length?`<div class="reading-tensions"><h4>需要一起看的另一面</h4>${r.tensions.map(t=>`<p>${e(t)}</p>`).join('')}</div>`:''}${r.actions?.length?`<div class="reading-actions"><h4>接下來怎麼做</h4><ol>${r.actions.map(a=>`<li><b>${e(a.when)} · ${e(a.task)}</b><p>怎麼檢查：${e(a.check)}</p></li>`).join('')}</ol></div>`:''}<details class="reading-limits"><summary>還不能判斷什麼</summary>${(r.limits||[]).map(t=>`<p>${e(t)}</p>`).join('')}${r.scope?`<p>${e(r.scope)}</p>`:''}</details>${r.sources?.length?`<details class="reading-sources"><summary>象徵參考與判讀方式</summary><p>古典象徵的現代情境轉譯；行動建議由本站撰寫，不假稱為古書原句或經科學驗證的預測。規則版本 ${VERSION}。</p><ul>${r.sources.map(s=>`<li><a href="${e(s.url)}" target="_blank" rel="noopener noreferrer">${e(s.title)}</a></li>`).join('')}</ul></details>`:''}</section>`;}
+function render(r,{compact=false}={}){if(!r)return'';const e=escape;const short=r.profiles?.length?`${r.actions[1]?.task||r.actions[0]?.task}。`:r.conclusion;return `<section class="interpretation" data-interpretation="${e(r.id||'combined')}" data-reading-status="${e(r.status||'combined')}"><div class="interpretation-intro"><span class="interpretation-label">${e(compact?r.name:TOPICS[r.topic])}</span>${r.question?`<h3>${e(r.question)}</h3>`:`<h3>${e(r.headline)}</h3>`}<p class="interpretation-conclusion">${e(short)}</p></div>${r.risk?`<div class="simple-caution"><b>要留意</b><p>${e(r.risk)}。</p></div>`:''}<details class="reading-limits simple-reasons"><summary>為什麼這樣看</summary>${r.evidence.map(o=>`<article><b>${e(o.label)} · ${e(o.observed)}</b><p>${e(o.meaning)}</p></article>`).join('')}${r.synthesis?`<p>${e(r.synthesis)}</p>`:''}${r.tensions.map(t=>`<p>${e(t)}</p>`).join('')}</details><details class="reading-limits"><summary>解讀範圍</summary>${(r.limits||[]).map(t=>`<p>${e(t)}</p>`).join('')}${r.scope?`<p>${e(r.scope)}</p>`:''}</details></section>`;}
+
 function renderReport(bundle){return `${render(bundle)}<section class="interpretation-modules"><h3>各派怎麼看你的問題</h3><p>依目前設定排序。先看結論，再按需展開依據；沒有資料的流派不參與。</p>${bundle.results.map(r=>`<details class="report-reading"><summary><b>${escape(r.name)}</b><span>${escape(r.headline)}</span><small>解讀配置 ${r.weight}%</small></summary>${render(r,{compact:true})}</details>`).join('')}</section>`;}
-root.FateInterpretation={version:VERSION,interpret,report,render,renderReport,inferTopic,context,HEX,MAJOR,NAMES,TOPICS};if(typeof module==='object'&&module.exports)module.exports=root.FateInterpretation;
+// Everyday consultation: three different questions answered with their own inputs.
+const YEAR_FOCUS=[null,
+ {title:'開始新方向',tag:'initiative',good:'適合啟動新計畫、主動爭取機會',risk:'同時開太多新局，最後無法收尾',work:'先推出一個小計畫，讓機會看得見。',love:'主動安排見面，別一直等對方開口。',wealth:'先試小額投入，確認成本再擴大。'},
+ {title:'經營合作',tag:'cooperate',good:'適合磨合關係、找到能一起做事的人',risk:'過度配合，自己的需求反而沒說清楚',work:'先談好分工，再共同推進。',love:'把期待說清楚，也留時間聽對方說。',wealth:'共同支出與分配方式先寫清楚。'},
+ {title:'讓人看見你',tag:'expression',good:'適合表達想法、展示成果、擴大交流',risk:'答應太多，花費與注意力容易分散',work:'把作品或成果帶到真正需要的人面前。',love:'增加自然互動，也直接表達自己的感受。',wealth:'先整理服務或成果的價值，再談收入。'},
+ {title:'把基礎打穩',tag:'structure',good:'適合整理工作、建立規律、累積基本功',risk:'只顧責任和細節，讓自己一直緊繃',work:'改善最常卡住的一個流程。',love:'用穩定的日常互動累積信任。',wealth:'先整理固定支出與必要預留。'},
+ {title:'試一點改變',tag:'change',good:'適合接觸新環境、測試不同做法',risk:'一時想換掉所有安排，低估變動成本',work:'保留原有基礎，試一個新方向。',love:'換一種相處方式，看看能否減少摩擦。',wealth:'新機會先測試，不急著一次投入。'},
+ {title:'照顧重要關係',tag:'care',good:'適合處理家庭、承諾與需要照顧的事',risk:'把所有人的責任都扛在自己身上',work:'釐清哪些是你的責任，哪些需要分工。',love:'談談彼此需要的支持與界線。',wealth:'照顧家人也要保留自己的餘裕。'},
+ {title:'想清楚再走',tag:'research',good:'適合進修、整理經驗、重新確認方向',risk:'想得太久，卻一直沒有實際驗證',work:'把最不確定的一件事查清楚。',love:'直接詢問，比一直猜測更有幫助。',wealth:'看懂條件和費用，再決定是否投入。'},
+ {title:'把成果落實',tag:'planning',good:'適合處理成果、責任與資源分配',risk:'太在意成績，忽略成本或關係',work:'把成果、報酬與責任談清楚。',love:'留意工作與相處時間是否失衡。',wealth:'核對實際收入與成本，別只看表面數字。'},
+ {title:'整理與收尾',tag:'closure',good:'適合完成舊事、整理不再適合的安排',risk:'捨不得放下，讓已失效的事情繼續佔用心力',work:'先收好舊案，再決定下一步。',love:'談清楚反覆卡住的事，確認是否願意一起改。',wealth:'檢查不再需要的支出和承諾。'}
+];
+const TAG_LABEL={initiative:'先踏出一步',planning:'穩住節奏',structure:'把基礎打穩',cooperate:'把合作談清楚',expression:'讓人看見你',care:'照顧關係與界線',research:'想清楚再決定',change:'小步嘗試改變',learning:'先補足能力',closure:'整理與收尾'};
+function annual(p,year){
+ year=Number(year);if(!Number.isInteger(year)||year<1900||year>2200)throw Error('年份無效');
+ if(!p||!Number.isInteger(p.m)||!Number.isInteger(p.d))throw Error('需要生日');
+ const digits=n=>String(n).split('').reduce((s,d)=>s+Number(d),0),reduce=n=>{while(n>9)n=digits(n);return n;};
+ const total=digits(p.m)+digits(p.d)+digits(year),number=reduce(total),profile=YEAR_FOCUS[number];
+ return {year,number,total,...profile,basis:`${p.m}月${p.d}日＋${year}年 → 個人年 ${number}`,months:Array.from({length:12},(_,i)=>{const n=reduce(number+i+1);return {month:i+1,number:n,title:YEAR_FOCUS[n].title};})};
+}
+function shortAnswer(topic,q,tag,year){
+ if(topic==='year')return `${year.year} 年的重點：${year.title}。${year.good}。`;
+ if(/創業|開店|事業.*開始/.test(q))return '先小規模試做，確認有人需要，再決定投入多少。';
+ if(/換工作|轉職/.test(q))return ['change','initiative','expression'].includes(tag)?'可以先找新機會，拿到具體條件後再決定是否換工作。':'先確認下份工作的條件，別只因目前不滿就急著離開。';
+ if(/復合/.test(q))return '先確認分手的原因是否真的改變，再談復合；也要確認雙方都有意願。';
+ if(/單身|認識對象/.test(q))return '先增加自然認識人的機會，再從對方的持續回應判斷是否值得靠近。';
+ if(/增加收入/.test(q))return '先把現有能力變成可交付的服務或成果，再確認有人願意付費。';
+ if(/增加支出/.test(q))return '先確認必要預留足夠，再決定是否增加支出。';
+ const a=TOPIC_ACTION[topic]?.[tag]||TOPIC_ACTION[topic]?.planning||TOPIC_ACTION.overview.planning;return a[0]+'。';
+}
+function compareLenses(lenses){
+ const groups=new Map();for(const l of lenses){if(!l.tag)continue;if(!groups.has(l.tag))groups.set(l.tag,[]);groups.get(l.tag).push(l);}
+ const groupsSorted=[...groups.entries()].sort((a,b)=>b[1].reduce((n,l)=>n+(l.weight||1),0)-a[1].reduce((n,l)=>n+(l.weight||1),0)),common=groupsSorted.find(([,ls])=>ls.length>=2&&new Set(ls.map(l=>l.family||l.id)).size>=2);
+ let pair=null;for(const [a,b] of [['change','structure'],['change','planning'],['initiative','research'],['expression','research'],['care','closure'],['cooperate','initiative']]){if(groups.has(a)&&groups.has(b)){pair=[groups.get(a)[0],groups.get(b)[0]];break;}}
+ const different=pair||lenses.filter((l,i)=>i===0||l.tag!==lenses[0]?.tag).slice(0,2);
+ return {common:common?{tag:common[0],title:TAG_LABEL[common[0]],names:common[1].map(l=>l.name),sources:common[1].map(l=>({name:l.name,basis:l.basis}))}:null,different,conflict:!!pair};
+}
+const WEIGHT_PLANS={
+ year:{label:'流年運勢',reason:'年度問題優先使用所選年份的個人年與年度牌；本命性格不當成流年。',weights:{numerology:60,tarotBirth:25,tarotDraw:15}},
+ love:{label:'感情相處',reason:'先看關係宮位與相處需求，再用本次抽牌參照眼前狀況。',weights:{ziwei:35,western:25,tarotDraw:25,numerology:15}},
+ single:{label:'認識對象',reason:'優先看眼前互動與相處需求，補充關係中的表達方式。',weights:{tarotDraw:35,western:25,ziwei:25,numerology:15}},
+ reconcile:{label:'復合與關係選擇',reason:'優先參照本次問事與抽牌；本命資料只作關係背景，不能代替對方的意願。',weights:{tarotDraw:40,iching:30,ziwei:20,western:10}},
+ career:{label:'工作與轉職',reason:'先參照做事方式與工作宮位，再看本次選擇的提醒。',weights:{bazi:30,ziwei:25,iching:25,tarotDraw:20}},
+ startup:{label:'創業與新事業',reason:'優先處理新事業的當下條件，再對照做事方式與工作背景。',weights:{iching:35,bazi:25,ziwei:20,tarotDraw:20}},
+ wealth:{label:'財運與資源',reason:'先看命盤中的資源與財務角色，再參照本次問事；不據此選金融商品。',weights:{bazi:35,ziwei:30,iching:20,tarotDraw:15}},
+ overview:{label:'近期方向',reason:'先看這次問事與抽牌，再用生日資料補充長期傾向。',weights:{iching:30,tarotDraw:30,bazi:25,numerology:15}}
+};
+function recommend(ctx={},ready={}){
+ const x=context(ctx),q=x.question;let key=x.topic;
+ if(x.topic==='love'&&/復合|分手|挽回/.test(q))key='reconcile';else if(x.topic==='love'&&/單身|認識對象|桃花/.test(q))key='single';else if(x.topic==='career'&&/創業|開店|新事業|做.{0,3}事業/.test(q))key='startup';
+ const plan=WEIGHT_PLANS[key]||WEIGHT_PLANS.overview,weights=Object.fromEntries(Object.keys(NAMES).map(id=>[id,0]));let valid=Object.entries(plan.weights).filter(([id])=>ready[id]===true);if(!valid.length&&ready.numerology)valid=[['numerology',100]];
+ const total=valid.reduce((s,[,n])=>s+n,0),fractions=valid.map(([id,n])=>({id,value:n/total*100}));let allocated=0;
+ for(const a of fractions){weights[a.id]=Math.floor(a.value);allocated+=weights[a.id];}
+ fractions.sort((a,b)=>(b.value-Math.floor(b.value))-(a.value-Math.floor(a.value)));for(let i=0;i<100-allocated&&fractions.length;i++)weights[fractions[i%fractions.length].id]++;
+ return {key,label:plan.label,reason:plan.reason,weights,excluded:Object.keys(plan.weights).filter(id=>!ready[id]),mode:'question rules and available inputs'};
+}
+function consultation(c,ctx={},events={},customWeights=null){
+ const x=context(ctx),year=annual(c.p,x.year),recommendation=recommend(x,c.ready),allocation=customWeights||recommendation.weights,lenses=[];
+ for(const [id,weight] of Object.entries(allocation).filter(([id,n])=>n>0&&c.ready[id]&&id!=='maya').sort((a,b)=>b[1]-a[1])){
+  const r=interpret(id,c,x,events);let pr=r.profiles[0],ev=r.evidence[r.anchorIndex||0];if(!pr)continue;
+  let name=NAMES[id],role=['iching','meihua','liuyao','tarotDraw'].includes(id)?'這次問事':'你的傾向',basis=ev.observed,summary=pr.help+'。',advice=(TOPIC_ACTION[x.topic][pr.tag]||TOPIC_ACTION[x.topic].planning)[0],family=['numerology','tarotBirth'].includes(id)?'birthday-numbers':id==='liuyao'?'iching':id;
+  if(x.topic==='year'&&id==='numerology'){pr={title:year.title,tag:year.tag,risk:year.risk};name='生命靈數流年';role=`${year.year} 年節奏`;basis=year.basis;summary=year.good+'。';advice=(TOPIC_ACTION.year[year.tag]||TOPIC_ACTION.year.planning)[0];}
+  if(x.topic==='year'&&id==='tarotBirth'){let annualCard=String(c.p.m+c.p.d+x.year).split('').reduce((sum,d)=>sum+Number(d),0);while(annualCard>22)annualCard=String(annualCard).split('').reduce((sum,d)=>sum+Number(d),0);const index=annualCard%22;pr=MAJOR[index];name='塔羅年度牌';role=`${year.year} 年題材`;basis=(root.FateEngine?.DECK||[]).find(c=>c.id==='major-'+index)?.name||String(index);summary=pr.help+'。';advice=(TOPIC_ACTION.year[pr.tag]||TOPIC_ACTION.year.planning)[0];}
+  lenses.push({id,name,role,weight,tag:pr.tag,title:TAG_LABEL[pr.tag]||pr.title,basis,summary,advice,risk:pr.risk,partial:r.status==='partial',family,cards:id==='tarotDraw'?r.evidence.map(e=>({position:e.label,card:e.observed,meaning:e.meaning})):null});
+ }
+ const comparison=compareLenses(lenses),main=comparison.common&&lenses.filter(l=>l.tag===comparison.common.tag).reduce((sum,l)=>sum+l.weight,0)>=(lenses[0]?.weight||0)?lenses.find(l=>l.tag===comparison.common.tag):lenses[0];
+ if(!main)return {topic:x.topic,question:x.question,year,lenses,comparison,allocation,recommendation,answer:'請先補齊資料或完成一次問事。',first:'回到首頁重新開始',watch:'目前資料不足',difference:'還沒有可比較的結果。',scope:'資料不足，暫不推斷。'};
+ if(x.weightMode==='manual'){recommendation.label='自訂配重';recommendation.reason='本次使用你手動調整的比例。';}const second=lenses.find(l=>l.tag!==main.tag),tension=comparison.different;
+ const difference=tension.length<2?'這次各派側重相近。':comparison.conflict?`${tension[0].name}提醒「${TAG_LABEL[tension[0].tag]}」，${tension[1].name}提醒「${TAG_LABEL[tension[1].tag]}」。先做可調整的小步驟，再決定是否擴大。`:`${tension[0].name}著重「${TAG_LABEL[tension[0].tag]}」；${tension[1].name}著重「${TAG_LABEL[tension[1].tag]}」。兩個角度都保留，不合成吉凶分數。`;
+ const defaultAnswer=shortAnswer(x.topic,x.question,main.tag,year);
+ return {topic:x.topic,question:x.question,year,lenses,comparison,allocation,recommendation,lead:main.id,answer:defaultAnswer,first:main.advice,watch:second?second.risk:main.risk,difference,scope:'流年採生命靈數曆年制與塔羅年度牌，未包含完整紫微流年或八字喜用推斷。數字流派同源，不當成獨立驗證；各派對照不代表已驗證的預測。'};
+}
+function renderConsultation(r){const e=escape,common=r.comparison.common;return `<section class="consultation" data-consultation data-topic="${e(r.topic)}"><div class="consult-answer"><small>你問的是</small><h2>${e(r.question||TOPICS[r.topic])}</h2><p class="direct-answer">${e(r.answer)}</p><span class="reading-kind">${r.topic==='year'?`${r.year.year} 流年 · 生命靈數`:'本次合參'}</span></div><div class="synthesis-grid"><article class="shared-insight" data-common="${common?'yes':'no'}"><span>01 · 共同提醒</span><h3>${e(common?.title||'這次沒有一致訊號')}</h3><p>${common?e(common.names.join('、')+' 都指向這個重點。'):e('各派看法分開呈現，先看差異再決定。')}</p>${common?`<details><summary>對照依據</summary>${common.sources.map(s=>`<p><b>${e(s.name)}</b> · ${e(s.basis)}</p>`).join('')}</details>`:''}</article><article class="different-insight"><span>02 · 不同看法</span><p>${e(r.difference)}</p></article><article class="next-insight"><span>03 · 你可以怎麼做</span><h3>${e(r.first)}</h3><p>留意：${e(r.watch)}。</p></article></div><section class="lens-section"><h3>各派怎麼看</h3><div class="consult-lenses">${r.lenses.map(l=>`<article class="consult-lens lens-${e(l.id)}"><img src="./assets/schools/${e(l.id)}.webp" alt="${e(l.name)}" width="1200" height="800"><div><small>${e(l.role)}</small><h4>${e(l.name)}</h4><b>${e(l.title)}</b><p>${e(l.advice)}${/[。！？]$/.test(l.advice)?'':'。'}</p><details><summary>這個說法怎麼來的</summary><p>${e(l.basis)}</p><p>${e(l.summary)}</p>${l.partial?'<p>尚缺出生時辰，這裡使用已能計算的部分。</p>':''}${l.cards?l.cards.map(c=>`<p><b>${e(c.position)} · ${e(c.card)}</b><br>${e(c.meaning)}</p>`).join(''):''}</details></div></article>`).join('')}</div></section>${r.topic==='year'?'':`<details class="extra-year"><summary>${r.year.year} 年度重點</summary>`}<section class="annual-outlook"><div><small>${r.year.year} 流年</small><h3>${e(r.year.title)}</h3><p>${e(r.year.good)}。</p></div><div class="annual-areas"><article><b>工作</b><p>${e(r.year.work)}</p></article><article><b>感情</b><p>${e(r.year.love)}</p></article><article><b>財運</b><p>${e(r.year.wealth)}</p></article></div><details><summary>每月主題</summary><p class="annual-note">依個人年與月份計算的象徵主題，不代表事件預報。</p><div class="annual-months">${r.year.months.map(m=>`<div><b>${m.month}月</b><span>${e(m.title)}</span></div>`).join('')}</div></details></section>${r.topic==='year'?'':'</details>'}<details class="consult-weight-choice"><summary>為什麼選這幾派</summary><p>${e(r.recommendation?.label)}：${e(r.recommendation?.reason)}</p><div class="auto-weight-list">${r.lenses.map(l=>`<div><b>${e(l.name)}</b><span>${l.weight}%</span></div>`).join('')}</div>${r.recommendation?.excluded.length?`<p>資料不足未採用：${e(r.recommendation.excluded.map(id=>NAMES[id]).join('、'))}。</p>`:''}<p>比例只決定這次先參照誰，不代表準確率。缺資料的流派自動排除。</p></details><details class="consult-limits"><summary>解讀範圍</summary><p>${e(r.scope)}</p><p>生日用於命盤與個人年；塔羅為這次另外抽出的牌。未確定的事件、他人心意與成敗日期無法由此確認。</p></details></section>`;}
+
+root.FateInterpretation={recommend,annual,compareLenses,consultation,renderConsultation,version:VERSION,interpret,report,render,renderReport,inferTopic,context,HEX,MAJOR,NAMES,TOPICS};if(typeof module==='object'&&module.exports)module.exports=root.FateInterpretation;
 })(typeof window==='object'?window:globalThis);
