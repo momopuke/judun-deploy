@@ -1,4 +1,4 @@
-name: FATE ATLAS v3.5.0 publish and verify
+name: FATE ATLAS v3.6.0 publish and verify
 on:
   push:
     branches: [gh-pages]
@@ -24,12 +24,16 @@ jobs:
           import hashlib,json
           from pathlib import Path
           data=json.loads(Path('version.json').read_text())
-          assert data['version']=='3.5.0'
+          assert data['version']=='3.6.0'
           for name,sha in data['assets'].items():
               assert hashlib.sha256(Path(name).read_bytes()).hexdigest()==sha,name
               if name.endswith('.webp'):
                   assert Path(name).stat().st_size>10000,name
                   assert Path(name).read_bytes()[:4]==b'RIFF',name
+              if name.endswith('.png'):
+                  blob=Path(name).read_bytes()
+                  assert blob[:8]==b'\x89PNG\r\n\x1a\n',name
+                  assert blob[25] in (4,6),'Expected alpha channel: '+name
           print('ALL_SOURCE_HASHES_PASS')
           PY
           node --check app.js
@@ -65,12 +69,12 @@ jobs:
           for attempt in range(16):
               try:
                   def fetch(name):
-                      req=urllib.request.Request(base+name+'?v=3.5.0-'+str(attempt),headers={'User-Agent':'FateAtlas-Release-QA','Cache-Control':'no-cache'})
+                      req=urllib.request.Request(base+name+'?v=3.6.0-'+str(attempt),headers={'User-Agent':'FateAtlas-Release-QA','Cache-Control':'no-cache'})
                       with urllib.request.urlopen(req,timeout=15) as r:
                           assert r.status==200
                           return r.read()
                   live=json.loads(fetch('version.json'))
-                  assert live['version']=='3.5.0'
+                  assert live['version']=='3.6.0'
                   for name,sha in expected['assets'].items():
                       assert hashlib.sha256(fetch(name)).hexdigest()==sha,name
                   assert live['assets']==expected['assets']

@@ -1,50 +1,42 @@
 {
-  "version": "3.4.2",
+  "version": "3.6.0",
   "release_date_taipei": "2026-11-10",
   "url": "https://momopuke.github.io/judun-deploy/",
-  "commit_sha": "e86a025d0c1d269650eb32fbeec051b703093aa8",
-  "tree_sha": "59975f7c81d8bec91f891a42b85151e41e681c67",
-  "source_files": 38,
-  "runtime_assets": 29,
-  "engine_checks": 567,
-  "workflow": {
-    "run_id": 42794329738,
-    "job_id": 129755464583,
-    "status": "success",
-    "markers": [
-      "2026-11-10T09:52:30.4813902Z ALL_SOURCE_HASHES_PASS",
-      "2026-11-10T09:52:42.6073972Z LIVE_HTTPS_ALL_ASSETS_VERIFIED https://momopuke.github.io/judun-deploy/",
-      "2026-11-10T09:52:42.6074747Z LIVE_VERSION 3.4.2"
-    ]
-  },
+  "status": "Local acceptance complete; live deployment proof is added to the final delivery package after publishing.",
+  "source_files": 43,
+  "runtime_assets": 32,
+  "engine_checks": 604,
   "browser": {
-    "desktop_live_version": "3.4.2",
+    "environment": "Chrome desktop and same-origin responsive iframe; not physical iPhone Safari",
     "desktop_viewport": [
       1363,
       936
     ],
-    "hover_scale": 1.06,
-    "hover_origin": "bottom center",
-    "default_wheel_diameter": 648.96875,
-    "hover_wheel_diameter": 687.9068,
-    "hover_wheel_bottom": 856.76724,
-    "hover_pointer_top": 156.67038,
-    "controls_unchanged": {
-      "top": 878.09375,
-      "bottom": 925.59375
-    },
-    "desktop_horizontal_overflow": 0,
-    "mouseleave_restores_default": true,
-    "short_preview": [
+    "desktop_wheel_diameter": 735.375,
+    "desktop_wheel_bottom": 916.281,
+    "short_viewport": [
       1265,
       720
     ],
-    "short_hover_wheel_bottom": 645.35497,
-    "short_hover_pointer_top": 168.95128,
-    "mobile_preview_width": 375,
-    "mobile_hover_transform": "none",
-    "mobile_wheel_diameter": 357.71875,
-    "actual_device_limit": "Chrome desktop and iframe dimensions only; not physical iPhone Safari"
+    "short_wheel_diameter": 528,
+    "short_wheel_bottom": 704.594,
+    "mobile_viewport": [
+      375,
+      844
+    ],
+    "mobile_wheel_diameter": 371,
+    "mobile_wheel_bounds_x": [
+      2,
+      373
+    ],
+    "mobile_table_font_px": 17,
+    "desktop_table_font_px": 18,
+    "mobile_dialog_client_and_scroll_width": 316,
+    "horizontal_overflow": 0,
+    "comic_panels": 3,
+    "comic_manual_start_stop_verified": true,
+    "combined_has_no_duplicate_interpretation_in_raw_calculations": true,
+    "single_bazi_birth_time_city_edit_returns_to_same_school": true
   },
-  "scope": "Fine-pointer hover enlarges wheel smoothly by 6%; touch-sized layouts retain full-width wheel. No new interpretive accuracy claims."
+  "scope": "Everyday three-panel illustrative comics; sourced history separated from symbolic evidence; raw calculation deduplication; larger type and wheel."
 }

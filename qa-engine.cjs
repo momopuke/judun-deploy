@@ -6,7 +6,7 @@ const ids={};function element(id){return ids[id]||(ids[id]={value:'',innerHTML:'
 element('dob').value='1990-01-01';element('topic').value='overview';
 let exportedBlob;const doc={body:{appendChild(){}},createElement(){return {click(){},remove(){}}},getElementById:element,querySelectorAll(){return[]},querySelector(){return null}};
 const c={console,Date,Intl,crypto,btoa,atob,Blob,URL:{createObjectURL(b){exportedBlob=b;return 'blob:test'},revokeObjectURL(){}},document:doc,location:{hash:'',protocol:'https:',hostname:'example.test'},alert(){},clearTimeout(){},setTimeout(){},navigator:{},history:{}};c.window=c;c.self=c;vm.createContext(c);
-for(const f of ['iztro-v2.6.5.min.js','engines-v1.2.0.js','astronomy-v2.1.19.min.js','sky-engine.js','discovery-engine.js','interpretation-engine.js','app.js'])vm.runInContext(fs.readFileSync(__dirname+'/'+f,'utf8'),c,{filename:f});
+for(const f of ['iztro-v2.6.5.min.js','engines-v1.2.0.js','astronomy-v2.1.19.min.js','sky-engine.js','discovery-engine.js','interpretation-engine.js','life-reading.js','app.js'])vm.runInContext(fs.readFileSync(__dirname+'/'+f,'utf8'),c,{filename:f});
 const sky=c.FateSky,app=c.__fortuneTest,e=c.FateEngine;
 const discovery=c.FateDiscovery;
 for(let i=0;i<12;i++){const start=i*437+31,p=discovery.plan(i,start,5,i%2?9:-9),relative=((-p.target%360)+360)%360;ok(relative>=i*30&&relative<(i+1)*30&&p.target>=start+1800,'Wheel pointer lands inside selected sector '+i)}
@@ -75,8 +75,14 @@ for(const method of discovery.ids){const computed=app.runReading(method);const r
 const beforeDraw=app.getState().tarotDrawn;app.runReading('tarotDraw');ok(app.getState().tarotDrawn!==beforeDraw&&app.getState().tarotDrawn.cards.length===3,'Wheel tarot dispatch creates a fresh three-card event');
 const beforeCoin=app.getState().coin;app.runReading('iching');ok(app.getState().coin!==beforeCoin&&app.getState().coin.lines.length===6,'Wheel I Ching dispatch creates a fresh six-line event');
 ok(Object.values(result.ready).every(Boolean),'All twelve modules have real input/event results');
-app.rebalance('ziwei',24);app.rebalance('western',20);app.rebalance('vedic',20);app.renderReport(false);ok(element('reportInner').innerHTML.includes('你的行星星圖')&&element('reportInner').innerHTML.includes('十二宮')&&!element('reportInner').innerHTML.includes('undefined'),'Full report combines real charts and events');
+app.rebalance('ziwei',24);app.rebalance('western',20);app.rebalance('vedic',20);app.renderReport(false);ok(element('reportInner').innerHTML.includes('data-calculation="western"')&&element('reportInner').innerHTML.includes('calculation-palaces')&&!element('reportInner').innerHTML.includes('undefined'),'Full report combines real charts and events');
 
+// Every calculation view retains the real result rather than a repeated interpretation.
+for(const id of discovery.ids){const raw=app.calculationMarkup(id,result);ok(raw.includes('data-calculation="'+id+'"')&&!raw.includes('undefined'),'Raw chart renders a complete calculation record '+id);}
+app.rebalance('iching',12);app.rebalance('liuyao',12);const grouped=app.technicalReportMarkup(result);
+ok((grouped.match(/data-calculation="(?:iching|liuyao)"/g)||[]).length===1,'The same coin cast is shown once when both I Ching and Liuyao participate');
+const realCardNames=c.FateEngine.tarotView(app.getState().tarotDrawn).map(x=>x.name),rawCardTable=app.calculationMarkup('tarotDraw',result);
+ok(realCardNames.every(n=>rawCardTable.includes(n))&&rawCardTable.includes('方向'),'The raw tarot table preserves every actually drawn card and direction');
 const I=c.FateInterpretation,ready=app.compute(app.dateParts('1990-01-01')),events=app.getState();
 ok(I.HEX.length===65&&I.HEX.slice(1).every(x=>x.title&&x.help&&x.risk&&x.act),'64 authored hexagram profiles complete');
 let hexHeads=new Set();for(let bits=0;bits<64;bits++){const six=Array.from({length:6},(_,i)=>(bits>>i)&1),primary=app.hexagramFromBits(six),coin={primary,changed:primary,moving:[],najia:e.najia(six.map(v=>v?7:8),'甲')};const rr=I.interpret('iching',ready,{topic:'career'},{coin});ok(I.HEX[primary.number].name===primary.name&&rr.evidence[0].observed===primary.title&&rr.actions.length>=2,'Hexagram meaning matches actual numbered result '+primary.number);ok(rr.tensions.some(t=>t.includes('沒有動爻'))&&rr.evidence.every(x=>x.label!=='之卦：變動後的觀察方向'),'No moving line does not invent a future hexagram '+primary.number);hexHeads.add(rr.headline);}
@@ -87,6 +93,7 @@ for(const card of e.DECK){const plain=I.interpret('tarotDraw',ready,{topic:'care
 const three={spread:3,cards:[{id:'major-3',reversed:false},{id:'major-18',reversed:false},{id:'swords-8',reversed:true}],time:'2026-11-10T00:00:00Z'};const tr=I.interpret('tarotDraw',ready,{topic:'career'},{tarotDrawn:three});ok(tr.conclusion.includes('現在／焦點（')&&tr.conclusion.includes('月亮')&&tr.synthesis.includes('皇后')&&tr.synthesis.includes('寶劍八'),'Three-card synthesis retains roles, anchor and actual cards');
 for(const id of Object.keys(I.NAMES)){const rr=I.interpret(id,ready,{topic:'career',question:'想做一項事業，現在先處理什麼？'},events);ok(rr.conclusion.length>45&&rr.evidence.length>0&&!JSON.stringify(rr).includes('undefined'),'Substantive fact-grounded output '+id);if(id!=='maya'){const love=I.interpret(id,ready,{topic:'love'},events);ok(rr.conclusion!==love.conclusion&&rr.actions[1].task!==love.actions[1].task,'Context changes advice '+id);} }
 const solarOnly=app.compute(app.dateParts('1990-01-01'));const noTime=structuredClone(ready);noTime.sky={status:'missing'};noTime.ready.ziwei=false;noTime.baziExtra.hour=null;
+ok(app.calculationMarkup('western',noTime,true).includes('data-edit-birth'),'A partial raw sky view retains its working birth-data edit entry');
 ok(I.interpret('western',noTime).status==='partial'&&I.interpret('western',noTime).evidence.length===1,'No birth time: only solar interpretation, no invented Moon/Asc');
 ok(I.interpret('ziwei',noTime).status==='pending'&&I.interpret('ziwei',noTime).actions.length===0,'Missing Ziwei data does not get generic personality fallback');
 const may=I.interpret('maya',ready,{topic:'love'});ok(may.status==='limited'&&may.profiles.length===0&&may.conclusion.includes('不能據此回答'),'Maya calendar cannot be turned into made-up personality');
@@ -201,5 +208,23 @@ ok(element('journeyPosition').textContent==='指定流派','Single-school direct
 app.beginRandomJourney();ok(app.getDirectSchool()===null&&app.getJourneyMode()==='random','Random entry clears the previous direct selection');
 app.beginDirectJourney('ziwei');app.beginCombinedJourney();ok(app.getDirectSchool()===null&&app.getJourneyMode()==='combined','Combined entry clears the previous direct selection');
 element('dob').value='1990-01-01';app.startConsultation();
+// Technical detail no longer restates the interpretation or advice.
+const rawTech=app.technicalReportMarkup(ready);
+ok(!rawTech.includes('report-cover')&&!rawTech.includes('data-interpretation')&&!rawTech.includes('weight-chips'),'Raw detail excludes the second report cover, repeated interpretation and repeated weights');
+ok(rawTech.includes('data-calculation')&&rawTech.includes('演算設定與來源'),'Actual calculations and source references remain inspectable');
+const rawBazi=app.calculationMarkup('bazi',ready);ok(rawBazi.includes('pillars-graphic')&&rawBazi.includes('天干十神')&&!rawBazi.includes('interpretation-conclusion'),'Bazi keeps the actual pillars and ten-god table without a second reading');
+const rawTarot=app.calculationMarkup('tarotDraw',ready);ok(!rawTarot.includes('RWS 象徵')&&!rawTarot.includes('tarot-card'),'Raw tarot uses one result table rather than another set of advice cards');
+const life=c.FateLife;
+ok(life.scenario({topic:'career',question:'我想開店'}).key==='career-startup','Starting a business gets a small-trial scene');
+ok(life.scenario({topic:'career',question:'想換工作',tag:'initiative'}).key!==life.scenario({topic:'career',question:'想換工作',tag:'planning'}).key,'The reading direction changes the everyday career scene');
+ok(life.scenario({topic:'love',question:'能不能復合'}).key==='love-reconcile','Reconciliation has a concrete two-sided willingness example');
+ok(life.scenario({topic:'wealth',question:'怎麼增加收入'}).key==='wealth-income','Income questions do not get the shopping-budget example');
+ok(life.render({available:false})==='','Missing input never generates an illustrative personal reading');
+const comic=life.render({topic:'career',question:'換工作',tag:'initiative'});
+ok((comic.match(/class="comic-scene /g)||[]).length===3&&comic.includes('虛構情境示意'),'The three comic scenes are explicitly illustrations, not claimed events');
+ok(comic.includes('陶淵明')&&comic.includes('國家文化記憶庫')&&comic.includes('不是命盤驗證'),'Historical experience is sourced and kept separate from divination evidence');
+ok(Object.values(life.people).length===5&&Object.values(life.people).every(p=>/^https:/.test(p.url)&&p.fact&&p.question),'All five curated histories have provenance and separate reflection questions');
+ok(life.plain('把每件事都變成自己必須證明的競賽').includes('把自己弄得太累'),'Abstract caution is restated in everyday language');
+const shown=I.renderConsultation(consult);ok((shown.match(/class="life-comic"/g)||[]).length===1,'A combined reading shows a single life comic');
 const excerpts={qian:rq,dayou:rd,tarot:tr,numerology:I.interpret('numerology',ready,{topic:'career'},events)};fs.writeFileSync(__dirname+'/reading-qa-samples.json',JSON.stringify(excerpts,null,2));
-element('downloadHtml').listeners.click();ok(exportedBlob?.type==='text/html;charset=utf-8','Standalone HTML export created');exportedBlob.text().then(html=>{ok(html.includes('data-consultation')&&html.includes('reading-crosscheck')&&html.includes('<style>')&&!html.includes('advanced-start'),'HTML includes report and full styling');ok(!html.includes('<script')&&!html.includes('<link rel=')&&!html.includes('src=\"./'),'Export has no external code dependency');ok(!html.includes('<button'),'Offline saved reading has no nonfunctional navigation buttons');fs.mkdirSync(__dirname+'/examples',{recursive:true});fs.writeFileSync(__dirname+'/examples/1990-01-01-career-reading.html',html);console.log(JSON.stringify({status:'PASS',checks,version:'3.5.0',all_systems:12},null,2))}).catch(e=>{console.error(e);process.exitCode=1});
+element('downloadHtml').listeners.click();ok(exportedBlob?.type==='text/html;charset=utf-8','Standalone HTML export created');exportedBlob.text().then(html=>{ok(html.includes('data-consultation')&&html.includes('reading-crosscheck')&&html.includes('<style>')&&!html.includes('advanced-start'),'HTML includes report and full styling');ok(!html.includes('<script')&&!html.includes('<link rel=')&&!html.includes('src=\"./'),'Export has no external code dependency');ok(!html.includes('<button'),'Offline saved reading has no nonfunctional navigation buttons');ok(!html.includes('assets/comic/')&&html.includes('虛構情境示意'),'Offline reading keeps the scenario text without a broken external sprite dependency');fs.mkdirSync(__dirname+'/examples',{recursive:true});fs.writeFileSync(__dirname+'/examples/1990-01-01-career-reading.html',html);console.log(JSON.stringify({status:'PASS',checks,version:'3.6.0',all_systems:12},null,2))}).catch(e=>{console.error(e);process.exitCode=1});
