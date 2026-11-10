@@ -1,3 +1,93 @@
 SC VPS encrypted telemetry: operator-initiated readback trigger.
 Read-only relay receipt check; no VPS commands executed by GitHub Actions.
+Poll UTC 2026-11-07T00:32:25Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-07T01:38:07.680Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-07T02:19:26.294Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-07T03:33:18.658Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-07T03:47:43.592Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-07T05:21:33.703Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-07T06:19:25Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-07T07:15:04.395Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-07T08:35:12Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-07T09:10:14Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-07T09:55:51Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-07T10:48:07Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-07T12:08:15Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-07T12:52:54Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-07T14:34:15Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-07T15:09:01Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-07T16:12:05Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-07T17:31:26Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-07T18:18:02Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-07T18:53:47Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-07T19:52:14Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-07T21:15:49Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-07T22:16:46Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-07T23:06:17.082Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-08T00:34:51Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-08T00:57:30Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-08T02:34:23.651Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-08T03:29:10Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-08T04:12:46Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-08T05:18:02.016Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-08T06:03:31Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-08T07:16:40Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-08T07:46:09Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-08T09:11:17Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-08T10:33:19Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-08T10:43:42.893Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-08T12:34:19.265Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-08T13:37:00Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-08T14:27:52.854Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-08T15:08:34Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-08T16:05:16Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-08T17:27:23.228Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-08T18:21:03.154Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-08T19:29:26Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-08T19:47:14.622Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-08T20:53:33Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-08T21:41:40.703Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-08T23:25:46.553Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-09T00:23:20.664Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-09T01:22:53Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-09T02:19:08Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-09T03:23:19Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-09T04:31:57.537Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-09T04:48:10.339Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-09T05:40:38Z: hourly real-host verification; retain signed channel seq19.
+
+Poll UTC 2026-11-09T07:33:41Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-09T08:22:01Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-09T09:11:35.789Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-09T10:01:56.700Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-09T10:41:31.917Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-09T12:28:01Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-09T13:43:17.261Z: hourly real-host verification; retain signed channel seq19.
+
+Poll UTC 2026-11-09T13:50:06Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-09T15:23:49.559Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-09T15:45:08.435Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-09T16:47:16.134Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-09T18:05:32Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-09T18:49:47Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-09T19:55:11Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-09T21:00:09.604Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-09T22:29:35Z: hourly real-host verification; retain signed channel seq19.
+
+Poll UTC 2026-11-09T22:44:41Z: hourly real-host verification; retain signed channel seq19.
+
+Poll UTC 2026-11-10T00:11:07Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-10T01:26:45Z: hourly real-host verification; retain signed channel seq19.
+
+Poll UTC 2026-11-10T02:12:48Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-10T03:22:46.890Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-10T03:53:20.403Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-10T05:09:56Z: hourly real-host verification; retain signed channel seq19.
+
+Poll UTC 2026-11-10T06:11:35Z: hourly real-host verification; retain signed channel seq19.
+
+Poll UTC 2026-11-10T07:19:40Z: hourly real-host verification; retain signed channel seq19.
+Poll UTC 2026-11-10T08:28:21Z: hourly real-host verification; retain signed channel seq19.
+
+Poll UTC 2026-11-10T08:40:08Z: hourly real-host verification; retain signed channel seq19.
 Poll UTC 2026-11-10T10:05:53Z: hourly real-host verification; retain signed channel seq19.
