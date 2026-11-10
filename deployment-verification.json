@@ -1,42 +1,15 @@
 {
-  "version": "3.6.0",
-  "release_date_taipei": "2026-11-10",
+  "version": "3.7.0",
   "url": "https://momopuke.github.io/judun-deploy/",
-  "status": "Local acceptance complete; live deployment proof is added to the final delivery package after publishing.",
-  "source_files": 43,
-  "runtime_assets": 32,
-  "engine_checks": 604,
-  "browser": {
-    "environment": "Chrome desktop and same-origin responsive iframe; not physical iPhone Safari",
-    "desktop_viewport": [
-      1363,
-      936
-    ],
-    "desktop_wheel_diameter": 735.375,
-    "desktop_wheel_bottom": 916.281,
-    "short_viewport": [
-      1265,
-      720
-    ],
-    "short_wheel_diameter": 528,
-    "short_wheel_bottom": 704.594,
-    "mobile_viewport": [
-      375,
-      844
-    ],
-    "mobile_wheel_diameter": 371,
-    "mobile_wheel_bounds_x": [
-      2,
-      373
-    ],
-    "mobile_table_font_px": 17,
-    "desktop_table_font_px": 18,
-    "mobile_dialog_client_and_scroll_width": 316,
-    "horizontal_overflow": 0,
-    "comic_panels": 3,
-    "comic_manual_start_stop_verified": true,
-    "combined_has_no_duplicate_interpretation_in_raw_calculations": true,
-    "single_bazi_birth_time_city_edit_returns_to_same_school": true
-  },
-  "scope": "Everyday three-panel illustrative comics; sourced history separated from symbolic evidence; raw calculation deduplication; larger type and wheel."
+  "source_validation": "633 checks passed locally",
+  "browser_qa": [
+    "desktop combined",
+    "direct tarot without birthday",
+    "birthday method input",
+    "switch method preserving data",
+    "browser back restores method",
+    "390px selection no horizontal overflow",
+    "required Ziwei inputs"
+  ],
+  "live_verification": "GitHub Pages workflow verifies every asset SHA-256 after deployment"
 }

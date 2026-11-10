@@ -156,25 +156,21 @@ ok(app.getNavigationState().birthOrigin.chart==='ziwei'&&app.getNavigationState(
 // Restore route without opening a modal in the lightweight DOM test; actual reopening is browser-verified.
 app.showView('home',false);ok(!app.getNavigationState().birthOrigin,'Explicit navigation clears obsolete birth-return state');
 
-// Guided journey: only explicit ritual actions create random events.
+// The explicit analyze CTA creates required events and opens results in one transition.
 element('dob').value='1990-01-01';element('topic').value='career';element('readingQuestion').value='現在適合換工作嗎？';element('readingQuestion').listeners.change();
-ok(app.prepareJourney()&&app.getNavigationState().currentView==='ritual','Valid birthday advances into the guided ritual');
-ok(!app.getState().coin&&!app.getState().tarotDrawn,'Entering the ritual never silently casts or draws');
-ok(app.ritualQueue().map(x=>x.kind).join(',')==='tarot,coin','Career questions request only their recommended independent events');
-app.performRitual();const guidedCards=app.getState().tarotDrawn;
-ok(guidedCards.cards.length===3&&!app.getState().coin,'First explicit action draws three cards and does not silently cast coins');
+app.beginCombinedJourney();ok(!app.getState().coin&&!app.getState().tarotDrawn,'Opening the profile never draws or casts');
+ok(app.prepareJourney()&&app.getNavigationState().currentView==='report','Analyze CTA reaches results without a forced ritual page');
+const guidedCards=app.getState().tarotDrawn,guidedCoin=app.getState().coin;
+ok(guidedCards.cards.length===3&&guidedCoin.lines.length===6,'Explicit analysis creates only the required real card and coin events');
 app.showView('profile',false);app.prepareJourney();
-ok(app.getState().tarotDrawn===guidedCards&&app.ritualQueue().find(x=>!x.done).kind==='coin','Returning to the birthday and continuing preserves the cards and resumes the remaining ritual');
-app.performRitual();const guidedCoin=app.getState().coin;
-ok(guidedCoin.lines.length===6&&app.ritualQueue().every(x=>x.done),'Second explicit action completes the six-line event');
-app.performRitual();ok(app.getNavigationState().currentView==='report'&&app.getState().tarotDrawn===guidedCards&&app.getState().coin===guidedCoin,'Reading the result preserves both independent events');
-app.showView('home',false);element('topic').value='year';element('readingQuestion').value='2027 年整體運勢如何？';element('readingQuestion').listeners.change();app.prepareJourney();app.skipRitual();
-ok(!app.getState().tarotDrawn&&!app.getState().coin&&app.getNavigationState().currentView==='report','Skip goes directly to the report without fabricating random events');
-ok(app.getWeights().tarotDraw===0&&Object.values(app.getWeights()).reduce((s,n)=>s+n,0)===100,'Skipped methods receive zero allocation and remaining methods sum to 100');
+ok(app.getState().tarotDrawn===guidedCards&&app.getState().coin===guidedCoin,'Returning and analyzing the same question preserves its actual events');
+app.showView('home',false);element('topic').value='year';element('readingQuestion').value='2027 年整體運勢如何？';element('readingQuestion').listeners.change();app.prepareJourney();
+ok(app.getState().tarotDrawn?.cards.length===3&&!app.getState().coin&&app.getNavigationState().currentView==='report','Annual plan draws its configured tarot supplement without unrelated coin events');
+ok(app.getWeights().iching===0&&Object.values(app.getWeights()).reduce((s,n)=>s+n,0)===100,'Unused event methods have zero allocation');
 app.showView('home',false);element('readingQuestion').value='最近財運要注意什麼？';element('readingQuestion').listeners.change();app.showView('report',false);
-ok(element('reportInner').innerHTML.includes('最近財運要注意什麼？')&&!element('reportInner').innerHTML.includes('2027 年整體運勢如何？'),'Restoring a report after a changed question cannot show the previous question');
-app.showView('finish',false);ok(element('finishAction').textContent.length>0&&element('finishQuestion').textContent==='最近財運要注意什麼？','The final takeaway comes from the same current consultation');
-element('dob').value='';ok(app.prepareJourney()===false&&app.getNavigationState().currentView==='profile','An invalid birthday keeps the visitor at the editable birthday step');
+ok(element('reportInner').innerHTML.includes('最近財運要注意什麼？')&&!element('reportInner').innerHTML.includes('2027 年整體運勢如何？'),'Restored report uses the current question');
+app.showView('finish',false);ok(element('finishAction').textContent.length>0&&element('finishQuestion').textContent==='最近財運要注意什麼？','Optional takeaway preserves the current consultation');
+element('dob').value='';ok(app.prepareJourney()===false&&app.getNavigationState().currentView==='profile','Missing birthday retains the editable profile');
 element('dob').value='1990-01-01';element('topic').value='career';element('readingQuestion').value='現在適合換工作嗎？';element('readingQuestion').listeners.change();app.startConsultation();
 
 // Reading hierarchy and deduplication retain distinct information and source evidence.
@@ -194,17 +190,17 @@ ok(!I.readingPresentation(yearConsult).answer.startsWith('2027 年的重點')&&I
 // The two homepage entries must lead to genuinely different journeys.
 app.beginRandomJourney();ok(app.getJourneyMode()==='random'&&app.getNavigationState().currentView==='profile'&&element('profileNext').textContent.includes('轉盤'),'Random entry prepares a single-school wheel route');
 element('dob').value='';ok(app.prepareJourney()===false&&app.getJourneyMode()==='random'&&app.getNavigationState().currentView==='profile','Missing birthday does not silently switch random mode into combined analysis');
-element('dob').value='1990-01-01';app.beginCombinedJourney();ok(app.getJourneyMode()==='combined'&&element('profileNext').textContent.includes('玩一下'),'Combined entry restores the multi-system consultation journey');
+element('dob').value='1990-01-01';app.beginCombinedJourney();ok(app.getJourneyMode()==='combined'&&element('profileNext').textContent.includes('看結果'),'Combined entry restores the multi-system consultation journey');
 const illustrated=I.renderConsultation({...consult,lead:'bazi'});ok(illustrated.includes('dossier-art')&&illustrated.includes('src="./assets/schools/bazi.webp"'),'The reading image represents its actual lead system');
 // Direct selection keeps the chosen method instead of invoking the random wheel.
 app.beginCombinedJourney();const previousView=app.getNavigationState().currentView;
 ok(app.beginDirectJourney('invalid-system')===false&&app.getJourneyMode()==='combined'&&app.getNavigationState().currentView===previousView,'Invalid direct school cannot change the journey');
 element('dob').value='';app.beginDirectJourney('bazi');
-ok(app.getJourneyMode()==='direct'&&app.getDirectSchool()==='bazi'&&element('profileTitle').textContent==='八字四柱','Direct entry names and retains the selected school');
+ok(app.getJourneyMode()==='direct'&&app.getDirectSchool()==='bazi'&&element('profileSelection').innerHTML.includes('八字四柱'),'Direct entry names and retains the selected school');
 ok(app.prepareJourney()===false&&app.getDirectSchool()==='bazi'&&app.getJourneyMode()==='direct','Missing birthday preserves the direct selection');
 element('dob').value='1990-01-01';app.prepareJourney();
-ok(element('chartDialog').open&&element('chartDialog').dataset.system==='bazi'&&app.getNavigationState().currentView==='album','Direct birthday submission opens exactly the chosen school');
-ok(element('journeyPosition').textContent==='指定流派','Single-school direct flow does not display combined progress');
+ok(element('reportInner').innerHTML.includes('data-reading-system="bazi"')&&app.getNavigationState().currentView==='report'&&!element('chartDialog').open,'Direct birthday submission opens exactly the chosen school');
+ok(element('journeyPosition').textContent==='3 / 3','Single-school direct flow does not display combined progress');
 app.beginRandomJourney();ok(app.getDirectSchool()===null&&app.getJourneyMode()==='random','Random entry clears the previous direct selection');
 app.beginDirectJourney('ziwei');app.beginCombinedJourney();ok(app.getDirectSchool()===null&&app.getJourneyMode()==='combined','Combined entry clears the previous direct selection');
 element('dob').value='1990-01-01';app.startConsultation();
@@ -214,17 +210,30 @@ ok(!rawTech.includes('report-cover')&&!rawTech.includes('data-interpretation')&&
 ok(rawTech.includes('data-calculation')&&rawTech.includes('演算設定與來源'),'Actual calculations and source references remain inspectable');
 const rawBazi=app.calculationMarkup('bazi',ready);ok(rawBazi.includes('pillars-graphic')&&rawBazi.includes('天干十神')&&!rawBazi.includes('interpretation-conclusion'),'Bazi keeps the actual pillars and ten-god table without a second reading');
 const rawTarot=app.calculationMarkup('tarotDraw',ready);ok(!rawTarot.includes('RWS 象徵')&&!rawTarot.includes('tarot-card'),'Raw tarot uses one result table rather than another set of advice cards');
+const y26=I.interpret('numerology',ready,{topic:'year',year:2026},events),y27=I.interpret('numerology',ready,{topic:'year',year:2027},events);ok(y26.evidence[0].observed!==y27.evidence[0].observed&&y26.headline!==y27.headline,'Direct personal-year result honors the chosen calendar year');const tb26=I.interpret('tarotBirth',ready,{topic:'year',year:2026},events),tb27=I.interpret('tarotBirth',ready,{topic:'year',year:2027},events);ok(tb26.evidence[0].observed!==tb27.evidence[0].observed,'Direct annual tarot card uses selected year rather than current year');
 const life=c.FateLife;
-ok(life.scenario({topic:'career',question:'我想開店'}).key==='career-startup','Starting a business gets a small-trial scene');
-ok(life.scenario({topic:'career',question:'想換工作',tag:'initiative'}).key!==life.scenario({topic:'career',question:'想換工作',tag:'planning'}).key,'The reading direction changes the everyday career scene');
-ok(life.scenario({topic:'love',question:'能不能復合'}).key==='love-reconcile','Reconciliation has a concrete two-sided willingness example');
-ok(life.scenario({topic:'wealth',question:'怎麼增加收入'}).key==='wealth-income','Income questions do not get the shopping-budget example');
-ok(life.render({available:false})==='','Missing input never generates an illustrative personal reading');
-const comic=life.render({topic:'career',question:'換工作',tag:'initiative'});
-ok((comic.match(/class="comic-scene /g)||[]).length===3&&comic.includes('虛構情境示意'),'The three comic scenes are explicitly illustrations, not claimed events');
-ok(comic.includes('陶淵明')&&comic.includes('國家文化記憶庫')&&comic.includes('不是命盤驗證'),'Historical experience is sourced and kept separate from divination evidence');
-ok(Object.values(life.people).length===5&&Object.values(life.people).every(p=>/^https:/.test(p.url)&&p.fact&&p.question),'All five curated histories have provenance and separate reflection questions');
-ok(life.plain('把每件事都變成自己必須證明的競賽').includes('把自己弄得太累'),'Abstract caution is restated in everyday language');
-const shown=I.renderConsultation(consult);ok((shown.match(/class="life-comic"/g)||[]).length===1,'A combined reading shows a single life comic');
+const readings=Object.keys(I.NAMES).filter(id=>id!=='maya').map(id=>I.interpret(id,ready,{topic:'career',question:'現在適合換工作嗎？'},events));
+const scenes=readings.map(reading=>life.scenario({reading}));
+ok(scenes.every(Boolean)&&new Set(scenes.map(s=>s.key)).size===11,'Each school result has an evidence-bound scenario identity');
+for(let i=0;i<scenes.length;i++){const scene=scenes[i],reading=readings[i],html=life.render({reading});ok(scene.basis===reading.evidence[reading.anchorIndex||0].observed&&html.includes(scene.basis.replace(/&/g,'&amp;')),'Visible life reflection preserves calculated evidence '+reading.id);ok(!html.includes('comic-person')&&!html.includes('播放漫畫'),'No comic sprite or playback remains '+reading.id);}
+const qscene=life.scenario({reading:rq}),dscene=life.scenario({reading:rd});ok(qscene.key!==dscene.key&&qscene.meaning!==dscene.meaning&&qscene.action!==dscene.action,'Different real hexagrams change evidence, meaning and action');
+const num4=I.interpret('numerology',same,{topic:'career'},events),num3=I.interpret('numerology',ready,{topic:'career'},events);
+ok(life.scenario({reading:num4}).key!==life.scenario({reading:num3}).key,'Changing the calculated number changes the life reflection');
+ok(life.render({available:false})===''&&life.render({topic:'career'})===''&&life.render({reading:may})==='','Missing evidence and calendar-only methods cannot create generic personal scenes');
+const matching={...num4,profiles:[{...num4.profiles[0],tag:'structure'}]};const matched=life.scenario({reading:matching});
+ok(matched.person?.name==='班傑明・富蘭克林'&&life.render({reading:matching}).includes('僅比較這段經歷'),'A matching rule preserves a sourced history and its precise comparison limit');
+ok(!life.scenario({reading:rq}).person&&!life.scenario({reading:{...matching,id:'western'}}).person,'Topic alone and unmatched schools do not receive a fallback celebrity');
+ok(Object.values(life.people).length===5&&Object.values(life.people).every(p=>/^https:/.test(p.url)&&p.fact&&p.question),'Curated stories retain provenance');
+ok(life.plain('把每件事都變成自己必須證明的競賽').includes('把自己弄得太累'),'Plain-language rewrite remains');
+const shown=I.renderConsultation(consult);ok((shown.match(/class="result-bridge"/g)||[]).length===1,'Combined report uses exactly one evidence-bound life reflection');
+// Events require no invented birthday and direct switching preserves supplied birth data.
+app.showView('home');element('dob').value='';app.beginDirectJourney('tarotDraw');ok(element('profileBirthStart').hidden&&!element('dob').required,'Tarot hides irrelevant birthday input');app.prepareJourney();
+ok(app.getNavigationState().currentView==='report'&&element('reportInner').innerHTML.includes('data-reading-system="tarotDraw"')&&element('dob').value===''&&app.getState().tarotDrawn.cards.length===3,'Tarot produces a real result without fabricating birth data');
+for(const id of ['iching','meihua','liuyao']){app.beginDirectJourney(id);ok(app.getNavigationState().currentView==='report'&&element('reportInner').innerHTML.includes('data-reading-system="'+id+'"')&&element('dob').value==='','Switching to event school needs no birthday '+id);}
+app.beginDirectJourney('ziwei');ok(app.getNavigationState().currentView==='profile'&&app.getDirectSchool()==='ziwei','Switching to a birth-based school requests missing inputs');
+element('dob').value='1990-01-01';element('birthtime').value='';app.prepareJourney();ok(app.getNavigationState().currentView==='profile'&&element('profileValidation').textContent.length>0,'Missing Ziwei hour stays at a clear editable requirement');
+element('birthtime').value='12:20';element('birthtz').value='Asia/Taipei';element('gender').value='male';app.prepareJourney();ok(app.getNavigationState().currentView==='report'&&element('reportInner').innerHTML.includes('data-reading-system="ziwei"'),'Complete Ziwei inputs open the selected result');
+app.beginDirectJourney('numerology');ok(app.getNavigationState().currentView==='report'&&element('dob').value==='1990-01-01'&&element('reportInner').innerHTML.includes('data-reading-system="numerology"'),'Switching a birth-based system retains data and opens its result directly');
+app.beginCombinedJourney();app.startConsultation();
 const excerpts={qian:rq,dayou:rd,tarot:tr,numerology:I.interpret('numerology',ready,{topic:'career'},events)};fs.writeFileSync(__dirname+'/reading-qa-samples.json',JSON.stringify(excerpts,null,2));
-element('downloadHtml').listeners.click();ok(exportedBlob?.type==='text/html;charset=utf-8','Standalone HTML export created');exportedBlob.text().then(html=>{ok(html.includes('data-consultation')&&html.includes('reading-crosscheck')&&html.includes('<style>')&&!html.includes('advanced-start'),'HTML includes report and full styling');ok(!html.includes('<script')&&!html.includes('<link rel=')&&!html.includes('src=\"./'),'Export has no external code dependency');ok(!html.includes('<button'),'Offline saved reading has no nonfunctional navigation buttons');ok(!html.includes('assets/comic/')&&html.includes('虛構情境示意'),'Offline reading keeps the scenario text without a broken external sprite dependency');fs.mkdirSync(__dirname+'/examples',{recursive:true});fs.writeFileSync(__dirname+'/examples/1990-01-01-career-reading.html',html);console.log(JSON.stringify({status:'PASS',checks,version:'3.6.0',all_systems:12},null,2))}).catch(e=>{console.error(e);process.exitCode=1});
+element('downloadHtml').listeners.click();ok(exportedBlob?.type==='text/html;charset=utf-8','Standalone HTML export created');exportedBlob.text().then(html=>{ok(html.includes('data-consultation')&&html.includes('reading-crosscheck')&&html.includes('<style>')&&!html.includes('advanced-start'),'HTML includes report and full styling');ok(!html.includes('<script')&&!html.includes('<link rel=')&&!html.includes('src=\"./'),'Export has no external code dependency');ok(!html.includes('<button'),'Offline saved reading has no nonfunctional navigation buttons');ok(!html.includes('assets/comic/')&&html.includes('傳統象徵延伸'),'Offline reading keeps the scenario text without a broken external sprite dependency');fs.mkdirSync(__dirname+'/examples',{recursive:true});fs.writeFileSync(__dirname+'/examples/1990-01-01-career-reading.html',html);console.log(JSON.stringify({status:'PASS',checks,version:'3.7.0',all_systems:12},null,2))}).catch(e=>{console.error(e);process.exitCode=1});

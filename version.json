@@ -1,15 +1,15 @@
 {
   "name": "FATE ATLAS 合參命理",
-  "version": "3.6.0",
-  "edition": "Everyday comic readings and lean calculation records",
-  "release_date": "2026-11-10",
+  "version": "3.7.0",
+  "edition": "Simple three-step flow and evidence-bound everyday readings",
+  "release_date": "2026-11-11",
   "source_branch": "gh-pages",
   "hosted_url": "https://momopuke.github.io/judun-deploy/",
-  "sha256_index_html": "e8359972d2ff97301b6621752589863457219010d9e8e9d87cd72791801cd855",
+  "sha256_index_html": "3bbf3c85f9ffacbbc65ecfd5c1a51de70e25faf573d4f6d681d231144881caf5",
   "sha256_engine": "9839e78f2b09d703a1c9238f140a37521081a0dde7b71fbebecfc919659c7f92",
   "assets": {
-    "index.html": "e8359972d2ff97301b6621752589863457219010d9e8e9d87cd72791801cd855",
-    "app.js": "00a9e0f25225c647ca44935c73029aa7cc37ed12f7f67fc42dc0befb13f6e564",
+    "index.html": "3bbf3c85f9ffacbbc65ecfd5c1a51de70e25faf573d4f6d681d231144881caf5",
+    "app.js": "b778aa69124badd42ceca31bd2f8bd387c289386c8e537f74e606bb60591ee57",
     "atlas.css": "0d13736eb29b8f2e99886c926cd265691aac76de4bb177580ecbd454439a8734",
     "sky-engine.js": "68d06103e3a7ebd955920a4679fe54f4832587244aa0780be5604ca95073e82f",
     "engines-v1.2.0.js": "9839e78f2b09d703a1c9238f140a37521081a0dde7b71fbebecfc919659c7f92",
@@ -33,21 +33,23 @@
     "assets/schools/vedic.webp": "32dc71ea6895acd922a916f8d375a2d40f7e8428f08288690d5f2e854e369398",
     "assets/schools/western.webp": "8425ed8c7a2e9b51db2d61acd5401ef3afcb2e7209869976c41520eb2350835b",
     "assets/schools/ziwei.webp": "88711c2c699f4115e72743dec7885a4f8f8db7e81d6429954531602ba11614c0",
-    "interpretation-engine.js": "38b674f0905f6f7718e9f4a0a026a00c5d65e6536873f1e30f2acf0e84b20bbf",
+    "interpretation-engine.js": "ed3716dd1e555950a63c810c919040e12c9864240db162a486a5690dbcfed1df",
     "interpretation.css": "f08cf7e92dd970e212728243e5a0c191ddb6c5501de2013b8b6e2c243c9d1df9",
     "journey.css": "ec39ec6ecd9f15b626f19b9c42c4243771dcc9750df8e885dd80bcf4d0ad1e08",
     "visual-refresh.css": "9e3d7bb860df6cbc5ea83955665ed560f9ee25814e75785bbb199d97b16f668d",
-    "life-reading.js": "b0985ff1863c081eae41617f7a85da0e2c95d5be4a35a2a734e39e914cc327bd",
+    "life-reading.js": "045364438b35203141ea3f38b53a7439cec9942f8431b74866b4039d7b79bd01",
     "reading-refine.css": "f83af5e8ef1be36383dd3d75396555092496faa261dabc834ae55429d51f5795",
-    "assets/comic/life-guide-poses.png": "26e7cd6ce82983a8ed0e3ab1bf821f4b04c375c7cc30e23affea07ee02007df6"
+    "simple-flow.css": "adc2aea15d836d3e281a1b08af0fb5e84610eb1727d62530d52af5c677a1f6e1"
   },
   "vendors": {
     "iztro": "2.6.5",
     "astronomy-engine": "2.1.19"
   },
   "qa": {
-    "checks": 604,
-    "status": "PASS"
+    "engine_and_flow_checks": 633,
+    "desktop_browser": "passed",
+    "mobile_390px": "selection and required-input UI passed",
+    "live_https": "verified by release workflow"
   },
   "accuracy_note": "Lahiri ayanamsa, nodes and dasha dates are explicitly approximate; whole-sign houses; civil midnight bazi.",
   "interpretation": {
@@ -83,18 +85,25 @@
     "automatic_weights": "Question subtype and input completeness; changes leading method and action"
   },
   "birth_editor": "Return to the exact originating page or school modal, preserving question and events",
-  "ux_flow": "Choose question → birthday → optional explicit rituals → consultation → takeaway; shared back/forward navigation",
+  "ux_flow": {
+    "steps": [
+      "選系統",
+      "填資料",
+      "看結果"
+    ],
+    "full_page_single_results": true,
+    "optional_life_examples": true,
+    "direct_switch_preserves_inputs": true
+  },
   "reading_layout": "One interpretation with one everyday comic; optional sourced historical story; raw charts contain no repeated reading, cover, advice cards or weight summary",
   "homepage_modes": [
-    "combined multi-system consultation",
-    "single-school experience: random or direct"
+    "幫我合參",
+    "自己選系統"
   ],
   "direct_school_selection": "Selected school retained through birthday and birth editing; missing birth time is never fabricated",
-  "visual_explanation": "Clearly labeled career example with question, two perspectives, shared direction, caveat and next step",
-  "comic": {
-    "character": "fictional everyday adult, generated four-pose alpha sheet",
-    "story_selection": "topic, question and actual leading symbolic tag",
-    "animation": "opt-in pose gestures; stop control; respects reduced motion",
-    "history": "five curated sourced experiences; facts and reflection separated"
+  "visual_explanation": {
+    "style": "warm cream, soft gradients and symbolic ornaments",
+    "binding": "actual school, evidence and interpretation rule",
+    "stories": "strict school/tag/topic match only; no fallback"
   }
 }
