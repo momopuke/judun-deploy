@@ -65,3 +65,80 @@ body.game-edition #home .direct-entry{grid-column:1!important;grid-row:3!importa
   .dossier-hero > .dossier-art img{object-position:center 43%}
   .dossier-hero > .dossier-art figcaption{font-size:11px;bottom:9px}
 }
+
+/* Single-school and combined readings share the same editorial layout. */
+.reading-friendly .reading-opening{
+  min-height:0;
+  overflow:hidden;
+  border:1px solid #655272;
+  border-radius:18px;
+  background:linear-gradient(120deg,#342843,#261e35);
+}
+.reading-friendly .reading-opening:has(>figure){
+  display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)
+}
+.reading-friendly .reading-first{
+  padding:clamp(20px,3vw,34px)!important;margin:0!important;min-width:0;overflow-wrap:anywhere
+}
+.reading-friendly .reading-first h3,.reading-friendly .reading-question{
+  font:500 clamp(18px,2vw,22px)/1.55 var(--sans)!important;
+  margin:8px 0 11px!important
+}
+.reading-friendly .reading-first .interpretation-conclusion,.reading-friendly .direct-answer{
+  font:500 clamp(22px,2.5vw,30px)/1.55 var(--sans)!important;
+  color:#fff0cd!important;margin:0!important;max-width:26em
+}
+.reading-friendly .reading-next-step{
+  margin:17px 0 0;padding:13px 0 0;border-top:1px solid #a793b05c;
+  color:#f0e4f5;font:400 clamp(16px,1.6vw,18px)/1.65 var(--sans)
+}
+.reading-next-step>b,.reading-detail-line>b{color:#f0d4a6;margin-right:.35em}
+.reading-friendly .reading-context-bar{
+  min-width:0;margin:10px 0 0!important;padding:0;border:0;font-size:14px!important;gap:8px
+}
+.reading-friendly .reading-context-bar button{flex-shrink:0;min-height:44px}
+.reading-friendly .reading-opening>.reading-cover,.reading-friendly .reading-opening>.dossier-art{
+  position:relative;inset:auto;margin:0;min-width:0;width:100%;height:auto;min-height:100%;
+  max-height:none;aspect-ratio:auto;border:0;border-radius:0;box-shadow:none
+}
+.reading-friendly .reading-opening>figure>img{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 43%
+}
+.reading-friendly .reading-opening .reading-cover figcaption{display:none}
+.reading-friendly .reading-lead:has(>.reading-opening){border:0;background:transparent;box-shadow:none}
+.reading-friendly>.reading-footnotes,.reading-friendly>.simple-reasons{
+  margin:10px 0 0;border:0;border-bottom:1px solid #655272;background:transparent
+}
+.reading-friendly .reading-footnotes>details{background:transparent!important;border:0!important}
+.reading-friendly .reading-limits summary,.reading-friendly .reading-footnotes>details>summary{
+  line-height:1.55;min-height:44px
+}
+.reading-friendly .reading-detail-line{margin:6px 0 12px;line-height:1.65;overflow-wrap:anywhere}
+.reading-friendly .life-explainer{margin-top:23px}
+.reading-friendly .result-bridge{
+  padding:0 0 15px!important;border:0!important;border-radius:0;background:transparent!important
+}
+.reading-friendly .bridge-head h3{font-size:18px;margin:3px 0 0}
+.reading-friendly .bridge-card{
+  border:0!important;border-radius:0;background:transparent!important;padding:0 0 12px!important
+}
+.reading-friendly .bridge-card h4{margin:0 0 4px;font-size:17px!important}
+.reading-friendly .bridge-card p{margin:0;line-height:1.65!important;color:#e2d4e9!important}
+.reading-friendly .bridge-caption,.reading-friendly .people-note{color:#d0b9d9!important}
+.reading-friendly .people-body>p{color:#e2d4e9!important;max-width:41em}
+.reading-friendly .people-body a{display:inline-block;overflow-wrap:anywhere}
+@media screen and (max-width:750px){
+  .reading-friendly .reading-opening:has(>figure){display:block}
+  .reading-friendly .reading-opening>.reading-cover,.reading-friendly .reading-opening>.dossier-art{
+    width:auto;min-height:0;height:clamp(115px,31vw,175px);margin:0 16px 16px;border-radius:11px
+  }
+  .reading-friendly .reading-first{padding:17px!important}
+  .reading-friendly .bridge-card+.bridge-card{padding-top:12px!important;border-top:1px solid #655272!important}
+}
+.report-export .reading-friendly .reading-opening:has(>figure){display:block}
+@media print{
+  .reading-friendly .reading-opening{display:block!important;background:#fff!important;border-color:#bbb!important}
+  .reading-friendly .reading-opening>figure{display:none!important}
+  .reading-friendly .reading-first .interpretation-conclusion,.reading-friendly .direct-answer,
+  .reading-friendly .reading-next-step,.reading-next-step>b,.reading-detail-line>b{color:#29272b!important}
+}

@@ -1,14 +1,16 @@
 {
-  "version": "3.9.1",
-  "url": "https://momopuke.github.io/judun-deploy/?v=3.9.1",
+  "version": "3.10.0",
+  "url": "https://momopuke.github.io/judun-deploy/?v=3.10.0",
   "source_validation": {
-    "engine_and_reading_checks": 648,
+    "engine_and_reading_checks": 655,
     "ceremony_checks": 12,
     "comic_assets": 11,
     "live_https": "release workflow compares all deployed asset hashes",
     "original_school_assets": 12
   },
   "scenarios": [
+    "Single and combined readings share one opening for the question, answer, next step and original cover.",
+    "The same question responds to the actual symbolic focus and keeps caveats, comparison and charts in one disclosure.",
     "All twelve system choices render their original school illustrations.",
     "Single results render the original cover and the new comic.",
     "Combined results render their leading school artwork.",
