@@ -22,17 +22,39 @@ function scenario(input={}){
  const person=storyFor(r,p);
  return {key:[r.id,r.topic,ev.label,ev.observed,p.title].join('|'),id:r.id,title:p.title,basis:ev.observed,label:ev.label,angle:ANGLES[r.id]||'對照實際生活觀察',meaning:plain(p.help),action:plain(r.id==='tarotDraw'&&r.actions?.[0]?.task==='把牌面主題放進一件實際情境核對'?r.actions?.[1]?.task:r.actions?.[0]?.task||''),check:plain(r.actions?.[1]?.check||r.actions?.[0]?.check||''),tag:p.tag,scene:SCENES[r.id]||'',person};
 }
-function emblem(id){
- let art='';
- if(id==='bazi')art=[0,1,2,3].map(i=>`<rect x="${15+i*17}" y="${18+i%2*7}" width="12" height="49" rx="6" fill="url(#softIcon)"/>`).join('');
- else if(id==='ziwei'||id==='nineStar')art=Array.from({length:9},(_,i)=>`<rect x="${18+i%3*20}" y="${13+Math.floor(i/3)*20}" width="16" height="16" rx="5" fill="url(#softIcon)" opacity="${i===4?1:.6}"/>`).join('');
- else if(id==='western'||id==='vedic')art='<circle cx="45" cy="41" r="23" fill="none" stroke="#9ab59a"/><ellipse cx="45" cy="41" rx="35" ry="13" fill="none" stroke="#b8be93" transform="rotate(-28 45 41)"/><circle cx="45" cy="41" r="12" fill="url(#softIcon)"/><circle cx="76" cy="26" r="5" fill="#c4b17b"/>';
- else if(['iching','meihua','liuyao'].includes(id))art=Array.from({length:6},(_,i)=>`<rect x="21" y="${13+i*10}" width="48" height="6" rx="3" fill="url(#softIcon)" opacity="${.45+i*.1}"/>`).join('');
- else if(id==='tarotDraw'||id==='tarotBirth')art=(id==='tarotDraw'?[-1,0,1]:[0]).map(i=>`<g transform="rotate(${i*12} 45 65)"><rect x="30" y="11" width="30" height="56" rx="8" fill="url(#softIcon)" stroke="#fcf9ed"/><path d="M45 28L49 36L45 44L41 36Z" fill="#fff9df"/></g>`).join('');
- else art='<circle cx="45" cy="41" r="28" fill="url(#softIcon)"/><path d="M45 22V60M28 41H62" stroke="#fcfae9" stroke-width="2"/><circle cx="45" cy="41" r="7" fill="#fbf7df"/>';
- return `<svg viewBox="0 0 90 82" aria-hidden="true"><defs><linearGradient id="softIcon" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#c9d9ae"/><stop offset="1" stop-color="#7eaa8c"/></linearGradient></defs>${art}</svg>`;
+const COMICS = {
+ bazi: ['少女在木工坊面對四根木柱', '少女與兔子比對接合處', '少女與夥伴合力接好第一個接點'],
+ ziwei: ['少女攤開紫色星盤', '少女與兔子將標記放進不同宮位', '少女選定一項責任，將標記釘上板子'],
+ western: ['少女在屋頂展開星座圖', '少女與兔子用望遠鏡看天空', '少女喝茶時與朋友對照觀察'],
+ vedic: ['少女在露台閱讀菱格星盤', '少女與兔子抬頭觀察月亮與星群', '少女在燈下寫下今晚的觀察'],
+ iching: ['少女在河邊整理蓍草和卦線', '少女觀察河水與踏腳石', '少女從乾燥的石頭踏出第一步'],
+ liuyao: ['夜市攤前，少女與兔子看著三枚銅錢', '兔子扶起一枚銅錢，少女露出微笑', '少女帶著兔子走進燈籠照亮的街道'],
+ meihua: ['少女看見梅花瓣落在雨中的露台', '少女與兔子對照花瓣與卦圖', '少女將茶具移到可以避雨的屋簷下'],
+ numerology: ['少女在文具店整理日曆與數字木牌', '少女與兔子把木牌分組', '少女在日曆上標記一項小習慣'],
+ nineStar: ['少女在車站對照九宮星格', '兔子指出星格中變動的位置', '少女掌握步調，帶著筆記走向列車'],
+ tarotBirth: ['少女在溫室發現星星塔羅牌與舊相簿', '少女與兔子發現舊畫裡也有星星', '少女種下種子，重新開始照顧它'],
+ tarotDraw: ['少女在書攤前擺出三張塔羅牌', '少女在兔子面前翻開一張月亮牌', '少女把兩張路線圖並排比較']
+};
+function comicPanel(id, index) {
+ const description = COMICS[id]?.[index];
+ if (!description) return '';
+ const [width, height] = id === 'liuyao' ? [640, 960] : [512, 1536];
+ return `<div class="bridge-panel" data-panel="${index + 1}"><img src="./assets/comic/${escape(id)}.webp" width="${width}" height="${height}" loading="lazy" decoding="async" alt="${escape(description)}"></div>`;
 }
-function render(input={}){const s=scenario(input);if(!s)return '';const e=escape,p=s.person;const lens='<svg viewBox="0 0 90 82" aria-hidden="true"><circle cx="37" cy="32" r="21" fill="#78588b33" stroke="#c8ac7e" stroke-width="2"/><path d="M52 48L75 70" stroke="#c8ac7e" stroke-width="7" stroke-linecap="round"/><path d="M28 32H46M37 23V41" stroke="#c2a7d3"/></svg>',path='<svg viewBox="0 0 90 82" aria-hidden="true"><path d="M15 66H34V47H53V28H74" fill="none" stroke="#c7a16d" stroke-width="3" stroke-linecap="round"/><path d="M69 16L73 23L81 26L73 30L69 38L65 30L57 26L65 23Z" fill="#e3c58d"/><circle cx="15" cy="65" r="5" fill="#9e83b9"/></svg>';return `<section class="result-bridge" data-life-key="${e(s.key)}" data-life-system="${e(s.id)}"><header class="bridge-head"><div><small>依本次結果，換成生活裡的樣子</small><h3>${e(s.angle)}</h3></div></header><div class="bridge-steps"><article class="bridge-card"><div class="bridge-vignette">${emblem(s.id)}</div><small>01 / 這次的線索</small><h4>${e(s.basis)}</h4><p>${e(s.scene)}</p></article><article class="bridge-card"><div class="bridge-vignette">${lens}</div><small>02 / 換個角度理解</small><h4>${e(s.meaning)}</h4><p>把「${e(s.title)}」放進你問的這件事，先找一個實際經驗來對照。</p></article><article class="bridge-card"><div class="bridge-vignette">${path}</div><small>03 / 現在先做這件事</small><h4>${e(s.action)}</h4><p>${e(s.check)}</p></article></div><p class="bridge-caption">生活情境為示意，依本次實算依據延伸；以實際經驗核對，不是事件預言。</p>${p?`<details class="people-story" open data-story="${e(p.key)}"><summary>一段可以借鏡的經歷 <span>${e(p.name)}</span></summary><div class="people-body"><span class="people-era">${e(p.era)}</span><h4>${e(p.name)}</h4><p>${e(p.fact)}</p><p class="story-connection"><strong>與這次解讀的關聯：</strong>${e(p.why)}</p><div class="people-question"><small>換成你的生活，問自己一句</small><p>${e(p.question)}</p></div><a href="${e(p.url)}" target="_blank" rel="noopener noreferrer">出處：${e(p.source)} ↗</a><small class="people-note">僅比較這段經歷與本次提醒；不表示命盤相同，也不是命盤驗證。</small></div></details>`:''}</section>`;}
-function toggle(){}
-root.FateLife={plain,scenario,render,toggle,people:PEOPLE,storyRules:STORY_RULES,storyFor};
+function render(input={}) {
+ const s = scenario(input);
+ if (!s) return '';
+ const e = escape, p = s.person;
+ const panels = [
+  ['這次的線索', s.basis, s.scene],
+  ['換個角度理解', s.meaning, `把「${s.title}」放進你問的這件事，先找一個實際經驗來對照。`],
+  ['現在先做這件事', s.action, s.check]
+ ];
+ return `<section class="result-bridge" data-life-key="${e(s.key)}" data-life-system="${e(s.id)}">
+  <header class="bridge-head"><h3>${e(s.angle)}</h3></header>
+  <div class="bridge-steps">${panels.map(([label, title, body], index) => `
+   <article class="bridge-card">${comicPanel(s.id, index)}<small>${label}</small><h4>${e(title)}</h4><p>${e(body)}</p></article>`).join('')}</div>
+  <p class="bridge-caption">生活情境為示意，文字依本次實算依據延伸；以實際經驗核對，不是事件預言。</p>
+${p?`<details class="people-story" open data-story="${e(p.key)}"><summary>一段可以借鏡的經歷 <span>${e(p.name)}</span></summary><div class="people-body"><span class="people-era">${e(p.era)}</span><h4>${e(p.name)}</h4><p>${e(p.fact)}</p><p class="story-connection"><strong>與這次解讀的關聯：</strong>${e(p.why)}</p><div class="people-question"><small>換成你的生活，問自己一句</small><p>${e(p.question)}</p></div><a href="${e(p.url)}" target="_blank" rel="noopener noreferrer">出處：${e(p.source)} ↗</a><small class="people-note">僅比較這段經歷與本次提醒；不表示命盤相同，也不是命盤驗證。</small></div></details>`:''}</section>`;}
+root.FateLife={plain,scenario,render,people:PEOPLE,storyRules:STORY_RULES,storyFor};
 })(typeof window==='object'?window:globalThis);

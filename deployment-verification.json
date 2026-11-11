@@ -1,19 +1,17 @@
 {
-  "version": "3.8.0",
-  "url": "https://momopuke.github.io/judun-deploy/?v=3.8.0",
+  "version": "3.9.0",
+  "url": "https://momopuke.github.io/judun-deploy/?v=3.9.0",
   "source_validation": {
     "engine_and_reading_checks": 645,
-    "ceremony_checks": 12
+    "ceremony_checks": 12,
+    "comic_assets": 11,
+    "live_https": "release workflow compares all deployed asset hashes"
   },
-  "browser_qa": [
-    "desktop homepage wheel",
-    "real pointer hover directory",
-    "ceremony opens and automatically completes",
-    "skip ceremony reaches result",
-    "life explanation and sourced story visible by default",
-    "390px no horizontal overflow",
-    "390px first tap opens school directory",
-    "390px no-birthday tarot ceremony and skip"
-  ],
-  "live_verification": "Release workflow checks every HTTPS asset hash"
+  "scenarios": [
+    "Each of the 11 interpretive systems has a distinct three-panel strip.",
+    "The Maya calendar reference and missing evidence do not produce a personal comic.",
+    "Changed calculations change the captions, interpretation, and action.",
+    "Relevant sourced stories are open by default.",
+    "Offline HTML retains the text and contains no external comic image dependency."
+  ]
 }
