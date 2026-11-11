@@ -1,15 +1,15 @@
 {
   "name": "FATE ATLAS 合參命理",
-  "version": "3.9.0",
-  "edition": "Hand-painted school comics with evidence-linked captions",
+  "version": "3.9.1",
+  "edition": "Restored original school artwork and retained reading comics",
   "release_date": "2026-11-11",
   "source_branch": "gh-pages",
-  "hosted_url": "https://momopuke.github.io/judun-deploy/?v=3.9.0",
-  "sha256_index_html": "f7fddd09edbe155f82be0b65f950241c5be8f9d7e46252d546530aa6456d69bd",
+  "hosted_url": "https://momopuke.github.io/judun-deploy/?v=3.9.1",
+  "sha256_index_html": "7ce0fba6ed8fffcaffba5100580528446f5c80d8b1dff39514e64b3a932f7aa5",
   "sha256_engine": "9839e78f2b09d703a1c9238f140a37521081a0dde7b71fbebecfc919659c7f92",
   "assets": {
-    "index.html": "f7fddd09edbe155f82be0b65f950241c5be8f9d7e46252d546530aa6456d69bd",
-    "app.js": "983333603ce8e77dfb58c053b2e6a99dd5e05ef1202e88fb2409be2b2b1678ce",
+    "index.html": "7ce0fba6ed8fffcaffba5100580528446f5c80d8b1dff39514e64b3a932f7aa5",
+    "app.js": "b37bfb5cbde1b7a533b63ae44c9863c97dd2b94c51635e85b206688e9fe441f0",
     "atlas.css": "0d13736eb29b8f2e99886c926cd265691aac76de4bb177580ecbd454439a8734",
     "sky-engine.js": "68d06103e3a7ebd955920a4679fe54f4832587244aa0780be5604ca95073e82f",
     "engines-v1.2.0.js": "9839e78f2b09d703a1c9238f140a37521081a0dde7b71fbebecfc919659c7f92",
@@ -39,8 +39,8 @@
     "visual-refresh.css": "9e3d7bb860df6cbc5ea83955665ed560f9ee25814e75785bbb199d97b16f668d",
     "life-reading.js": "8cf30af766628627f457bd02a8b66ab54400b60fefe481aaa6a053272f5bc4f0",
     "reading-refine.css": "f83af5e8ef1be36383dd3d75396555092496faa261dabc834ae55429d51f5795",
-    "simple-flow.css": "5d4dc7cc722a1c8707b45016c0530f05798e987c0715735c47167ab4d2c48a99",
-    "mystic.css": "d51f89e4c55a94d3fcf1f84c9e536beacfd8523ba66dc807a3379e75085d2b43",
+    "simple-flow.css": "5700f044a9ca25483940fd386b5a40c2efc25ffd45c7c911e6cf2c814ba7206c",
+    "mystic.css": "ca7ace197f820614b520a0c3ee135686c2ea9c6097b7a37a69aa4eff5522af7d",
     "mystic-interactions.js": "24fdc5c8e26deee6012ea982fb62c7011cb519052dc42e193f0183631d081ab8",
     "assets/comic/bazi.webp": "974a02665e33df195710c03cad3a4c9c89c696f39da767994389d4a31b2a6087",
     "assets/comic/iching.webp": "0eaba59072df5a72bc22c2ff63b7e4ade1178092b44912e0dab3579ab927cbae",
@@ -59,10 +59,11 @@
     "astronomy-engine": "2.1.19"
   },
   "qa": {
-    "engine_and_reading_checks": 645,
+    "engine_and_reading_checks": 648,
     "ceremony_checks": 12,
     "comic_assets": 11,
-    "live_https": "release workflow compares all deployed asset hashes"
+    "live_https": "release workflow compares all deployed asset hashes",
+    "original_school_assets": 12
   },
   "accuracy_note": "Lahiri ayanamsa, nodes and dasha dates are explicitly approximate; whole-sign houses; civil midnight bazi.",
   "interpretation": {
