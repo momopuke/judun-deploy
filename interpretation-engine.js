@@ -218,6 +218,21 @@ function directPresentation(r){
  const step=guide?.step||action;
  return {answer,action:repeatedReadingText(answer,step)?'':step,reason:repeatedReadingText(answer,reason)?'':reason,risk:repeatedReadingText(answer,profile.risk)?'':plainReading(profile.risk)};
 }
+function renderSingleAnalysis(r,p){
+ const profile=r.profiles?.[0];
+ const evidence=r.evidence||[], anchor=evidence[r.anchorIndex||0];
+ if(!profile||!anchor)return '';
+ const e=escape;
+ const supporting=evidence.find(o=>o!==anchor&&o.observed!==anchor.observed&&
+  o.meaning&&!repeatedReadingText(o.meaning,profile.help)&&!repeatedReadingText(o.meaning,p.answer));
+ const application=[p.reason,plainReading(profile.act)].filter((line,i,lines)=>line&&
+  ![p.answer,p.action,...lines.slice(0,i)].some(value=>repeatedReadingText(line,value)));
+ return `<section class="reading-analysis"><h3>這個結果怎麼理解</h3>
+ <p>這次用<strong>「${e(anchor.observed)}」</strong>當主線。${application.map(line=>e(readingSentence(line))).join('')}</p>
+${supporting?`<p>還有一個角度是「${e(supporting.observed)}」。${e(readingSentence(supporting.meaning))}</p>`:''}
+${detailLine('值得留意',p.risk)}
+ </section>`;
+}
 function render(r,{compact=false,cover='',contextBar='',calculation=''}={}){
  if(!r)return '';
  const e=escape, p=directPresentation(r), evidence=r.evidence||[];
@@ -230,12 +245,13 @@ function render(r,{compact=false,cover='',contextBar='',calculation=''}={}){
   <p class="interpretation-conclusion">${e(p.answer)}</p>
   ${readingStep(p.action)}${contextBar}
  </div>${cover}</div>
+${!compact?renderSingleAnalysis(r,p):''}
  <details class="reading-limits simple-reasons"><summary>展開理由與提醒</summary>
- ${detailLine('這次的提醒',p.reason)}${detailLine('值得留意',p.risk)}
- ${evidence.map(o=>`<article><b>${e(o.label)} · ${e(o.observed)}</b><p>${e(readingSentence(o.meaning))}</p></article>`).join('')}
- ${technical.map(t=>`<p>${e(t)}</p>`).join('')}${calculation}${limits.length||r.scope?`<h4>解讀範圍</h4>${limits.map(t=>`<p>${e(t)}</p>`).join('')}${r.scope?`<p>${e(r.scope)}</p>`:''}`:''}
+${compact?detailLine('這次的提醒',p.reason)+detailLine('值得留意',p.risk):''}
+${evidence.map(o=>`<article><b>${e(o.label)} · ${e(o.observed)}</b><p>${e(readingSentence(o.meaning))}</p></article>`).join('')}
+${technical.map(t=>`<p>${e(t)}</p>`).join('')}${calculation}${limits.length||r.scope?`<h4>解讀範圍</h4>${limits.map(t=>`<p>${e(t)}</p>`).join('')}${r.scope?`<p>${e(r.scope)}</p>`:''}`:''}
  </details>
- ${comic?`<section class="life-explainer"><h3>生活漫畫與人物故事</h3>${comic}</section>`:''}
+${comic?`<section class="life-explainer"><h3>生活漫畫與人物故事</h3>${comic}</section>`:''}
  </section>`;
 }
 
@@ -278,7 +294,7 @@ function questionGuide(topic,question,tag){
  return null;
 }
 function shortAnswer(topic,q,tag,year){
- if(topic==='year')return `${year.year} 年的重點：${year.title}。${year.good}。`;
+ if(topic==='year'&&year)return `${year.year} 年的重點：${year.title}。${year.good}。`;
  const guide=questionGuide(topic,q,tag);
  if(guide)return readingSentence(guide.answer);
  const a=TOPIC_ACTION[topic]?.[tag]||TOPIC_ACTION[topic]?.planning||TOPIC_ACTION.overview.planning;
@@ -323,8 +339,8 @@ function consultation(c,ctx={},events={},customWeights=null){
  if(!main)return {topic:x.topic,question:x.question,year,lenses,comparison,allocation,recommendation,answer:'請先補齊資料或完成一次問事。',first:'回到首頁重新開始',watch:'目前資料不足',difference:'還沒有可比較的結果。',scope:'資料不足，暫不推斷。'};
  if(x.weightMode==='manual'){recommendation.label='自訂配重';recommendation.reason='本次使用你手動調整的比例。';}const second=lenses.find(l=>l.tag!==main.tag),tension=comparison.different;
  const difference=tension.length<2?'這次各派側重相近。':comparison.conflict?`${tension[0].name}提醒「${TAG_LABEL[tension[0].tag]}」，${tension[1].name}提醒「${TAG_LABEL[tension[1].tag]}」。先做可調整的小步驟，再決定是否擴大。`:`${tension[0].name}著重「${TAG_LABEL[tension[0].tag]}」；${tension[1].name}著重「${TAG_LABEL[tension[1].tag]}」。兩個角度都保留，不合成吉凶分數。`;
- const defaultAnswer=shortAnswer(x.topic,x.question,main.tag,year);const lifeReading=interpret(main.id,c,x,events);if(x.topic==='year'){lifeReading.profiles=[{title:main.title,help:main.summary,risk:main.risk,tag:main.tag,act:main.advice}];lifeReading.evidence=[{label:main.role,observed:main.basis,meaning:main.summary}];lifeReading.anchorIndex=0;lifeReading.actions=[{task:main.advice,check:'月底回看實際進度，再調整下一步。'}];}
- return {topic:x.topic,question:x.question,year,lenses,comparison,allocation,recommendation,lead:main.id,lifeReading,answer:defaultAnswer,first:questionGuide(x.topic,x.question,main.tag)?.step||main.advice,watch:second?second.risk:main.risk,difference,scope:'流年採生命靈數曆年制與塔羅年度牌，未包含完整紫微流年或八字喜用推斷。數字流派同源，不當成獨立驗證；各派對照不代表已驗證的預測。'};
+ const defaultAnswer=shortAnswer(x.topic,x.question,main.tag,lenses.some(l=>l.id==='numerology')?year:null);const lifeReading=interpret(main.id,c,x,events);if(x.topic==='year'){lifeReading.profiles=[{title:main.title,help:main.summary,risk:main.risk,tag:main.tag,act:main.advice}];lifeReading.evidence=[{label:main.role,observed:main.basis,meaning:main.summary}];lifeReading.anchorIndex=0;lifeReading.actions=[{task:main.advice,check:'月底回看實際進度，再調整下一步。'}];}
+ return {topic:x.topic,question:x.question,year,lenses,comparison,allocation,recommendation,lead:main.id,lifeReading,answer:defaultAnswer,first:questionGuide(x.topic,x.question,main.tag)?.step||main.advice,watch:second?second.risk:main.risk,difference,scope:x.topic==='year'?'年度解讀取自本次列出的流派。個人年與年度牌共用出生數字，屬於兩種讀法。月份主題供安排與回顧。':'各派依這次可用的資料解讀。合參比較的是不同傳統看事情的角度。實際進展可用生活裡的結果回頭核對。'};
 }
 // A brief reading first; calculation evidence stays available without repeating advice.
 const normalizeReadingText=s=>String(s||'').replace(/[\s\p{P}\p{S}]/gu,'');
@@ -333,29 +349,71 @@ function readingPresentation(r){
  const say=root.FateLife?.plain||String;const answer=say(r.answer||'').trim().replace(r.topic==='year'?/^\d{4}\s*年的重點[：:]\s*/:/^$/,''),action=say(r.first||'').replace(/[。；;\s]+$/g,'').trim();
  const risk=say(r.watch||'').replace(/^留意[：:]\s*/,'').replace(/[。；;\s]+$/g,'').trim();
  const compare=r.comparison||{},common=compare.common;
- const lead=r.lenses?.find(l=>l.id===r.lead)||r.lenses?.[0];
- const reason=r.topic==='year'?'':plainReading(lead?.summary);
  const pair=(compare.different||[]).filter((l,i,ls)=>!ls.slice(0,i).some(p=>p.tag===l.tag)).slice(0,2);
- return {answer,action,reason:repeatedReadingText(answer,reason)?'':reason,showAction:!!action&&!repeatedReadingText(answer,action),risk:repeatedReadingText(answer,risk)||repeatedReadingText(action,risk)?'':risk,common,pair,comparisonKind:common?'common':compare.conflict?'conflict':'different'};
+ return {answer,action,showAction:!!action&&!repeatedReadingText(answer,action),risk:repeatedReadingText(answer,risk)||repeatedReadingText(action,risk)?'':risk,common,pair,comparisonKind:common?'common':compare.conflict?'conflict':'different'};
 }
-function renderReadingBasis(r,overview){const e=escape;return `<details class="reading-evidence"><summary><span>展開理由與提醒</span><small>${r.lenses.length} 派參照</small></summary>${overview}<div class="reading-basis-list">${r.lenses.map(l=>`<article class="reading-basis lens-${e(l.id)}"><img src="./assets/schools/${e(l.id)}.webp" alt="${e(l.name)}" width="1200" height="800" loading="lazy"><div><h4>${e(l.name)}</h4><p class="basis-fact">${e(l.basis)}</p><p>${e(readingSentence(l.summary))}</p>${l.partial?'<small>資料未齊，採目前能計算的部分。</small>':''}${l.cards?`<details><summary>本次三張牌</summary>${l.cards.map(c=>`<p><b>${e(c.position)} · ${e(c.card)}</b><br>${e(c.meaning)}</p>`).join('')}</details>`:''}</div></article>`).join('')}</div><details class="consult-weight-choice"><summary>本題配重</summary><p>${e(r.recommendation?.reason||'依目前可用資料選擇。')}</p><div class="auto-weight-list">${r.lenses.map(l=>`<div><b>${e(l.name)}</b><span>${l.weight}%</span></div>`).join('')}</div>${r.recommendation?.excluded?.length?`<p>資料不足未採用：${e(r.recommendation.excluded.map(id=>NAMES[id]).join('、'))}。</p>`:''}<p>比例決定參照順序，並非準確率。</p></details><details class="consult-limits"><summary>解讀範圍</summary><p>${e(r.scope)}</p></details></details>`;}
-function renderAnnualDetails(r){const e=escape;return `<details class="reading-year-details"><summary><span>${r.year.year} 年工作・感情・財運</span><small>展開</small></summary><div class="annual-areas">${[['工作',r.year.work],['感情',r.year.love],['財運',r.year.wealth]].map(([label,text])=>`<article><b>${label}</b><p>${e(text)}</p></article>`).join('')}</div><details class="reading-month-details"><summary>每月主題</summary><p class="annual-note">生命靈數的月份主題，供年度安排參考。</p><div class="annual-months">${r.year.months.map(m=>`<div><b>${m.month}月</b><span>${e(m.title)}</span></div>`).join('')}</div></details></details>`;}
-function renderConsultation(r,{calculation=''}={}){const e=escape,p=readingPresentation(r),comic=root.FateLife?.render({reading:r.lifeReading,available:r.lenses.length>0}),cover=r.lenses.find(l=>l.id===r.lead)||r.lenses[0];let cross='';
- if(p.common)cross=`<span class="cross-label">共同提醒</span><strong>${e(p.common.title)}</strong><small>${e(p.common.names.join('・'))}</small>`;
- else if(p.pair.length>1)cross=`<span class="cross-label">${p.comparisonKind==='conflict'?'看法有分歧':'各派側重'}</span><div class="cross-pair">${p.pair.map(l=>`<span><small>${e(l.name)}</small><b>${e(TAG_LABEL[l.tag]||l.title)}</b></span>`).join('<i aria-hidden="true">／</i>')}</div>`;
- else cross=`<span class="cross-label">本次參照</span><strong>${e(r.lenses[0]?.name||'資料待補齊')}</strong>`;
- const overview=`${detailLine('這次的提醒',p.reason)}${detailLine('值得留意',p.risk)}
- <div class="reading-crosscheck" data-common="${p.common?'yes':'no'}">${cross}</div>
- ${r.topic==='year'?renderAnnualDetails(r):''}${calculation}`;
+function renderReadingBasis(r,calculation){const e=escape;return `<details class="reading-evidence"><summary><span>展開計算依據與限制</span><small>${r.lenses.length} 派參照</small></summary>${calculation}<div class="reading-basis-list">${r.lenses.map(l=>`<article class="reading-basis lens-${e(l.id)}"><img src="./assets/schools/${e(l.id)}.webp" alt="${e(l.name)}" width="1200" height="800" loading="lazy"><div><h4>${e(l.name)}</h4><p class="basis-fact">${e(l.basis)}</p>${l.partial?'<small>資料未齊，採目前能計算的部分。</small>':''}${l.cards?`<details><summary>本次三張牌</summary>${l.cards.map(c=>`<p><b>${e(c.position)} · ${e(c.card)}</b><br>${e(c.meaning)}</p>`).join('')}</details>`:''}</div></article>`).join('')}</div><details class="consult-weight-choice"><summary>本題配重</summary><p>${e(r.recommendation?.reason||'依目前可用資料選擇。')}</p><div class="auto-weight-list">${r.lenses.map(l=>`<div><b>${e(l.name)}</b><span>${l.weight}%</span></div>`).join('')}</div>${r.recommendation?.excluded?.length?`<p>資料不足未採用：${e(r.recommendation.excluded.map(id=>NAMES[id]).join('、'))}。</p>`:''}<p>比例決定參照順序，並非準確率。</p></details><details class="consult-limits"><summary>解讀範圍</summary><p>${e(r.scope)}</p></details></details>`;}
+const TOPIC_CHECK={
+ career:'試完後，看看實際投入多少時間、做出了什麼，以及對方有沒有願意繼續談或使用的跡象',
+ love:'觀察你說清楚需求後，對方怎麼回應，以及下一次相處時有沒有真的做出改變',
+ wealth:'把實際收支和原先預估並排，看看哪些費用沒算到、原本預留的錢夠不夠',
+ year:'月底回頭看一件已完成的事和一件還卡著的事，用這兩個例子調整下個月的安排',
+ overview:'做完一小步後記下發生了什麼，再決定這個做法值得繼續、改一下，還是先放著'
+};
+const SEQUENCE={
+ 'change:structure':'先把仍要維持的工作、支出或承諾列出來，另外挑一件可以試錯的小事。這樣新做法有空間試，原有安排也有交代',
+ 'change:planning':'先定好願意花多少時間、做到哪裡就回頭看，再開一個小試驗',
+ 'initiative:research':'挑一個可撤回的小動作先做，並事先寫下想查清楚的問題。做完就有資料判斷要不要加快',
+ 'expression:research':'先讓少數合適的人看到你的做法，帶著一個具體問題請他們回應。這樣既有機會被看見，也能查清原本拿不準的事',
+ 'care:closure':'先說清楚自己還願意做到哪裡，再約好什麼情況需要停下或交接',
+ 'cooperate:initiative':'可以由你先提出一件具體的事，再和對方確認誰做哪一段'
+};
+function renderComparison(r,p){
+ const e=escape;
+ const common=p.common?`<p><strong>共同提醒是「${e(p.common.title)}」。</strong>${e(p.common.names.join('、'))}都把重點放在這裡。${e(readingSentence(TOPIC_ACTION[r.topic]?.[p.common.tag]?.[0]))}</p>`:'';
+ const [a,b]=p.pair;
+ const difference=b?`<p><strong>${p.comparisonKind==='conflict'?'兩個提醒可以排出先後':'各派看的角度不同'}。</strong>${e(a.name)}著重「${e(a.title)}」，${e(b.name)}著重「${e(b.title)}」。${e(readingSentence(SEQUENCE[a.tag+':'+b.tag]||SEQUENCE[b.tag+':'+a.tag]||'可以把兩個角度用在不同的決定上。先看看哪一個對應你眼前最卡的事'))}</p>`:'';
+ return common||difference?`<div class="reading-crosscheck" data-common="${p.common?'yes':'no'}">${common}${difference}</div>`:'';
+}
+function renderAnnualDetails(r){
+ const e=escape, y=r.year;
+ const areas=[['工作',y.work,'月底看看哪個做法真的讓進度往前，哪些只是多了一件待辦'],
+  ['感情',y.love,'找一次具體的相處經驗，看看彼此說好的事有沒有做到'],
+  ['財運',y.wealth,'月底用實際帳目回看，確認固定支出和預留的錢都照顧到了']];
+ return `<section class="reading-year-details"><h4>${y.year} 年放到生活裡</h4>
+ <div class="annual-areas">${areas.map(([label,action,check])=>`<p><strong>${label}</strong> ${e(readingSentence(action))}${e(readingSentence(check))}</p>`).join('')}</div>
+ <details class="reading-month-details"><summary>查看每月主題</summary><div class="annual-months">${y.months.map(m=>`<div><b>${m.month} 月</b><span>${e(m.title)}</span></div>`).join('')}</div></details></section>`;
+}
+function renderConsultationAnalysis(r,p){
+ if(!r.lenses.length)return '';
+ const e=escape, covered=[p.answer,p.action];
+ const readings=r.lenses.map(l=>{
+  const action=covered.some(text=>repeatedReadingText(text,l.advice))?'':l.advice;
+  if(action)covered.push(action);
+  const summary=readingSentence(l.summary);
+  const observation=`這一派從「${l.basis}」讀到「${l.title}」`;
+  return `<p class="lens-explanation"><strong>${e(l.name)}</strong> ${e(readingSentence(observation))}${e(summary)}${e(readingSentence(action))}${l.partial?' 這段依已算出的資料解讀。':''}</p>`;
+ });
+ return `<section class="reading-analysis"><h3>合參怎麼看這個問題</h3>
+${renderComparison(r,p)}
+ <div class="reading-perspectives"><h4>各派看到什麼</h4>${readings.join('')}</div>
+${detailLine('值得留意',p.risk)}
+${r.topic==='year'&&r.lenses.some(l=>l.id==='numerology')?renderAnnualDetails(r):''}
+${detailLine('做完怎麼回看',TOPIC_CHECK[r.topic])}
+ </section>`;
+}
+function renderConsultation(r,{calculation=''}={}){
+ const e=escape,p=readingPresentation(r),comic=root.FateLife?.render({reading:r.lifeReading,available:r.lenses.length>0}),cover=r.lenses.find(l=>l.id===r.lead)||r.lenses[0];
  return `<section class="consultation editorial-reading reading-dossier reading-friendly" data-consultation data-topic="${e(r.topic)}">
  <article class="reading-lead"><div class="dossier-hero reading-opening"><div class="dossier-copy reading-first">
  <div class="brief-meta"><span>合參解讀</span><span>${e(r.topic==='year'?r.year.year+' 流年':TOPICS[r.topic])}</span></div>
  <h2 class="reading-question">${e(r.question||TOPICS[r.topic])}</h2><p class="direct-answer">${e(p.answer)}</p>
- ${p.showAction?readingStep(p.action):''}</div>
- ${cover?`<figure class="dossier-art"><img src="./assets/schools/${e(cover.id)}.webp" alt="${e(cover.name)}" width="1200" height="800"><figcaption>${e(cover.name)}</figcaption></figure>`:''}
+${p.showAction?readingStep(p.action):''}</div>
+${cover?`<figure class="dossier-art"><img src="./assets/schools/${e(cover.id)}.webp" alt="${e(cover.name)}" width="1200" height="800"><figcaption>${e(cover.name)}</figcaption></figure>`:''}
  </div></article>
- <div class="reading-footnotes">${renderReadingBasis(r,overview)}</div>
- ${comic?`<section class="life-explainer"><h3>生活漫畫與人物故事</h3>${comic}</section>`:''}
+${renderConsultationAnalysis(r,p)}
+ <div class="reading-footnotes">${renderReadingBasis(r,calculation)}</div>
+${comic?`<section class="life-explainer"><h3>生活漫畫與人物故事</h3>${comic}</section>`:''}
  </section>`;
 
 }

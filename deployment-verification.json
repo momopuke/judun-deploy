@@ -1,14 +1,17 @@
 {
-  "version": "3.10.0",
-  "url": "https://momopuke.github.io/judun-deploy/?v=3.10.0",
+  "version": "3.11.0",
+  "url": "https://momopuke.github.io/judun-deploy/?v=3.11.0",
   "source_validation": {
-    "engine_and_reading_checks": 655,
+    "engine_and_reading_checks": 660,
     "ceremony_checks": 12,
     "comic_assets": 11,
     "live_https": "release workflow compares all deployed asset hashes",
     "original_school_assets": 12
   },
   "scenarios": [
+    "Visible single-system and combined analysis paragraphs precede technical disclosures.",
+    "Combined annual readings explain all participating methods and only show the personal-year and month themes when numerology participates.",
+    "The comparison and caution text have explicit colors on dark surfaces.",
     "Single and combined readings share one opening for the question, answer, next step and original cover.",
     "The same question responds to the actual symbolic focus and keeps caveats, comparison and charts in one disclosure.",
     "All twelve system choices render their original school illustrations.",

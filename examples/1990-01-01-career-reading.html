@@ -318,17 +318,74 @@ body.game-edition #home .direct-entry{grid-column:1!important;grid-row:3!importa
   .reading-friendly .reading-first .interpretation-conclusion,.reading-friendly .direct-answer,
   .reading-friendly .reading-next-step,.reading-next-step>b,.reading-detail-line>b{color:#29272b!important}
 }
+
+/* Reading paragraphs use one dark editorial surface and explicit text colors. */
+.reading-friendly .reading-analysis{
+  margin:22px 0 0;padding:clamp(18px,3vw,32px);
+  border:1px solid #695477;border-radius:16px;background:#261e34;color:#f0e5f5;
+  overflow-wrap:anywhere
+}
+.reading-friendly .reading-analysis h3,.reading-friendly .reading-analysis h4{
+  color:#ffe4b6;margin:0 0 12px;font-family:var(--sans);font-weight:600
+}
+.reading-friendly .reading-analysis h3{font-size:clamp(20px,2vw,25px)}
+.reading-friendly .reading-analysis h4{font-size:17px}
+.reading-friendly .reading-analysis p,.reading-friendly .reading-detail-line{
+  color:#f0e5f5!important;font:400 clamp(16px,1.5vw,18px)/1.8 var(--sans);
+  margin:0 0 13px;max-width:46em
+}
+.reading-friendly .reading-analysis p:last-child{margin-bottom:0}
+.reading-friendly .reading-analysis strong,.reading-friendly .reading-detail-line b{color:#ffe4b6!important}
+.reading-friendly.reading-dossier .reading-analysis .reading-crosscheck{
+  display:block;margin:0 0 21px;padding:13px 17px;
+  border:0;border-left:3px solid #d6ae7b!important;border-radius:0 9px 9px 0;background:#352843
+}
+.reading-friendly .reading-perspectives{margin-bottom:18px}
+.reading-friendly .reading-year-details{
+  padding-top:17px;margin:17px 0;border-top:1px solid #695477
+}
+.reading-friendly .reading-year-details .annual-areas{
+  display:block;margin:0;padding:0;border:0
+}
+.reading-friendly .reading-month-details summary,.reading-friendly .reading-evidence>summary small,
+.reading-friendly .reading-evidence>summary::after,.reading-friendly .reading-evidence .reading-basis small{
+  color:#decce8!important
+}
+.reading-friendly .reading-month-details .annual-months,
+.reading-friendly .reading-evidence .consult-weight-choice,.reading-friendly .reading-evidence .consult-limits{
+  color:#f0e5f5
+}
+.reading-friendly .reading-month-details .annual-months b{color:#ffe4b6}
+.reading-friendly .reading-month-details{padding:7px 0;border-color:#695477}
+.reading-friendly .reading-evidence .auto-weight-list>div{
+  color:#f0e5f5;background:#352843;border-color:#695477
+}
+.reading-friendly .reading-evidence .auto-weight-list b,
+.reading-friendly .reading-evidence .auto-weight-list span{color:#f0e5f5}
+@media print{
+ .reading-friendly .reading-analysis,.reading-friendly.reading-dossier .reading-analysis .reading-crosscheck{
+   background:#fff!important;border-color:#888!important
+ }
+ .reading-friendly .reading-analysis h3,.reading-friendly .reading-analysis h4,
+ .reading-friendly .reading-analysis p,.reading-friendly .reading-analysis strong,
+ .reading-friendly .reading-detail-line b{color:#29272b!important}
+}
  body{background:#f4f1e9;color:#293733;max-width:1040px;margin:auto;padding:32px}body:before{display:none}.report-sheet{color:#293733}.report-cover h2{color:#293733}.report-item{color:#293733}.notice,.muted{color:#768172}a{color:#3f6951}@media print{body{padding:0}}</style></head><body class="report-export"><div class="consult-report-head"><span>合參 · 1990-01-01</span><div class="report-edit-actions"></div></div><section class="consultation editorial-reading reading-dossier reading-friendly" data-consultation data-topic="career">
  <article class="reading-lead"><div class="dossier-hero reading-opening"><div class="dossier-copy reading-first">
  <div class="brief-meta"><span>合參解讀</span><span>工作與創業</span></div>
  <h2 class="reading-question">現在適合換工作嗎？</h2><p class="direct-answer">可以先去看看新機會。拿到具體條件後，你會更容易判斷值不值得換。</p>
- <p class="reading-next-step" data-primary-action><b>你可以先試</b> 找一個有興趣的職缺，記下它比現在好的地方，還有你要付出的代價。</p></div>
- <figure class="dossier-art"><figcaption>八字四柱</figcaption></figure>
+<p class="reading-next-step" data-primary-action><b>你可以先試</b> 找一個有興趣的職缺，記下它比現在好的地方，還有你要付出的代價。</p></div>
+<figure class="dossier-art"><figcaption>八字四柱</figcaption></figure>
  </div></article>
- <div class="reading-footnotes"><details open class="reading-evidence"><summary><span>展開理由與提醒</span><small>4 派參照</small></summary><p class="reading-detail-line"><b>這次的提醒</b> 強調自行承擔及同儕之間的合作。</p><p class="reading-detail-line"><b>值得留意</b> 長期對外付出，忽略恢復與回報。</p>
- <div class="reading-crosscheck" data-common="yes"><span class="cross-label">共同提醒</span><strong>先踏出一步</strong><small>八字四柱・傳統塔羅</small></div>
- <div class="reading-basis-list"><article class="reading-basis lens-bazi"><div><h4>八字四柱</h4><p class="basis-fact">丙子 · 比肩</p><p>強調自行承擔及同儕之間的合作。</p></div></article><article class="reading-basis lens-ziwei"><div><h4>紫微斗數</h4><p class="basis-fact">乙亥 · 太陽（陷）</p><p>透過表達、服務和被看見的成果帶動他人。</p></div></article><article class="reading-basis lens-iching"><div><h4>易經六十四卦</h4><p class="basis-fact">第 29 卦 · 坎</p><p>把不確定拆成可處理的步驟。</p></div></article><article class="reading-basis lens-tarotDraw"><div><h4>傳統塔羅</h4><p class="basis-fact">權杖五 · 正位</p><p>意見角力。</p><details open><summary>本次三張牌</summary><p><b>過去／背景 · 錢幣八 · 正位</b><br>正位可從「技能練習」找資源，同時留意「困在細節，沒有接觸實際需求」。</p><p><b>現在／焦點 · 權杖五 · 正位</b><br>正位可從「意見角力」找資源，同時留意「把磨合升高成人身對立」。</p><p><b>接下來的反思方向 · 寶劍二 · 正位</b><br>正位可從「權衡僵局」找資源，同時留意「拖延取捨，讓時間替你決定」。</p></details></div></article></div><details open class="consult-weight-choice"><summary>本題配重</summary><p>先參照做事方式與工作宮位，再看本次選擇的提醒。</p><div class="auto-weight-list"><div><b>八字四柱</b><span>30%</span></div><div><b>紫微斗數</b><span>25%</span></div><div><b>易經六十四卦</b><span>25%</span></div><div><b>傳統塔羅</b><span>20%</span></div></div><p>比例決定參照順序，並非準確率。</p></details><details open class="consult-limits"><summary>解讀範圍</summary><p>流年採生命靈數曆年制與塔羅年度牌，未包含完整紫微流年或八字喜用推斷。數字流派同源，不當成獨立驗證；各派對照不代表已驗證的預測。</p></details></details></div>
- <section class="life-explainer"><h3>生活漫畫與人物故事</h3><section class="result-bridge" data-life-key="bazi|career|月柱：透干關係|丙子 · 比肩|自主與同儕" data-life-system="bazi">
+<section class="reading-analysis"><h3>合參怎麼看這個問題</h3>
+<div class="reading-crosscheck" data-common="no"><p><strong>兩個提醒可以排出先後。</strong>易經六十四卦著重「把合作談清楚」，八字四柱著重「先踏出一步」。可以由你先提出一件具體的事，再和對方確認誰做哪一段。</p></div>
+ <div class="reading-perspectives"><h4>各派看到什麼</h4><p class="lens-explanation"><strong>八字四柱</strong> 這一派從「丙子 · 比肩」讀到「先踏出一步」。強調自行承擔及同儕之間的合作。先爭取一個新任務，看看是否適合自己。</p><p class="lens-explanation"><strong>紫微斗數</strong> 這一派從「乙亥 · 太陽（陷）」讀到「讓人看見你」。透過表達、服務和被看見的成果帶動他人。拿出作品或案例，讓真正需要的人看見。</p><p class="lens-explanation"><strong>易經六十四卦</strong> 這一派從「第 31 卦 · 咸」讀到「把合作談清楚」。從真實回饋建立連結。先談清楚分工與報酬，再答應合作。</p><p class="lens-explanation"><strong>傳統塔羅</strong> 這一派從「錢幣五 · 正位」讀到「穩住節奏」。匱乏焦慮。把薪資、工時與成長機會列清楚再比較。</p></div>
+<p class="reading-detail-line"><b>值得留意</b> 長期對外付出，忽略恢復與回報。</p>
+
+<p class="reading-detail-line"><b>做完怎麼回看</b> 試完後，看看實際投入多少時間、做出了什麼，以及對方有沒有願意繼續談或使用的跡象。</p>
+ </section>
+ <div class="reading-footnotes"><details open class="reading-evidence"><summary><span>展開計算依據與限制</span><small>4 派參照</small></summary><div class="reading-basis-list"><article class="reading-basis lens-bazi"><div><h4>八字四柱</h4><p class="basis-fact">丙子 · 比肩</p></div></article><article class="reading-basis lens-ziwei"><div><h4>紫微斗數</h4><p class="basis-fact">乙亥 · 太陽（陷）</p></div></article><article class="reading-basis lens-iching"><div><h4>易經六十四卦</h4><p class="basis-fact">第 31 卦 · 咸</p></div></article><article class="reading-basis lens-tarotDraw"><div><h4>傳統塔羅</h4><p class="basis-fact">錢幣五 · 正位</p><details open><summary>本次三張牌</summary><p><b>過去／背景 · 聖杯六 · 逆位</b><br>逆位先檢查「把熟悉感誤認為適合」是否已在發生；也可能是這個功能尚未表達，不直接等同凶兆。</p><p><b>現在／焦點 · 錢幣五 · 正位</b><br>正位可從「匱乏焦慮」找資源，同時留意「因羞愧或悲觀而孤立自己」。</p><p><b>接下來的反思方向 · 寶劍七 · 正位</b><br>正位可從「策略保留」找資源，同時留意「把猜疑當成證據，或過度隱瞞」。</p></details></div></article></div><details open class="consult-weight-choice"><summary>本題配重</summary><p>先參照做事方式與工作宮位，再看本次選擇的提醒。</p><div class="auto-weight-list"><div><b>八字四柱</b><span>30%</span></div><div><b>紫微斗數</b><span>25%</span></div><div><b>易經六十四卦</b><span>25%</span></div><div><b>傳統塔羅</b><span>20%</span></div></div><p>比例決定參照順序，並非準確率。</p></details><details open class="consult-limits"><summary>解讀範圍</summary><p>各派依這次可用的資料解讀。合參比較的是不同傳統看事情的角度。實際進展可用生活裡的結果回頭核對。</p></details></details></div>
+<section class="life-explainer"><h3>生活漫畫與人物故事</h3><section class="result-bridge" data-life-key="bazi|career|月柱：透干關係|丙子 · 比肩|自主與同儕" data-life-system="bazi">
   <header class="bridge-head"><h3>接到一件新任務</h3></header>
   <div class="bridge-steps">
    <article class="bridge-card"><h4>想像一下</h4><p>接到一件新任務時，先分清需要自己主動處理的部分，以及適合找人協作的部分。</p></article>

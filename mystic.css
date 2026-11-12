@@ -142,3 +142,55 @@ body.game-edition #home .direct-entry{grid-column:1!important;grid-row:3!importa
   .reading-friendly .reading-first .interpretation-conclusion,.reading-friendly .direct-answer,
   .reading-friendly .reading-next-step,.reading-next-step>b,.reading-detail-line>b{color:#29272b!important}
 }
+
+/* Reading paragraphs use one dark editorial surface and explicit text colors. */
+.reading-friendly .reading-analysis{
+  margin:22px 0 0;padding:clamp(18px,3vw,32px);
+  border:1px solid #695477;border-radius:16px;background:#261e34;color:#f0e5f5;
+  overflow-wrap:anywhere
+}
+.reading-friendly .reading-analysis h3,.reading-friendly .reading-analysis h4{
+  color:#ffe4b6;margin:0 0 12px;font-family:var(--sans);font-weight:600
+}
+.reading-friendly .reading-analysis h3{font-size:clamp(20px,2vw,25px)}
+.reading-friendly .reading-analysis h4{font-size:17px}
+.reading-friendly .reading-analysis p,.reading-friendly .reading-detail-line{
+  color:#f0e5f5!important;font:400 clamp(16px,1.5vw,18px)/1.8 var(--sans);
+  margin:0 0 13px;max-width:46em
+}
+.reading-friendly .reading-analysis p:last-child{margin-bottom:0}
+.reading-friendly .reading-analysis strong,.reading-friendly .reading-detail-line b{color:#ffe4b6!important}
+.reading-friendly.reading-dossier .reading-analysis .reading-crosscheck{
+  display:block;margin:0 0 21px;padding:13px 17px;
+  border:0;border-left:3px solid #d6ae7b!important;border-radius:0 9px 9px 0;background:#352843
+}
+.reading-friendly .reading-perspectives{margin-bottom:18px}
+.reading-friendly .reading-year-details{
+  padding-top:17px;margin:17px 0;border-top:1px solid #695477
+}
+.reading-friendly .reading-year-details .annual-areas{
+  display:block;margin:0;padding:0;border:0
+}
+.reading-friendly .reading-month-details summary,.reading-friendly .reading-evidence>summary small,
+.reading-friendly .reading-evidence>summary::after,.reading-friendly .reading-evidence .reading-basis small{
+  color:#decce8!important
+}
+.reading-friendly .reading-month-details .annual-months,
+.reading-friendly .reading-evidence .consult-weight-choice,.reading-friendly .reading-evidence .consult-limits{
+  color:#f0e5f5
+}
+.reading-friendly .reading-month-details .annual-months b{color:#ffe4b6}
+.reading-friendly .reading-month-details{padding:7px 0;border-color:#695477}
+.reading-friendly .reading-evidence .auto-weight-list>div{
+  color:#f0e5f5;background:#352843;border-color:#695477
+}
+.reading-friendly .reading-evidence .auto-weight-list b,
+.reading-friendly .reading-evidence .auto-weight-list span{color:#f0e5f5}
+@media print{
+ .reading-friendly .reading-analysis,.reading-friendly.reading-dossier .reading-analysis .reading-crosscheck{
+   background:#fff!important;border-color:#888!important
+ }
+ .reading-friendly .reading-analysis h3,.reading-friendly .reading-analysis h4,
+ .reading-friendly .reading-analysis p,.reading-friendly .reading-analysis strong,
+ .reading-friendly .reading-detail-line b{color:#29272b!important}
+}
