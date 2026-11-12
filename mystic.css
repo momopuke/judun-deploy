@@ -194,3 +194,46 @@ body.game-edition #home .direct-entry{grid-column:1!important;grid-row:3!importa
  .reading-friendly .reading-analysis p,.reading-friendly .reading-analysis strong,
  .reading-friendly .reading-detail-line b{color:#29272b!important}
 }
+
+/* Captions belong to the panel they describe. */
+.reading-friendly .result-bridge .bridge-card{
+  margin:0;padding:0!important;min-width:0;overflow:hidden;
+  border:1px solid #695477!important;border-radius:13px;background:#2d243c!important
+}
+.reading-friendly .result-bridge .bridge-panel{margin:0;border-radius:0}
+.reading-friendly .result-bridge .comic-caption{
+  padding:13px 14px 15px;border-top:1px solid #695477;
+  color:#f4eaf7;overflow-wrap:anywhere
+}
+.reading-friendly .result-bridge .comic-caption h4{color:#ffe0a8!important}
+.reading-friendly .result-bridge .comic-caption p{
+  color:#f4eaf7!important;font-size:16px!important;margin-left:-.4em
+}
+.reading-friendly .result-bridge .bridge-caption{
+  margin:14px 0 22px;padding:11px 14px;border-left:2px solid #c49c69;
+  color:#e7daec!important;background:#292136
+}
+.reading-friendly .result-bridge .bridge-caption strong{color:#ffe0a8}
+.reading-friendly .people-story>summary{
+  display:flex;flex-wrap:wrap;align-items:baseline;gap:5px 13px;
+  color:#ffe0a8!important;line-height:1.5
+}
+.reading-friendly .people-story>summary>span{
+  color:#f1e6f4!important;font-weight:500;font-size:17px!important
+}
+.reading-friendly .people-body{max-width:50rem}
+.reading-friendly .people-body>p,.reading-friendly .people-question p{
+  color:#f0e5f3!important;font-size:16px!important;line-height:1.8
+}
+.reading-friendly .people-body>p{margin:0 0 13px}
+.reading-friendly .people-body .people-era{margin:7px 0 10px}
+.reading-friendly .people-question h4{margin:0 0 8px;color:#ffe0a8!important;font-size:17px}
+.reading-friendly .people-question p+p{margin-top:8px}
+@media print{
+ .reading-friendly .result-bridge .bridge-card,.reading-friendly .result-bridge .bridge-caption,
+ .reading-friendly .people-question{background:#fff!important;border-color:#aaa!important}
+ .reading-friendly .result-bridge .comic-caption h4,.reading-friendly .result-bridge .comic-caption p,
+ .reading-friendly .result-bridge .bridge-caption,.reading-friendly .result-bridge .bridge-caption strong,
+ .reading-friendly .people-body>p,.reading-friendly .people-question p,.reading-friendly .people-question h4,
+ .reading-friendly .people-story>summary,.reading-friendly .people-story>summary>span{color:#29272b!important}
+}

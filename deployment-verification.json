@@ -1,14 +1,16 @@
 {
-  "version": "3.11.0",
-  "url": "https://momopuke.github.io/judun-deploy/?v=3.11.0",
+  "version": "3.12.0",
+  "url": "https://momopuke.github.io/judun-deploy/?v=3.12.0",
   "source_validation": {
-    "engine_and_reading_checks": 660,
+    "engine_and_reading_checks": 674,
     "ceremony_checks": 12,
     "comic_assets": 11,
     "live_https": "release workflow compares all deployed asset hashes",
     "original_school_assets": 12
   },
   "scenarios": [
+    "Eleven storyboards have scene-specific captions attached to all three original images.",
+    "Nine historical stories have three substantive paragraphs, a contextual practical question, and a source.",
     "Visible single-system and combined analysis paragraphs precede technical disclosures.",
     "Combined annual readings explain all participating methods and only show the personal-year and month themes when numerology participates.",
     "The comparison and caution text have explicit colors on dark surfaces.",

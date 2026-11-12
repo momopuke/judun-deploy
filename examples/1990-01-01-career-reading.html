@@ -370,6 +370,49 @@ body.game-edition #home .direct-entry{grid-column:1!important;grid-row:3!importa
  .reading-friendly .reading-analysis p,.reading-friendly .reading-analysis strong,
  .reading-friendly .reading-detail-line b{color:#29272b!important}
 }
+
+/* Captions belong to the panel they describe. */
+.reading-friendly .result-bridge .bridge-card{
+  margin:0;padding:0!important;min-width:0;overflow:hidden;
+  border:1px solid #695477!important;border-radius:13px;background:#2d243c!important
+}
+.reading-friendly .result-bridge .bridge-panel{margin:0;border-radius:0}
+.reading-friendly .result-bridge .comic-caption{
+  padding:13px 14px 15px;border-top:1px solid #695477;
+  color:#f4eaf7;overflow-wrap:anywhere
+}
+.reading-friendly .result-bridge .comic-caption h4{color:#ffe0a8!important}
+.reading-friendly .result-bridge .comic-caption p{
+  color:#f4eaf7!important;font-size:16px!important;margin-left:-.4em
+}
+.reading-friendly .result-bridge .bridge-caption{
+  margin:14px 0 22px;padding:11px 14px;border-left:2px solid #c49c69;
+  color:#e7daec!important;background:#292136
+}
+.reading-friendly .result-bridge .bridge-caption strong{color:#ffe0a8}
+.reading-friendly .people-story>summary{
+  display:flex;flex-wrap:wrap;align-items:baseline;gap:5px 13px;
+  color:#ffe0a8!important;line-height:1.5
+}
+.reading-friendly .people-story>summary>span{
+  color:#f1e6f4!important;font-weight:500;font-size:17px!important
+}
+.reading-friendly .people-body{max-width:50rem}
+.reading-friendly .people-body>p,.reading-friendly .people-question p{
+  color:#f0e5f3!important;font-size:16px!important;line-height:1.8
+}
+.reading-friendly .people-body>p{margin:0 0 13px}
+.reading-friendly .people-body .people-era{margin:7px 0 10px}
+.reading-friendly .people-question h4{margin:0 0 8px;color:#ffe0a8!important;font-size:17px}
+.reading-friendly .people-question p+p{margin-top:8px}
+@media print{
+ .reading-friendly .result-bridge .bridge-card,.reading-friendly .result-bridge .bridge-caption,
+ .reading-friendly .people-question{background:#fff!important;border-color:#aaa!important}
+ .reading-friendly .result-bridge .comic-caption h4,.reading-friendly .result-bridge .comic-caption p,
+ .reading-friendly .result-bridge .bridge-caption,.reading-friendly .result-bridge .bridge-caption strong,
+ .reading-friendly .people-body>p,.reading-friendly .people-question p,.reading-friendly .people-question h4,
+ .reading-friendly .people-story>summary,.reading-friendly .people-story>summary>span{color:#29272b!important}
+}
  body{background:#f4f1e9;color:#293733;max-width:1040px;margin:auto;padding:32px}body:before{display:none}.report-sheet{color:#293733}.report-cover h2{color:#293733}.report-item{color:#293733}.notice,.muted{color:#768172}a{color:#3f6951}@media print{body{padding:0}}</style></head><body class="report-export"><div class="consult-report-head"><span>合參 · 1990-01-01</span><div class="report-edit-actions"></div></div><section class="consultation editorial-reading reading-dossier reading-friendly" data-consultation data-topic="career">
  <article class="reading-lead"><div class="dossier-hero reading-opening"><div class="dossier-copy reading-first">
  <div class="brief-meta"><span>合參解讀</span><span>工作與創業</span></div>
@@ -378,19 +421,29 @@ body.game-edition #home .direct-entry{grid-column:1!important;grid-row:3!importa
 <figure class="dossier-art"><figcaption>八字四柱</figcaption></figure>
  </div></article>
 <section class="reading-analysis"><h3>合參怎麼看這個問題</h3>
-<div class="reading-crosscheck" data-common="no"><p><strong>兩個提醒可以排出先後。</strong>易經六十四卦著重「把合作談清楚」，八字四柱著重「先踏出一步」。可以由你先提出一件具體的事，再和對方確認誰做哪一段。</p></div>
- <div class="reading-perspectives"><h4>各派看到什麼</h4><p class="lens-explanation"><strong>八字四柱</strong> 這一派從「丙子 · 比肩」讀到「先踏出一步」。強調自行承擔及同儕之間的合作。先爭取一個新任務，看看是否適合自己。</p><p class="lens-explanation"><strong>紫微斗數</strong> 這一派從「乙亥 · 太陽（陷）」讀到「讓人看見你」。透過表達、服務和被看見的成果帶動他人。拿出作品或案例，讓真正需要的人看見。</p><p class="lens-explanation"><strong>易經六十四卦</strong> 這一派從「第 31 卦 · 咸」讀到「把合作談清楚」。從真實回饋建立連結。先談清楚分工與報酬，再答應合作。</p><p class="lens-explanation"><strong>傳統塔羅</strong> 這一派從「錢幣五 · 正位」讀到「穩住節奏」。匱乏焦慮。把薪資、工時與成長機會列清楚再比較。</p></div>
+<div class="reading-crosscheck" data-common="no"><p><strong>各派看的角度不同。</strong>八字四柱著重「先踏出一步」，紫微斗數著重「讓人看見你」。可以把兩個角度用在不同的決定上。先看看哪一個對應你眼前最卡的事。</p></div>
+ <div class="reading-perspectives"><h4>各派看到什麼</h4><p class="lens-explanation"><strong>八字四柱</strong> 這一派從「丙子 · 比肩」讀到「先踏出一步」。強調自行承擔及同儕之間的合作。先爭取一個新任務，看看是否適合自己。</p><p class="lens-explanation"><strong>紫微斗數</strong> 這一派從「乙亥 · 太陽（陷）」讀到「讓人看見你」。透過表達、服務和被看見的成果帶動他人。拿出作品或案例，讓真正需要的人看見。</p><p class="lens-explanation"><strong>易經六十四卦</strong> 這一派從「第 26 卦 · 大畜」讀到「先練好這件事需要的本事」。保存能力、經驗和可運用的資源。先補足新工作最需要的一項能力。</p><p class="lens-explanation"><strong>傳統塔羅</strong> 這一派從「錢幣四 · 正位」讀到「穩住節奏」。守住資源。把薪資、工時與成長機會列清楚再比較。</p></div>
 <p class="reading-detail-line"><b>值得留意</b> 長期對外付出，忽略恢復與回報。</p>
 
 <p class="reading-detail-line"><b>做完怎麼回看</b> 試完後，看看實際投入多少時間、做出了什麼，以及對方有沒有願意繼續談或使用的跡象。</p>
  </section>
- <div class="reading-footnotes"><details open class="reading-evidence"><summary><span>展開計算依據與限制</span><small>4 派參照</small></summary><div class="reading-basis-list"><article class="reading-basis lens-bazi"><div><h4>八字四柱</h4><p class="basis-fact">丙子 · 比肩</p></div></article><article class="reading-basis lens-ziwei"><div><h4>紫微斗數</h4><p class="basis-fact">乙亥 · 太陽（陷）</p></div></article><article class="reading-basis lens-iching"><div><h4>易經六十四卦</h4><p class="basis-fact">第 31 卦 · 咸</p></div></article><article class="reading-basis lens-tarotDraw"><div><h4>傳統塔羅</h4><p class="basis-fact">錢幣五 · 正位</p><details open><summary>本次三張牌</summary><p><b>過去／背景 · 聖杯六 · 逆位</b><br>逆位先檢查「把熟悉感誤認為適合」是否已在發生；也可能是這個功能尚未表達，不直接等同凶兆。</p><p><b>現在／焦點 · 錢幣五 · 正位</b><br>正位可從「匱乏焦慮」找資源，同時留意「因羞愧或悲觀而孤立自己」。</p><p><b>接下來的反思方向 · 寶劍七 · 正位</b><br>正位可從「策略保留」找資源，同時留意「把猜疑當成證據，或過度隱瞞」。</p></details></div></article></div><details open class="consult-weight-choice"><summary>本題配重</summary><p>先參照做事方式與工作宮位，再看本次選擇的提醒。</p><div class="auto-weight-list"><div><b>八字四柱</b><span>30%</span></div><div><b>紫微斗數</b><span>25%</span></div><div><b>易經六十四卦</b><span>25%</span></div><div><b>傳統塔羅</b><span>20%</span></div></div><p>比例決定參照順序，並非準確率。</p></details><details open class="consult-limits"><summary>解讀範圍</summary><p>各派依這次可用的資料解讀。合參比較的是不同傳統看事情的角度。實際進展可用生活裡的結果回頭核對。</p></details></details></div>
+ <div class="reading-footnotes"><details open class="reading-evidence"><summary><span>展開計算依據與限制</span><small>4 派參照</small></summary><div class="reading-basis-list"><article class="reading-basis lens-bazi"><div><h4>八字四柱</h4><p class="basis-fact">丙子 · 比肩</p></div></article><article class="reading-basis lens-ziwei"><div><h4>紫微斗數</h4><p class="basis-fact">乙亥 · 太陽（陷）</p></div></article><article class="reading-basis lens-iching"><div><h4>易經六十四卦</h4><p class="basis-fact">第 26 卦 · 大畜</p></div></article><article class="reading-basis lens-tarotDraw"><div><h4>傳統塔羅</h4><p class="basis-fact">錢幣四 · 正位</p><details open><summary>本次三張牌</summary><p><b>過去／背景 · 錢幣侍者 · 逆位</b><br>逆位先檢查「一直準備，還沒有實際成果」是否已在發生；也可能是這個功能尚未表達，不直接等同凶兆。</p><p><b>現在／焦點 · 錢幣四 · 正位</b><br>正位可從「守住資源」找資源，同時留意「為了安全感不願投入任何改變」。</p><p><b>接下來的反思方向 · 權杖騎士 · 正位</b><br>正位可從「勇於嘗試」找資源，同時留意「衝太快，承諾變來變去」。</p></details></div></article></div><details open class="consult-weight-choice"><summary>本題配重</summary><p>先參照做事方式與工作宮位，再看本次選擇的提醒。</p><div class="auto-weight-list"><div><b>八字四柱</b><span>30%</span></div><div><b>紫微斗數</b><span>25%</span></div><div><b>易經六十四卦</b><span>25%</span></div><div><b>傳統塔羅</b><span>20%</span></div></div><p>比例決定參照順序，並非準確率。</p></details><details open class="consult-limits"><summary>解讀範圍</summary><p>各派依這次可用的資料解讀。合參比較的是不同傳統看事情的角度。實際進展可用生活裡的結果回頭核對。</p></details></details></div>
 <section class="life-explainer"><h3>生活漫畫與人物故事</h3><section class="result-bridge" data-life-key="bazi|career|月柱：透干關係|丙子 · 比肩|自主與同儕" data-life-system="bazi">
-  <header class="bridge-head"><h3>接到一件新任務</h3></header>
-  <div class="bridge-steps">
-   <article class="bridge-card"><h4>想像一下</h4><p>接到一件新任務時，先分清需要自己主動處理的部分，以及適合找人協作的部分。</p></article>
-   <article class="bridge-card"><h4>可以這樣看</h4><p>強調自行承擔及同儕之間的合作。</p></article>
-   <article class="bridge-card"><h4>試著做一步</h4><p>把可以合作的部分明確分工。</p></article></div>
-  <p class="bridge-caption">生活情境為示意。這次的線索是 丙子 · 比肩。</p>
-<details class="people-story" open data-story="curie"><summary>一個可以借鏡的故事 <span>瑪麗・居禮</span></summary><div class="people-body"><span class="people-era">近代・波蘭／法國</span><p>她與皮耶發現礦石的測量結果無法只用鈾解釋，便持續分離、測量，逐步找到釙與鐳。</p><p class="story-connection"><strong>這段故事可以怎麼用？</strong>這次提醒先查證或與人協作，可借她與研究夥伴持續測量的經歷，想想哪一步能接受實際檢驗。</p><div class="people-question"><small>如果換成你</small><p>你的想法，能不能先用一個小實驗或一次實際回應來確認？</p></div><a href="https://lemelson.mit.edu/resources/marie-curie" target="_blank" rel="noopener noreferrer">出處：MIT Lemelson 人物資料 ↗</a><small class="people-note">僅比較這段經歷與本次提醒；不表示命盤相同，也不是命盤驗證。</small></div></details></section></section>
+ <header class="bridge-head"><h3>四根柱子，先接穩第一個接點</h3></header>
+ <div class="bridge-steps"><figure class="bridge-card">
+
+ <figcaption class="comic-caption"><h4>木料到了</h4><p>「四根柱子都要裝上，先從哪一根開始？」</p></figcaption></figure><figure class="bridge-card">
+
+ <figcaption class="comic-caption"><h4>比對榫口</h4><p>「先看哪兩塊接得起來，再拿給夥伴一起確認。」</p></figcaption></figure><figure class="bridge-card">
+
+ <figcaption class="comic-caption"><h4>兩人一起裝</h4><p>「你扶住木柱，我把這個接點裝好。」</p></figcaption></figure></div>
+ <p class="bridge-caption"><strong>回到你的問題</strong> 這次的線索是「丙子 · 比肩」。強調自行承擔及同儕之間的合作。把可以合作的部分明確分工。</p>
+<details class="people-story" open data-story="curie">
+ <summary>瑪麗・居禮 <span>礦石的讀數超出預期，她循著差距追下去</span></summary>
+ <div class="people-body"><span class="people-era">近代・波蘭／法國</span>
+ <p>瑪麗・居禮研究鈾所發出的輻射時，遇到一個數字上的怪現象：有些含鈾礦石的放射性，比裡面那些鈾能解釋的還高。假如原先的解釋足夠，讀數應該更低。</p><p>她和皮耶把這個差距當成線索，推想礦石裡還有別的成分。他們把礦石分成不同部分，再看哪些部分的讀數特別高，一步步把範圍縮小。這讓原本模糊的猜想有了可以核對的結果。</p><p>這條線索帶來釙與鐳的發現。瑪麗後來在諾貝爾獎演講裡回顧，放射性的強弱也可以用來尋找當時還不認識的元素。</p>
+ <div class="people-question"><h4>把這段經歷帶回你的問題</h4>
+ <p>這次的解讀重點是「自主與同儕」。這次提醒先查證或與人協作，可借她與研究夥伴持續測量的經歷，想想哪一步能接受實際檢驗。</p><p>如果事情和你預期的不同，先記下預期和實際結果各是什麼。哪一個差距最值得找人用同樣的標準再核對一次？</p></div>
+ <a href="https://www.nobelprize.org/prizes/chemistry/1911/marie-curie/lecture/?print=1" target="_blank" rel="noopener noreferrer">閱讀史料 · 瑪麗・居禮的諾貝爾獎演講 ↗</a>
+ <small class="people-note">僅比較這段經歷與本次提醒。</small></div></details></section></section>
  </section></body></html>
