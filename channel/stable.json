@@ -1,12 +1,12 @@
 {
   "schema": "judun-autodeploy-v1",
-  "release_id": "v1.2.161-company-titles-20261110",
-  "base_artifact_id": "JUDUN-1.2.160-COMPANYENTRY20261110",
-  "target_artifact_id": "JUDUN-1.2.161-COMPANYTITLE20261110",
-  "target_build_instance_id": "1.2.161-20261110-COMPANYTITLE",
-  "expected_display_version": "v1.2.161",
+  "release_id": "v1.2.162-ecpay-20261112",
+  "base_artifact_id": "JUDUN-1.2.161-COMPANYTITLE20261110",
+  "target_artifact_id": "JUDUN-1.2.162-ECPAY20261112",
+  "target_build_instance_id": "1.2.162-20261112-ECPAY",
+  "expected_display_version": "v1.2.162",
   "expected_managed_file_count": 88,
-  "payload_path": "releases/v1.2.161-company-titles-20261110.cms.b64",
-  "payload_sha256": "e0b9dc6a7a69b15d809e42f54cd823bce734ba9aa9b2d5c5a0b7dd35b0154173",
+  "payload_path": "releases/v1.2.162-ecpay-20261112.cms.b64",
+  "payload_sha256": "14d61be32d7a0f2338e47ecade014d4157ad4898def5c10452e494ebd2fb79ba",
   "noop": false
 }
