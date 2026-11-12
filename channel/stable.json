@@ -1,12 +1,12 @@
 {
   "schema": "judun-autodeploy-v1",
-  "release_id": "v1.2.166-payment-sandbox-20261112",
-  "base_artifact_id": "JUDUN-1.2.165-ECPAY20261112",
-  "target_artifact_id": "JUDUN-1.2.166-PAYTEST20261112",
-  "target_build_instance_id": "1.2.166-20261112-PAYTEST",
-  "expected_display_version": "v1.2.166",
+  "release_id": "v1.2.167-payment-test-origin-20261112",
+  "base_artifact_id": "JUDUN-1.2.166-PAYTEST20261112",
+  "target_artifact_id": "JUDUN-1.2.167-PAYTEST20261112",
+  "target_build_instance_id": "1.2.167-20261112-PAYTEST",
+  "expected_display_version": "v1.2.167",
   "expected_managed_file_count": 88,
-  "payload_path": "releases/v1.2.166-payment-sandbox-20261112.cms.b64",
-  "payload_sha256": "bb23588aed8050111378429facb651edd377c3d8befde03792a88d703c7738d6",
+  "payload_path": "releases/v1.2.167-payment-test-origin-20261112.cms.b64",
+  "payload_sha256": "598e59edbef548a09349a864864bb2bad957dcbce7218f01080e2098a250f42f",
   "noop": false
 }
