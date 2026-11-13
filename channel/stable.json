@@ -1,12 +1,12 @@
 {
   "schema": "judun-autodeploy-v1",
-  "release_id": "v1.2.171-report-email-entry-20261114",
-  "base_artifact_id": "JUDUN-1.2.170-REPORTUX20261114",
-  "target_artifact_id": "JUDUN-1.2.171-REPORTENTRY20261114",
-  "target_build_instance_id": "1.2.171-20261114-REPORTENTRY",
-  "expected_display_version": "v1.2.171",
+  "release_id": "v1.2.172-report-navigation-20261114",
+  "base_artifact_id": "JUDUN-1.2.171-REPORTENTRY20261114",
+  "target_artifact_id": "JUDUN-1.2.172-REPORTNAV20261114",
+  "target_build_instance_id": "1.2.172-20261114-REPORTNAV",
+  "expected_display_version": "v1.2.172",
   "expected_managed_file_count": 88,
-  "payload_path": "releases/v1.2.171-report-email-entry-20261114.cms.b64",
-  "payload_sha256": "1bb2cebacf222b1279345e3e1ff06d8230e936d18d4937e2ae3f59d040091c68",
+  "payload_path": "releases/v1.2.172-report-navigation-20261114.cms.b64",
+  "payload_sha256": "e3bc1e9093cd767bfc382deb9c0bf7099d4810d18e1bc10a949b79eb7707cee5",
   "noop": false
 }
