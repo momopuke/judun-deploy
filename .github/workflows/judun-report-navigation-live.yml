@@ -1,0 +1,19 @@
+name: JUDUN report navigation live regression
+on:
+  push:
+    paths:
+      - "channel/stable.json"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  navigation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Check production report rendering, stale unlock state and password gate
+        run: node p3/test_report_navigation_live.cjs
