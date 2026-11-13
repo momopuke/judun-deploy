@@ -3,6 +3,8 @@ on:
   push:
     paths:
       - "channel/stable.json"
+      - ".github/workflows/judun-report-navigation-live.yml"
+      - "p3/test_report_navigation_live.cjs"
   workflow_dispatch:
 permissions:
   contents: read

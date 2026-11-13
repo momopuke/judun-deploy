@@ -23,8 +23,13 @@ async function check(label,script,base,{stale=false,unauthorized=false}={}){
  console.log('REPORT_NAVIGATION_'+label+'_PASS');
 }
 (async()=>{
- const build=JSON.parse(await get('/health/build'));assert.equal(String(build.version).replace(/^v/,''),'1.2.172');
- assert.equal(build.artifact_id,'JUDUN-1.2.172-REPORTNAV20261114');
+ let build;const deadline=Date.now()+540000;
+ while(true){try{build=JSON.parse(await get('/health/build'));
+   if(String(build.version).replace(/^v/,'')==='1.2.172' && build.artifact_id==='JUDUN-1.2.172-REPORTNAV20261114')break;
+ }catch(e){console.log('REPORT_NAVIGATION_HEALTH_RETRY',String(e.message||e).slice(0,140));}
+ if(Date.now()>deadline)throw new Error('LIVE_V172_NOT_INSTALLED');
+ await new Promise(r=>setTimeout(r,10000));}
+ console.log('LIVE_V172_INSTALLED',build.artifact_id);
  const html=await get('/');
  const blocks=[...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script\s*>/gi)].map(m=>m[1]);
  const home=blocks.find(x=>x.includes('async function restoreJudunJobOnHome(jobId)'));
