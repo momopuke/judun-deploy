@@ -1,0 +1,69 @@
+name: JUDUN report-entry compatibility live check
+on:
+  push:
+    paths:
+      - ".github/workflows/judun-report-entry-live.yml"
+      - "channel/stable.json"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  report-entry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Verify existing email link redirects to the homepage report flow
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json,os,time,urllib.error,urllib.parse,urllib.request
+          origin="https://judun.142-93-91-214.sslip.io"
+          signed_url="https://raw.githubusercontent.com/"+os.environ["GITHUB_REPOSITORY"]+"/"+os.environ["GITHUB_SHA"]+"/channel/stable.json"
+          with urllib.request.urlopen(signed_url,timeout=25) as response:
+              channel=json.load(response)
+          target=str(channel["expected_display_version"]).lstrip("v")
+          artifact=channel["target_artifact_id"]
+          if tuple(map(int,target.split("."))) < (1,2,171):
+              print("REPORT_ENTRY_TEST_NOT_APPLICABLE_TO_OLD_RELEASE",target)
+              raise SystemExit(0)
+          def get(path):
+              request=urllib.request.Request(origin+path,headers={"Cache-Control":"no-cache","User-Agent":"JUDUN-report-entry-live/1"})
+              with urllib.request.urlopen(request,timeout=20) as response:
+                  return response.read(2_000_000).decode("utf-8","replace")
+          deadline=time.monotonic()+420
+          while True:
+              try:
+                  build=json.loads(get("/health/build"))
+                  if build.get("version")==target and build.get("artifact_id")==artifact:
+                      break
+              except (ValueError,TimeoutError,urllib.error.URLError):pass
+              if time.monotonic()>=deadline:
+                  raise AssertionError("LIVE_VERSION_NOT_INSTALLED:"+target)
+              time.sleep(10)
+          print("REPORT_ENTRY_VERSION_PASS",target,artifact)
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self,*args,**kwargs):return None
+          opener=urllib.request.build_opener(NoRedirect)
+          def location(path):
+              request=urllib.request.Request(origin+path,headers={"Cache-Control":"no-cache"})
+              try:
+                  with opener.open(request,timeout=20) as response:
+                      raise AssertionError("OLD_QUERY_PAGE_STILL_RENDERED:"+str(response.status))
+              except urllib.error.HTTPError as exc:
+                  assert exc.code==303,("EXPECTED_303",exc.code)
+                  return exc.headers.get("Location","")
+          test_code="00000000-0000-4000-8000-000000000000"
+          url=location("/search?job_id="+test_code)
+          parsed=urllib.parse.urlsplit(url)
+          assert parsed.path=="/",(url,parsed.path)
+          assert urllib.parse.parse_qs(parsed.query).get("job_id")==[test_code],url
+          assert urllib.parse.parse_qs(parsed.query).get("report_view")==["full"],url
+          assert parsed.fragment=="report-container",url
+          assert location("/search").endswith("#home-retrieve")
+          assert location("/search?job_id=%2F%2Fevil.example").endswith("#home-retrieve")
+          print("LEGACY_SEARCH_REDIRECT_PASS",url)
+          homepage=get("/")
+          for phrase in ("showJudunHomeReportPassword","judun-report-access-form","/authorize-report/","window.openSavedReportFromHome","report-container"):
+              assert phrase in homepage,("REPORT_ACCESS_FLOW_MISSING",phrase)
+          print("HOME_REPORT_ACCESS_GATE_PASS",len(homepage))
+          PY
