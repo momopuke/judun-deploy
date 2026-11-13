@@ -8,7 +8,7 @@ async function check(label,script,base,{stale=false,unauthorized=false}={}){
  const handlers=[],saved={},session={};if(stale)session['judun_unlock_section_'+ID]='report-price-items';
  const store=x=>({getItem:k=>x[k]||null,setItem:(k,v)=>x[k]=String(v),removeItem:k=>delete x[k]});
  const ctx={URLSearchParams,console,AbortController,setTimeout,clearTimeout,location:{pathname:'/',search:'?job_id='+ID+'&report_view=full',hash:'#report-container'},sessionStorage:store(session),localStorage:store(saved),
- document:{getElementById:k=>els[k]||null,addEventListener:(n,f)=>n==='DOMContentLoaded'&&handlers.push(f),createElement:()=>new Node()},
+ document:{body:new Node(),getElementById:k=>els[k]||null,addEventListener:(n,f)=>n==='DOMContentLoaded'&&handlers.push(f),createElement:()=>new Node()},
  fetch:async u=>{ctx.requested=u;return {ok:!unauthorized,status:unauthorized?401:200,json:async()=>unauthorized?{detail:'AUTH_REQUIRED'}:{status:stale?'完成_解鎖':'完成',tier:'basic',report:'<section id="report-summary">SYNTHETIC_REPORT_RENDERED</section>'}}},
  requestAnimationFrame:f=>f()};
  ctx.window=ctx;ctx.addEventListener=(n,f)=>n==='DOMContentLoaded'&&handlers.push(f);
@@ -23,16 +23,17 @@ async function check(label,script,base,{stale=false,unauthorized=false}={}){
  console.log('REPORT_NAVIGATION_'+label+'_PASS');
 }
 (async()=>{
+ const pin=process.env.GITHUB_SHA||'main'; const channel=await (await fetch('https://raw.githubusercontent.com/momopuke/judun-deploy/'+pin+'/channel/stable.json',{signal:AbortSignal.timeout(25000)})).json(); const expected=String(channel.expected_display_version).replace(/^v/,'');
  let build;const deadline=Date.now()+540000;
  while(true){try{build=JSON.parse(await get('/health/build'));
-   if(String(build.version).replace(/^v/,'')==='1.2.172' && build.artifact_id==='JUDUN-1.2.172-REPORTNAV20261114')break;
+   if(String(build.version).replace(/^v/,'')===expected && build.artifact_id===channel.target_artifact_id)break;
  }catch(e){console.log('REPORT_NAVIGATION_HEALTH_RETRY',String(e.message||e).slice(0,140));}
- if(Date.now()>deadline)throw new Error('LIVE_V172_NOT_INSTALLED');
+ if(Date.now()>deadline)throw new Error('LIVE_SIGNED_VERSION_NOT_INSTALLED:'+expected);
  await new Promise(r=>setTimeout(r,10000));}
- console.log('LIVE_V172_INSTALLED',build.artifact_id);
+ console.log('LIVE_SIGNED_VERSION_INSTALLED',build.artifact_id);
  const html=await get('/');
  const blocks=[...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script\s*>/gi)].map(m=>m[1]);
- const home=blocks.find(x=>x.includes('async function restoreJudunJobOnHome(jobId)'));
+ const home=blocks.find(x=>x.includes('async function restoreJudunJobOnHome('));
  const base=blocks.find(x=>x.includes("const unlockSection = jobId ? sessionStorage.getItem('judun_unlock_section_' + jobId)"));
  assert(home&&base,'live report scripts missing');
  const a=base.indexOf("window.addEventListener('DOMContentLoaded', () => {\n    const urlParams = new URLSearchParams(window.location.search)");
