@@ -209,9 +209,9 @@ element('dob').value='1990-01-01';
 app.showView('home',false);
 ok(fs.readFileSync(__dirname+'/index.html','utf8').includes('id="homeStartCombined"')&&fs.readFileSync(__dirname+'/index.html','utf8').includes('id="homeChooseSchool"'),'Home retains two direct alternatives without exposing the whole form');
 // The two homepage entries must lead to genuinely different journeys.
-app.beginRandomJourney();ok(app.getJourneyMode()==='random'&&app.getNavigationState().currentView==='profile'&&element('profileNext').textContent.includes('轉盤'),'Random entry prepares a single-school wheel route');
+app.beginRandomJourney();ok(app.getJourneyMode()==='random'&&app.getNavigationState().currentView==='profile'&&element('profileNext').textContent.includes('解讀'),'Random entry prepares a single-school wheel route');
 element('dob').value='';ok(app.prepareJourney()===false&&app.getJourneyMode()==='random'&&app.getNavigationState().currentView==='profile','Missing birthday does not silently switch random mode into combined analysis');
-element('dob').value='1990-01-01';app.beginCombinedJourney();ok(app.getJourneyMode()==='combined'&&element('profileNext').textContent.includes('看結果'),'Combined entry restores the multi-system consultation journey');
+element('dob').value='1990-01-01';app.beginCombinedJourney();ok(app.getJourneyMode()==='combined'&&element('profileNext').textContent.includes('解讀'),'Combined entry restores the multi-system consultation journey');
 const illustrated=I.renderConsultation({...consult,lead:'bazi'});ok(illustrated.includes('dossier-art')&&illustrated.includes('src="./assets/schools/bazi.webp"'),'The reading image represents its actual lead system');
 // Direct selection keeps the chosen method instead of invoking the random wheel.
 app.beginCombinedJourney();const previousView=app.getNavigationState().currentView;
