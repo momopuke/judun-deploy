@@ -1,12 +1,12 @@
 {
   "schema": "judun-autodeploy-v1",
-  "release_id": "v1.2.184-staging-boot-check-20261114",
-  "base_artifact_id": "JUDUN-1.2.183-STAGINGSTART20261114",
-  "target_artifact_id": "JUDUN-1.2.184-STAGINGBOOTCHECK20261114",
-  "target_build_instance_id": "1.2.184-20261114-STAGINGBOOTCHECK",
-  "expected_display_version": "v1.2.184",
+  "release_id": "v1.2.185-staging-recovery-20261114",
+  "base_artifact_id": "JUDUN-1.2.184-STAGINGBOOTCHECK20261114",
+  "target_artifact_id": "JUDUN-1.2.185-STAGINGRECOVERY20261114",
+  "target_build_instance_id": "1.2.185-20261114-STAGINGRECOVERY",
+  "expected_display_version": "v1.2.185",
   "expected_managed_file_count": 88,
-  "payload_path": "releases/v1.2.184-staging-boot-check-20261114.cms.b64",
-  "payload_sha256": "bca98cd5bfe1de41153a20e1ffe70994e0fbba40f24f9b0cb31b2181ab92433f",
+  "payload_path": "releases/v1.2.185-staging-recovery-20261114.cms.b64",
+  "payload_sha256": "d3e813ab22c6e9c88361b2db27ebd50e9e17f411be5946c98ffd5aa77c83a719",
   "noop": false
 }
