@@ -246,16 +246,16 @@ function render(r,{compact=false,cover='',contextBar='',calculation=''}={}){
   ${readingStep(p.action)}${contextBar}
  </div>${cover}</div>
 ${!compact?renderSingleAnalysis(r,p):''}
- <details class="reading-limits simple-reasons"><summary>展開理由與提醒</summary>
+ <section class="reading-limits simple-reasons"><h3>解讀依據與提醒</h3>
 ${compact?detailLine('這次的提醒',p.reason)+detailLine('值得留意',p.risk):''}
 ${evidence.map(o=>`<article><b>${e(o.label)} · ${e(o.observed)}</b><p>${e(readingSentence(o.meaning))}</p></article>`).join('')}
 ${technical.map(t=>`<p>${e(t)}</p>`).join('')}${calculation}${limits.length||r.scope?`<h4>解讀範圍</h4>${limits.map(t=>`<p>${e(t)}</p>`).join('')}${r.scope?`<p>${e(r.scope)}</p>`:''}`:''}
- </details>
+ </section>
 ${comic?`<section class="life-explainer"><h3>生活漫畫與人物故事</h3>${comic}</section>`:''}
  </section>`;
 }
 
-function renderReport(bundle){return `${render(bundle)}<section class="interpretation-modules"><h3>各派怎麼看你的問題</h3><p>依目前設定排序。先看結論，再按需展開依據；沒有資料的流派不參與。</p>${bundle.results.map(r=>`<details class="report-reading"><summary><b>${escape(r.name)}</b><span>${escape(r.headline)}</span><small>解讀配置 ${r.weight}%</small></summary>${render(r,{compact:true})}</details>`).join('')}</section>`;}
+function renderReport(bundle){return `${render(bundle)}<section class="interpretation-modules"><h3>各派怎麼看你的問題</h3><p>依目前設定排序。先看結論，再按需展開依據；沒有資料的流派不參與。</p>${bundle.results.map(r=>`<section class="report-reading"><h4><b>${escape(r.name)}</b> · ${escape(r.headline)} <small>解讀配置 ${r.weight}%</small></h4>${render(r,{compact:true})}</section>`).join('')}</section>`;}
 // Everyday consultation: three different questions answered with their own inputs.
 const YEAR_FOCUS=[null,
  {title:'開始新方向',tag:'initiative',good:'適合啟動新計畫、主動爭取機會',risk:'同時開太多新局，最後無法收尾',work:'先推出一個小計畫，讓機會看得見。',love:'主動安排見面，別一直等對方開口。',wealth:'先試小額投入，確認成本再擴大。'},
@@ -352,7 +352,7 @@ function readingPresentation(r){
  const pair=(compare.different||[]).filter((l,i,ls)=>!ls.slice(0,i).some(p=>p.tag===l.tag)).slice(0,2);
  return {answer,action,showAction:!!action&&!repeatedReadingText(answer,action),risk:repeatedReadingText(answer,risk)||repeatedReadingText(action,risk)?'':risk,common,pair,comparisonKind:common?'common':compare.conflict?'conflict':'different'};
 }
-function renderReadingBasis(r,calculation){const e=escape;return `<details class="reading-evidence"><summary><span>展開計算依據與限制</span><small>${r.lenses.length} 派參照</small></summary>${calculation}<div class="reading-basis-list">${r.lenses.map(l=>`<article class="reading-basis lens-${e(l.id)}"><img src="./assets/schools/${e(l.id)}.webp" alt="${e(l.name)}" width="1200" height="800" loading="lazy"><div><h4>${e(l.name)}</h4><p class="basis-fact">${e(l.basis)}</p>${l.partial?'<small>資料未齊，採目前能計算的部分。</small>':''}${l.cards?`<details><summary>本次三張牌</summary>${l.cards.map(c=>`<p><b>${e(c.position)} · ${e(c.card)}</b><br>${e(c.meaning)}</p>`).join('')}</details>`:''}</div></article>`).join('')}</div><details class="consult-weight-choice"><summary>本題配重</summary><p>${e(r.recommendation?.reason||'依目前可用資料選擇。')}</p><div class="auto-weight-list">${r.lenses.map(l=>`<div><b>${e(l.name)}</b><span>${l.weight}%</span></div>`).join('')}</div>${r.recommendation?.excluded?.length?`<p>資料不足未採用：${e(r.recommendation.excluded.map(id=>NAMES[id]).join('、'))}。</p>`:''}<p>比例決定參照順序，並非準確率。</p></details><details class="consult-limits"><summary>解讀範圍</summary><p>${e(r.scope)}</p></details></details>`;}
+function renderReadingBasis(r,calculation){const e=escape;return `<details class="reading-evidence"><summary><span>計算方法、配重與資料限制</span><small>${r.lenses.length} 派參照</small></summary>${calculation}<div class="reading-basis-list">${r.lenses.map(l=>`<article class="reading-basis lens-${e(l.id)}"><img src="./assets/schools/${e(l.id)}.webp" alt="${e(l.name)}" width="1200" height="800" loading="lazy"><div><h4>${e(l.name)}</h4><p class="basis-fact">${e(l.basis)}</p>${l.partial?'<small>資料未齊，採目前能計算的部分。</small>':''}${l.cards?`<section class="reading-basis-cards"><h5>本次三張牌</h5>${l.cards.map(c=>`<p><b>${e(c.position)} · ${e(c.card)}</b><br>${e(c.meaning)}</p>`).join('')}</section>`:''}</div></article>`).join('')}</div><section class="consult-weight-choice"><h5>本題配重</h5><p>${e(r.recommendation?.reason||'依目前可用資料選擇。')}</p><div class="auto-weight-list">${r.lenses.map(l=>`<div><b>${e(l.name)}</b><span>${l.weight}%</span></div>`).join('')}</div>${r.recommendation?.excluded?.length?`<p>資料不足未採用：${e(r.recommendation.excluded.map(id=>NAMES[id]).join('、'))}。</p>`:''}<p>比例決定參照順序，並非準確率。</p></section><section class="consult-limits"><h5>解讀範圍</h5><p>${e(r.scope)}</p></section></details>`;}
 const TOPIC_CHECK={
  career:'試完後，看看實際投入多少時間、做出了什麼，以及對方有沒有願意繼續談或使用的跡象',
  love:'觀察你說清楚需求後，對方怎麼回應，以及下一次相處時有沒有真的做出改變',
@@ -382,7 +382,7 @@ function renderAnnualDetails(r){
   ['財運',y.wealth,'月底用實際帳目回看，確認固定支出和預留的錢都照顧到了']];
  return `<section class="reading-year-details"><h4>${y.year} 年放到生活裡</h4>
  <div class="annual-areas">${areas.map(([label,action,check])=>`<p><strong>${label}</strong> ${e(readingSentence(action))}${e(readingSentence(check))}</p>`).join('')}</div>
- <details class="reading-month-details"><summary>查看每月主題</summary><div class="annual-months">${y.months.map(m=>`<div><b>${m.month} 月</b><span>${e(m.title)}</span></div>`).join('')}</div></details></section>`;
+ <section class="reading-month-details"><h5>每月主題</h5><div class="annual-months">${y.months.map(m=>`<div><b>${m.month} 月</b><span>${e(m.title)}</span></div>`).join('')}</div></section></section>`;
 }
 function renderConsultationAnalysis(r,p){
  if(!r.lenses.length)return '';
@@ -412,8 +412,8 @@ ${p.showAction?readingStep(p.action):''}</div>
 ${cover?`<figure class="dossier-art"><img src="./assets/schools/${e(cover.id)}.webp" alt="${e(cover.name)}" width="1200" height="800"><figcaption>${e(cover.name)}</figcaption></figure>`:''}
  </div></article>
 ${renderConsultationAnalysis(r,p)}
- <div class="reading-footnotes">${renderReadingBasis(r,calculation)}</div>
-${comic?`<section class="life-explainer"><h3>生活漫畫與人物故事</h3>${comic}</section>`:''}
+ ${comic?`<section class="life-explainer"><h3>生活漫畫與人物故事</h3>${comic}</section>`:''}
+<div class="reading-footnotes">${renderReadingBasis(r,calculation)}</div>
  </section>`;
 
 }
