@@ -1,12 +1,12 @@
 {
   "schema": "judun-autodeploy-v1",
-  "release_id": "v1.2.177-sync-test-fix-20261114",
-  "base_artifact_id": "JUDUN-1.2.176-SYNCREPORTTEST20261114",
-  "target_artifact_id": "JUDUN-1.2.177-SYNCTESTFIX20261114",
-  "target_build_instance_id": "1.2.177-20261114-SYNCTESTFIX",
-  "expected_display_version": "v1.2.177",
+  "release_id": "v1.2.178-full-staging-20261114",
+  "base_artifact_id": "JUDUN-1.2.177-SYNCTESTFIX20261114",
+  "target_artifact_id": "JUDUN-1.2.178-FULLSTAGING20261114",
+  "target_build_instance_id": "1.2.178-20261114-FULLSTAGING",
+  "expected_display_version": "v1.2.178",
   "expected_managed_file_count": 88,
-  "payload_path": "releases/v1.2.177-sync-test-fix-20261114.cms.b64",
-  "payload_sha256": "65c9e1835e928a56d22d7837546bae29a2b38a9a7e55db63e0eb8a376bf474c3",
+  "payload_path": "releases/v1.2.178-full-staging-20261114.cms.b64",
+  "payload_sha256": "89798f8df1792539de6c5e25f60e23d133c38dee3dc34b7ee7cc6e168ef9bb56",
   "noop": false
 }
