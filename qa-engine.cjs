@@ -4,8 +4,8 @@ const crypto=require('node:crypto').webcrypto;let checks=0;
 const ok=(test,msg)=>{assert.ok(test,msg);checks++};
 const ids={};function element(id){return ids[id]||(ids[id]={value:'',innerHTML:'',textContent:'',style:{},dataset:{},open:false,showModal(){this.open=true},close(){this.open=false},focus(){},hidden:false,options:[],selectedOptions:[{textContent:'全面分析'}],listeners:{},addEventListener(n,f){this.listeners[n]=f},querySelectorAll(){return[]},querySelector(){return null},scrollIntoView(){},classList:{toggle(){}}});}
 element('dob').value='1990-01-01';element('topic').value='overview';
-let exportedBlob;const doc={body:{appendChild(){}},createElement(){return {click(){},remove(){}}},getElementById:element,querySelectorAll(){return[]},querySelector(){return null}};
-const c={console,Date,Intl,crypto,btoa,atob,Blob,URL:{createObjectURL(b){exportedBlob=b;return 'blob:test'},revokeObjectURL(){}},document:doc,location:{hash:'',protocol:'https:',hostname:'example.test'},alert(){},clearTimeout(){},setTimeout(){},navigator:{},history:{}};c.window=c;c.self=c;vm.createContext(c);
+let exportedBlob;const doc={body:{dataset:{},appendChild(){}},createElement(){return {click(){},remove(){}}},getElementById:element,querySelectorAll(){return[]},querySelector(){return null}};
+const c={console,Date,Intl,crypto,performance:{now:()=>0},requestAnimationFrame:fn=>fn(4000),btoa,atob,Blob,URL:{createObjectURL(b){exportedBlob=b;return 'blob:test'},revokeObjectURL(){}},document:doc,location:{hash:'',protocol:'https:',hostname:'example.test'},alert(){},clearTimeout(){},setTimeout(){},navigator:{},history:{}};c.window=c;c.self=c;vm.createContext(c);
 for(const f of ['iztro-v2.6.5.min.js','engines-v1.2.0.js','astronomy-v2.1.19.min.js','sky-engine.js','discovery-engine.js','interpretation-engine.js','life-reading.js','app.js'])vm.runInContext(fs.readFileSync(__dirname+'/'+f,'utf8'),c,{filename:f});
 const sky=c.FateSky,app=c.__fortuneTest,e=c.FateEngine;
 const discovery=c.FateDiscovery;
@@ -198,6 +198,16 @@ const comparisonNarrative=I.renderConsultation({...yearConsult,comparison:I.comp
 ok(comparisonNarrative.includes('兩個提醒可以排出先後')&&comparisonNarrative.includes('先讓少數合適的人看到你的做法'),'A recognizable divergence gives concrete sequencing rather than just two labels');
 const emptyReading=I.consultation(ready,{topic:'career'},events,zeros);ok(!I.renderConsultation(emptyReading).includes('undefined'),'A reading with no available weighted source renders without fabricated content');
 ok(!I.readingPresentation(yearConsult).answer.startsWith('2027 年的重點')&&I.readingPresentation(yearConsult).answer.includes(yearConsult.year.title),'Annual brief removes the repeated year prefix while retaining the actual annual focus');
+// Wheel-first flow is data-free, retains the selected method, then opens a separate profile screen.
+element('dob').value='';
+app.showView('home',false);
+ok(app.spinDiscovery()===true&&element('wheelResult').innerHTML.includes('填生日')&&element('wheelResult').dataset.system&&app.getNavigationState().currentView==='home','Wheel animates and reveals one of 12 schools before any birth date is entered');
+const firstWheelSelection=element('wheelResult').dataset.system;
+element('reopenReading').onclick();
+ok(app.getDirectSchool()===firstWheelSelection&&app.getNavigationState().currentView==='profile'&&app.getJourneyMode()==='direct','Reveal CTA opens the separate birth-data page with the original random result');
+element('dob').value='1990-01-01';
+app.showView('home',false);
+ok(fs.readFileSync(__dirname+'/index.html','utf8').includes('id="homeStartCombined"')&&fs.readFileSync(__dirname+'/index.html','utf8').includes('id="homeChooseSchool"'),'Home retains two direct alternatives without exposing the whole form');
 // The two homepage entries must lead to genuinely different journeys.
 app.beginRandomJourney();ok(app.getJourneyMode()==='random'&&app.getNavigationState().currentView==='profile'&&element('profileNext').textContent.includes('轉盤'),'Random entry prepares a single-school wheel route');
 element('dob').value='';ok(app.prepareJourney()===false&&app.getJourneyMode()==='random'&&app.getNavigationState().currentView==='profile','Missing birthday does not silently switch random mode into combined analysis');

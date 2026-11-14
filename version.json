@@ -1,15 +1,15 @@
 {
   "name": "FATE ATLAS 合參命理",
-  "version": "3.13.1",
-  "edition": "Centered interactive astrolabe, stable dropdowns, narrative sourced stories, new royal Ziwei celestial illustration",
+  "version": "3.13.2",
+  "edition": "One-screen wheel-first experience, golden tactile start button, minimal homepage, birthday after revealed school",
   "release_date": "2026-11-14",
   "source_branch": "gh-pages",
-  "hosted_url": "https://momopuke.github.io/judun-deploy/?v=3.13.1",
-  "sha256_index_html": "5f7840ed01d859360bc1cca8bf511547e90703ce08154f1381712de8456fd243",
+  "hosted_url": "https://momopuke.github.io/judun-deploy/?v=3.13.2",
+  "sha256_index_html": "1d679cc375380a74774e4eb68c194704e340c491cf65ad88d8620716b73407a6",
   "sha256_engine": "9839e78f2b09d703a1c9238f140a37521081a0dde7b71fbebecfc919659c7f92",
   "assets": {
-    "index.html": "5f7840ed01d859360bc1cca8bf511547e90703ce08154f1381712de8456fd243",
-    "app.js": "8b8182398f84a58007f75bc38695fc4a999fecc0f8e1eeed97b6faa933e939f1",
+    "index.html": "1d679cc375380a74774e4eb68c194704e340c491cf65ad88d8620716b73407a6",
+    "app.js": "18349f19e66846380210f7fc04b1c52ccb55f4a7e5feb77c72134ad587ed447b",
     "atlas.css": "0d13736eb29b8f2e99886c926cd265691aac76de4bb177580ecbd454439a8734",
     "sky-engine.js": "68d06103e3a7ebd955920a4679fe54f4832587244aa0780be5604ca95073e82f",
     "engines-v1.2.0.js": "9839e78f2b09d703a1c9238f140a37521081a0dde7b71fbebecfc919659c7f92",
@@ -53,8 +53,8 @@
     "assets/comic/vedic.webp": "41b72629bd2e42a820e01cfe80283831482eaacff4114a1b210dd6414dff54db",
     "assets/comic/western.webp": "0f636bf2ab53f7d3b3c87c03f3f4099093fb04f492f090b6a0437d9eab2439bd",
     "assets/comic/ziwei.webp": "c2dfcb4c43890a52c3e13b665060300b9610ecc56730f8e751be4cdbeb00b6c6",
-    "home-refinement.css": "a4d44c27e15f62770b663e5ae239da5b47fea81256311cd6d20b832a26523793",
-    "qa-engine.cjs": "ce6c9689af8be4a56b2690e0ece08eab47e0da170adf61f2fb3406374c592e86",
+    "home-refinement.css": "a3bd8874e7c14210fc6efef9aff8ba4bbac627276340d1ed1a63670b20330e0a",
+    "qa-engine.cjs": "e2c57cc11e028a0a3326b497947f03e6a81a10d13fbf3a40fe8f215a87c1eeb0",
     "assets/schools/ziwei-royal.svg": "1c31ddefb4d1b52d722af2fde90ffa692f9560a0c9f0dc733795e1b24174e7f6"
   },
   "vendors": {
@@ -168,8 +168,10 @@
   },
   "homepage_wheel": {
     "default_visible": true,
-    "desktop": "large centered interactive wheel",
-    "mobile": "large centered interactive wheel",
-    "real_interaction": true
+    "desktop": "one-screen centered interactive wheel",
+    "mobile": "one-screen centered interactive wheel",
+    "spin_before_birth": true,
+    "selection_persists_through_profile": true,
+    "random_pool": 12
   }
 }
