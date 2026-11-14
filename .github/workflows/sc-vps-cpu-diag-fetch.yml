@@ -39,7 +39,7 @@ jobs:
                       row=json.loads(line)
                       msg=row.get('message','')
                       stamp=int(row.get('time',0))
-                      if row.get('event')!='message' or row.get('title') not in ('SC VPS encrypted CPU diagnosis v19','SC VPS encrypted CPU diagnosis v20','SC VPS encrypted CPU diagnosis v21','SC VPS encrypted CPU diagnosis v22'):
+                      if row.get('event')!='message' or row.get('title') not in ('SC VPS encrypted CPU diagnosis v19','SC VPS encrypted CPU diagnosis v20','SC VPS encrypted CPU diagnosis v21','SC VPS encrypted CPU diagnosis v22','SC VPS encrypted CPU diagnosis v23'):
                           continue
                       if not isinstance(msg,str) or len(msg)!=684 or len(base64.b64decode(msg,validate=True))!=512:
                           continue
