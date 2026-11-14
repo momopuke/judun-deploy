@@ -272,3 +272,6 @@ body.game-edition #home .home-actions button:focus-visible{outline:2px solid #f3
 .reading-friendly .narrative-reading p.narrative-boundary{margin:24px 0 0!important;padding:15px 0 0!important;border-top:1px solid #8e7c925b!important;font-size:16px!important;line-height:1.9!important;color:#dbcee0!important}
 .reading-friendly .life-explainer .bridge-intro{max-width:870px;margin:12px auto 20px;font-size:17px;line-height:1.86;color:#e3d6eb}
 @media(max-width:750px){.reading-friendly .reading-analysis.narrative-reading{padding:22px 18px!important}.reading-friendly .narrative-reading p.narrative-paragraph,.reading-friendly .narrative-reading p.lens-explanation{font-size:17px!important;line-height:1.92!important}}
+
+.reading-friendly .narrative-reading .reading-crosscheck{margin:0!important;padding:0!important;border:none!important;background:transparent!important;box-shadow:none!important}
+.reading-friendly .narrative-reading .reading-crosscheck p{margin-bottom:19px!important;font-size:inherit!important;line-height:1.95!important;color:#eee3f1!important}

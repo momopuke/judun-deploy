@@ -58,7 +58,7 @@ function combined(r,view,opts={}){
  }).join('');
  const check=CHECK[r.topic]||CHECK.overview;
  return '<section class="reading-analysis narrative-reading" data-narrative-version="2"><h3>合參怎麼看這個問題</h3>'
- +p(esc(f[0]),'narrative-context')+p(passage)
+ +p(esc(f[0]),'narrative-context')+'<div class="reading-crosscheck" data-common="'+(common?'yes':'no')+'">'+p(passage)+'</div>'
  +p('放到生活情境，這些角度才有具體意思。'+esc(f[1]))
  +'<div class="reading-perspectives"><h4>從命理線索到白話解釋</h4>'+paragraphs+'</div>'
  +p('<strong>把這些觀點串成一個決定：</strong>先從上方建議中挑一件可以觀察結果的小事，做完再'+esc(sentence(check)),'narrative-conclusion')
