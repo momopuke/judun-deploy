@@ -387,7 +387,7 @@ function renderAnnualDetails(r){
  <section class="reading-month-details"><h5>每月主題</h5><div class="annual-months">${y.months.map(m=>`<div><b>${m.month} 月</b><span>${e(m.title)}</span></div>`).join('')}</div></section></section>`;
 }
 function renderConsultationAnalysis(r,p){
- if(root.FateNarrative?.combined)return root.FateNarrative.combined(r,p,{annualDetails:renderAnnualDetails});
+ if(root.FateNarrative?.combined)return root.FateNarrative.combined(r,p,{annualDetails:renderAnnualDetails,comparison:renderComparison(r,p)});
  if(!r.lenses.length)return '';
  const e=escape, covered=[p.answer,p.action];
  const readings=r.lenses.map(l=>{

@@ -194,8 +194,8 @@ const emptyBrief=I.readingPresentation({...duplicateReading,watch:duplicateReadi
 ok(!/<details class="reading-evidence"[^>]*\bopen/.test(briefHtml)&&duplicateReading.lenses.every(l=>briefHtml.includes(l.basis.replace(/&/g,'&amp;'))),'Evidence remains inspectable and closed by default');
 ok(!briefHtml.includes('consult-lenses')&&!briefHtml.includes('synthesis-grid'),'Old parallel advice cards are replaced rather than added beneath the brief');
 const annualBrief=I.renderConsultation(yearConsult);ok(annualBrief.includes('reading-year-details')&&!annualBrief.includes('annual-outlook')&&!annualBrief.includes('extra-year'),'Annual areas do not repeat the full annual headline and introduction');
-const annualNarrative=annualBrief.slice(annualBrief.indexOf('<section class="reading-analysis">'),annualBrief.indexOf('<details class="reading-evidence">'));
-ok(yearConsult.lenses.length===3&&(annualNarrative.match(/class="lens-explanation"/g)||[]).length===3&&yearConsult.lenses.every(l=>annualNarrative.includes(l.basis.replace(/&/g,'&amp;'))),'The visible annual reading explains every method actually used and its computed basis');
+const annualNarrative=annualBrief.slice(annualBrief.indexOf('<section class="reading-analysis'),annualBrief.indexOf('<details class="reading-evidence">'));
+ok(yearConsult.lenses.length===3&&(annualNarrative.match(/class="[^"]*lens-explanation[^"]*"/g)||[]).length===3&&yearConsult.lenses.every(l=>annualNarrative.includes(l.basis.replace(/&/g,'&amp;'))),'The visible annual reading explains every method actually used and its computed basis');
 ok(['工作','感情','財運','月底回頭看'].every(part=>annualNarrative.includes(part))&&annualNarrative.includes('每月主題'),'Annual analysis has readable life sections, a review step and visible monthly themes');
 const onlyTarotYear=I.consultation(ready,{topic:'year',year:2027},events,{...zeros,tarotBirth:100});
 const onlyTarotYearHtml=I.renderConsultation(onlyTarotYear);

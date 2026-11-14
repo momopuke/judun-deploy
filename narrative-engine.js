@@ -1,7 +1,7 @@
 (function(root){'use strict';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const sentence=s=>{let t=String(s||'').trim().replace(/[。；;\s]+$/g,'');return t?(t.match(/[！？?!]$/)?t:t+'。'):'';};
-const CHECK={career:'核對實際需求、投入時間與交付成果，看看這個做法是否真的有用',love:'留意雙方的實際回應與後續安排，不單憑心裡的猜測',wealth:'把收支紀錄、預算和可承受的損失並排核對',year:'在月底核對完成了什麼、還有哪些事情卡著',overview:'記下做完後的實際結果，再決定繼續、修改或停止'};
+const CHECK={career:'核對實際需求、投入時間與交付成果，看看這個做法是否真的有用',love:'留意雙方的實際回應與後續安排，不單憑心裡的猜測',wealth:'把收支紀錄、預算和可承受的損失並排核對',year:'月底回頭看一件已完成的事和一件還卡著的事，再決定下個月要調整什麼',overview:'記下做完後的實際結果，再決定繼續、修改或停止'};
 function context(topic,question,year){
  const q=String(question||'');
  if(topic==='career'&&/創業|開店|新事業/.test(q))return ['創業先要解決兩個問題：有沒有人真的需要，以及自己能否用可承受的時間與成本交付。這次的命理線索可以提供觀察角度，但不能代替真正的市場驗證。','例如你想推出一項新服務，可以先做一個最小版本、算出工時成本，再找一位可能付費的人試談。稱讚你「很有想法」和真的願意購買，是兩種不同的回饋。'];
@@ -58,7 +58,7 @@ function combined(r,view,opts={}){
  }).join('');
  const check=CHECK[r.topic]||CHECK.overview;
  return '<section class="reading-analysis narrative-reading" data-narrative-version="2"><h3>合參怎麼看這個問題</h3>'
- +p(esc(f[0]),'narrative-context')+'<div class="reading-crosscheck" data-common="'+(common?'yes':'no')+'">'+p(passage)+'</div>'
+ +p(esc(f[0]),'narrative-context')+p(passage)+(opts.comparison||'')
  +p('放到生活情境，這些角度才有具體意思。'+esc(f[1]))
  +'<div class="reading-perspectives"><h4>從命理線索到白話解釋</h4>'+paragraphs+'</div>'
  +p('<strong>把這些觀點串成一個決定：</strong>先從上方建議中挑一件可以觀察結果的小事，做完再'+esc(sentence(check)),'narrative-conclusion')
