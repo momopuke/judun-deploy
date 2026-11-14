@@ -187,7 +187,7 @@ ok(!briefHtml.includes('consult-lenses')&&!briefHtml.includes('synthesis-grid'),
 const annualBrief=I.renderConsultation(yearConsult);ok(annualBrief.includes('reading-year-details')&&!annualBrief.includes('annual-outlook')&&!annualBrief.includes('extra-year'),'Annual areas do not repeat the full annual headline and introduction');
 const annualNarrative=annualBrief.slice(annualBrief.indexOf('<section class="reading-analysis">'),annualBrief.indexOf('<details class="reading-evidence">'));
 ok(yearConsult.lenses.length===3&&(annualNarrative.match(/class="lens-explanation"/g)||[]).length===3&&yearConsult.lenses.every(l=>annualNarrative.includes(l.basis.replace(/&/g,'&amp;'))),'The visible annual reading explains every method actually used and its computed basis');
-ok(['工作','感情','財運','月底回頭看'].every(part=>annualNarrative.includes(part))&&annualNarrative.includes('查看每月主題'),'Annual analysis has readable life sections, a review step and optional month themes');
+ok(['工作','感情','財運','月底回頭看'].every(part=>annualNarrative.includes(part))&&annualNarrative.includes('每月主題'),'Annual analysis has readable life sections, a review step and visible monthly themes');
 const onlyTarotYear=I.consultation(ready,{topic:'year',year:2027},events,{...zeros,tarotBirth:100});
 const onlyTarotYearHtml=I.renderConsultation(onlyTarotYear);
 ok(!onlyTarotYearHtml.includes('個人年 4')&&!onlyTarotYearHtml.includes('reading-year-details')&&onlyTarotYearHtml.includes('塔羅年度牌'),'An annual reading with numerology disabled does not borrow its calculated year or monthly themes');
