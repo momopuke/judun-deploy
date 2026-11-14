@@ -237,7 +237,7 @@ const sampleCombined=I.renderConsultation(I.consultation(ready,{topic:'career',q
 ok(sampleCombined.includes('reading-friendly')&&sampleCombined.includes('你可以先試')&&sampleCombined.includes('職缺')&&sampleCombined.indexOf('data-primary-action')<sampleCombined.indexOf('計算方法、配重與資料限制')&&!sampleCombined.includes('reading-decisions'),'Combined reading also gives a practical question-specific step');
 ok(!I.render(may).includes('你可以先試')&&!I.render(may).includes('life-explainer'),'Calendar-only results do not invent advice or a life story');
 const originalSchoolImages = element('homeSchoolGrid').innerHTML;
-ok(Object.keys(I.NAMES).every(id => originalSchoolImages.includes('src="./assets/schools/'+id+'.webp"')), 'Each system choice has its original school illustration');
+ok(Object.keys(I.NAMES).every(id => originalSchoolImages.includes('src="./assets/schools/'+(id==='ziwei'?'ziwei-royal.svg':id+'.webp')+'"')), 'All twelve choices retain their own illustration and Ziwei uses the new celestial artwork');
 const life=c.FateLife;
 const readings=Object.keys(I.NAMES).filter(id=>id!=='maya').map(id=>I.interpret(id,ready,{topic:'career',question:'現在適合換工作嗎？'},events));
 const scenes=readings.map(reading=>life.scenario({reading}));
