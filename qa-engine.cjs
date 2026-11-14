@@ -234,7 +234,7 @@ const relationship=I.render({...I.interpret('numerology',ready,{topic:'love'},ev
 ok(relationship.includes('心意要從相處和回應慢慢看')&&relationship.includes('具體的邀約'),'A question about another person’s feelings gets a grounded way to check');
 ok(!activeStartup.includes('<details class="reading-limits"')&&activeStartup.includes('class="people-story"')&&!activeStartup.includes('reading-notes'),'Single result presents one technical disclosure and the sourced story instead of multiple summary cards');
 const sampleCombined=I.renderConsultation(I.consultation(ready,{topic:'career',question:'現在適合換工作嗎？'},events));
-ok(sampleCombined.includes('reading-friendly')&&sampleCombined.includes('你可以先試')&&sampleCombined.includes('職缺')&&sampleCombined.indexOf('data-primary-action')<sampleCombined.indexOf('展開計算依據與限制')&&!sampleCombined.includes('reading-decisions'),'Combined reading also gives a practical question-specific step');
+ok(sampleCombined.includes('reading-friendly')&&sampleCombined.includes('你可以先試')&&sampleCombined.includes('職缺')&&sampleCombined.indexOf('data-primary-action')<sampleCombined.indexOf('計算方法、配重與資料限制')&&!sampleCombined.includes('reading-decisions'),'Combined reading also gives a practical question-specific step');
 ok(!I.render(may).includes('你可以先試')&&!I.render(may).includes('life-explainer'),'Calendar-only results do not invent advice or a life story');
 const originalSchoolImages = element('homeSchoolGrid').innerHTML;
 ok(Object.keys(I.NAMES).every(id => originalSchoolImages.includes('src="./assets/schools/'+id+'.webp"')), 'Each system choice has its original school illustration');
@@ -257,7 +257,7 @@ const num4=I.interpret('numerology',same,{topic:'career'},events),num3=I.interpr
 ok(life.scenario({reading:num4}).key!==life.scenario({reading:num3}).key,'Changing the calculated number changes the life reflection');
 ok(life.render({available:false})===''&&life.render({topic:'career'})===''&&life.render({reading:may})==='','Missing evidence and calendar-only methods cannot create generic personal scenes');
 const matching={...num4,profiles:[{...num4.profiles[0],tag:'structure'}]};const matched=life.scenario({reading:matching});
-ok(matched.person?.name==='班傑明・富蘭克林'&&life.render({reading:matching}).includes('僅比較這段經歷'),'A matching rule preserves a sourced history and its precise comparison limit');
+ok(matched.person?.name==='班傑明・富蘭克林'&&life.render({reading:matching}).includes('歷史經驗供生活借鏡'),'A matching rule preserves a sourced history and its precise comparison limit');
 ok(!life.scenario({reading:{...matching,profiles:[{...matching.profiles[0],tag:'unknown'}]}}).person,'An unsupported symbolic rule cannot receive a topic-only celebrity fallback');
 ok(Object.values(life.people).length>=9&&Object.values(life.people).every(p=>/^https:/.test(p.url)&&p.fact&&p.question),'Curated stories retain provenance');
 ok(life.plain('把每件事都變成自己必須證明的競賽').includes('把自己弄得太累'),'Plain-language rewrite remains');
