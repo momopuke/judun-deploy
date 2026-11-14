@@ -44,12 +44,13 @@ jobs:
                       if not isinstance(msg,str) or len(msg)!=684 or len(base64.b64decode(msg,validate=True))!=512:
                           continue
                       if not 0<=now-stamp<=86400:continue
-                      found[msg]=stamp
+                      found[msg]=(stamp,row.get('title',''))
                   except (ValueError,TypeError,KeyError):pass
-          latest=sorted(found.items(),key=lambda x:-x[1])[:8]
+          latest=sorted(found.items(),key=lambda x:-x[1][0])[:8]
           print('CPU_DIAG_RECEIPTS='+str(len(latest)))
-          for i,(msg,stamp) in enumerate(latest,1):
+          for i,(msg,(stamp,title)) in enumerate(latest,1):
               print(f'CPU_DIAG_{i}_RELAY_TIME_UNIX={stamp}')
+              print(f'CPU_DIAG_{i}_RELAY_TITLE={title}')
               print(f'CPU_DIAG_{i}_ENCRYPTED_REPORT_B64={msg}')
           print('CPU_DIAG_READ_PASS')
           PY
