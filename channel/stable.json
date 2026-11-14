@@ -1,12 +1,12 @@
 {
   "schema": "judun-autodeploy-v1",
-  "release_id": "v1.2.179-staging-boot-20261114",
-  "base_artifact_id": "JUDUN-1.2.177-SYNCTESTFIX20261114",
-  "target_artifact_id": "JUDUN-1.2.179-STAGINGBOOT20261114",
-  "target_build_instance_id": "1.2.179-20261114-STAGINGBOOT",
-  "expected_display_version": "v1.2.179",
+  "release_id": "v1.2.180-staging-live-20261114",
+  "base_artifact_id": "JUDUN-1.2.179-STAGINGBOOT20261114",
+  "target_artifact_id": "JUDUN-1.2.180-STAGINGLIVE20261114",
+  "target_build_instance_id": "1.2.180-20261114-STAGINGLIVE",
+  "expected_display_version": "v1.2.180",
   "expected_managed_file_count": 88,
-  "payload_path": "releases/v1.2.179-staging-boot-20261114.cms.b64",
-  "payload_sha256": "d90763042ff97ea02e0b7ed1b0f06dd5f63e7a84cfe9adaa7e52a2bebf271d02",
+  "payload_path": "releases/v1.2.180-staging-live-20261114.cms.b64",
+  "payload_sha256": "fe36d7b26aec754e56d9edb8de207184288dab9a5cc34fb7489bcefce5a3e419",
   "noop": false
 }
