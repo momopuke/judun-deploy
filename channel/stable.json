@@ -1,12 +1,12 @@
 {
   "schema": "judun-autodeploy-v1",
-  "release_id": "v1.2.181-staging-parity-20261114",
-  "base_artifact_id": "JUDUN-1.2.180-STAGINGLIVE20261114",
-  "target_artifact_id": "JUDUN-1.2.181-STAGINGPARITY20261114",
-  "target_build_instance_id": "1.2.181-20261114-STAGINGPARITY",
-  "expected_display_version": "v1.2.181",
+  "release_id": "v1.2.182-staging-service-20261114",
+  "base_artifact_id": "JUDUN-1.2.181-STAGINGPARITY20261114",
+  "target_artifact_id": "JUDUN-1.2.182-STAGINGSERVICE20261114",
+  "target_build_instance_id": "1.2.182-20261114-STAGINGSERVICE",
+  "expected_display_version": "v1.2.182",
   "expected_managed_file_count": 88,
-  "payload_path": "releases/v1.2.181-staging-parity-20261114.cms.b64",
-  "payload_sha256": "5748134cf3248943631b7bb3ae220a3019bc721af9597ac03946e67ac1449e54",
+  "payload_path": "releases/v1.2.182-staging-service-20261114.cms.b64",
+  "payload_sha256": "987321e158bc4c06236d7f5f38e1666768a740bd291f85d9dbd3c959e3ddccd0",
   "noop": false
 }
