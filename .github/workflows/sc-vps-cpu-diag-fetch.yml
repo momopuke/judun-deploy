@@ -1,0 +1,55 @@
+name: SC VPS bounded CPU diagnosis receipts (read-only)
+on:
+  push:
+    branches: [vps-maintenance]
+    paths:
+      - '.github/workflows/sc-vps-cpu-diag-fetch.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  read-cpu-diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read previous day encrypted CPU diagnosis (no host access or decryption key)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import ast,base64,json,pathlib,re,time,urllib.request
+          source=pathlib.Path('vps-maintenance/autodeploy/releases/SC-VPS-v15-20261104-e1/SC_VPS_Rescue_v15.py').read_text()
+          uplink=next(ast.literal_eval(n.value) for n in ast.parse(source).body
+                      if isinstance(n,ast.Assign) and any(getattr(t,'id',None)=='UPLINK' for t in n.targets))
+          assert re.fullmatch(r'https://ntfy\.sh/scvps-rpt-[0-9a-f]{40}',uplink)
+          found={}
+          now=time.time()
+          for endpoint in (uplink, uplink.replace('https://ntfy.sh/','https://ntfy.envs.net/')):
+              req=urllib.request.Request(endpoint+'/json?poll=1&since=24h',
+                                         headers={'User-Agent':'SCVPS-cpu-diagnosis-receiver/1'})
+              try:
+                  with urllib.request.urlopen(req,timeout=25) as resp:
+                      raw=resp.read(400000).decode('utf8')
+              except Exception as exc:
+                  print('DIAG_RELAY_ERROR='+type(exc).__name__)
+                  continue
+              for line in raw.splitlines():
+                  try:
+                      row=json.loads(line)
+                      msg=row.get('message','')
+                      stamp=int(row.get('time',0))
+                      if row.get('event')!='message' or row.get('title')!='SC VPS encrypted CPU diagnosis v19':
+                          continue
+                      if not isinstance(msg,str) or len(msg)!=684 or len(base64.b64decode(msg,validate=True))!=512:
+                          continue
+                      if not 0<=now-stamp<=86400:continue
+                      found[msg]=stamp
+                  except (ValueError,TypeError,KeyError):pass
+          latest=sorted(found.items(),key=lambda x:-x[1])[:8]
+          print('CPU_DIAG_RECEIPTS='+str(len(latest)))
+          for i,(msg,stamp) in enumerate(latest,1):
+              print(f'CPU_DIAG_{i}_RELAY_TIME_UNIX={stamp}')
+              print(f'CPU_DIAG_{i}_ENCRYPTED_REPORT_B64={msg}')
+          print('CPU_DIAG_READ_PASS')
+          PY
