@@ -25,9 +25,9 @@ function init(options){
  document.querySelectorAll('[data-top-menu]').forEach(group=>{
   const toggle=group.querySelector('.directory-toggle');let closeTimer;
   group.addEventListener('pointerenter',e=>{if(e.pointerType==='touch'||root.matchMedia?.('(max-width:750px)').matches)return;clearTimeout(closeTimer);showMenu(group);});
-  group.addEventListener('pointerleave',()=>{closeTimer=setTimeout(()=>{if(!group.contains(document.activeElement))closeMenus();},180);});
+  group.addEventListener('pointerleave',()=>{clearTimeout(closeTimer);closeTimer=setTimeout(()=>{if(group.classList.contains('directory-open')&&!group.matches(':hover')&&!group.contains(document.activeElement))closeMenus();},320);});
   group.addEventListener('focusin',e=>{clearTimeout(closeTimer);if(!e.target.closest('.directory-toggle')&&e.target.matches?.(':focus-visible'))showMenu(group);});
-  group.addEventListener('focusout',()=>{closeTimer=setTimeout(()=>{if(!group.contains(document.activeElement))closeMenus();},100);});
+  group.addEventListener('focusout',()=>{clearTimeout(closeTimer);closeTimer=setTimeout(()=>{if(group.classList.contains('directory-open')&&!group.matches(':hover')&&!group.contains(document.activeElement))closeMenus();},180);});
   toggle.onclick=()=>{const open=toggle.getAttribute('aria-expanded')==='true';if(open)closeMenus();else showMenu(group);};
  });
  nav.addEventListener('click',event=>{const b=event.target.closest('button');if(!b)return;let handled=true;if(b.dataset.directorySchool)callbacks.school(b.dataset.directorySchool);else if(b.dataset.homeTarget)callbacks.home(b.dataset.homeTarget);else if(b.dataset.resultPart)callbacks.result(b.dataset.resultPart);else if(b.dataset.exploreFilter)callbacks.explore(b.dataset.exploreFilter);else if(b.dataset.birthPart)callbacks.birth(b.dataset.birthPart);else handled=false;if(handled||b.hasAttribute('data-nav')||b.id==='quickSchoolSelect')closeMenus();});
