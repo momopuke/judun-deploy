@@ -1,0 +1,58 @@
+name: SC VPS v22 complete signed release archive
+on:
+  push:
+    branches: [vps-maintenance]
+    paths: ['.github/workflows/sc-vps-v22-package.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify all signed bytes then prepare self-contained release package
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import base64,hashlib,json,pathlib,shutil,subprocess,tempfile
+          root=pathlib.Path('vps-maintenance/autodeploy')
+          raw=(root/'channel.json').read_bytes();doc=json.loads(raw)
+          assert doc['sequence']==22 and doc['version']==22
+          assert doc['operation']=='apply' and doc['release_id']=='SC-VPS-v22-20261114-h1'
+          assert doc['git_commit']=='7b11f454f4c5f233a277dcfbd425f4ede5ed35bb'
+          src=root/'releases'/doc['release_id']
+          out=pathlib.Path('dist')/doc['release_id']
+          out.mkdir(parents=True)
+          for name,expected in doc['files'].items():
+              data=(src/name).read_bytes()
+              assert hashlib.sha256(data).hexdigest()==expected,name
+              (out/name).parent.mkdir(parents=True,exist_ok=True)
+              (out/name).write_bytes(data)
+          with tempfile.TemporaryDirectory() as td:
+              sig=pathlib.Path(td)/'sig'
+              sig.write_bytes(base64.b64decode((root/'channel.sig.b64').read_text().strip(),validate=True))
+              subprocess.run(['openssl','pkeyutl','-verify','-pubin','-inkey',str(root/'release-signing-public.pem'),
+                              '-rawin','-in',str(root/'channel.json'),'-sigfile',str(sig)],capture_output=True,check=True)
+          shutil.copy2(root/'channel.json',out/'channel.json')
+          shutil.copy2(root/'channel.sig.b64',out/'channel.sig.b64')
+          shutil.copy2(root/'release-signing-public.pem',out/'release-signing-public.pem')
+          (out/'README.txt').write_text(
+              'SC VPS signed v22 guarded CPU diagnosis release\\n'
+              'Immutable source commit: '+doc['git_commit']+'\\n'
+              'All listed files and signature validated independently.\\n'
+              'Use the existing enrolled signed VPS pull-agent. Do not run source directly on a fresh host.\\n'
+              'NEVER include private signing or decryption keys.\\n'
+              'This archive is not evidence of actual host execution or improvement.\\n')
+          print('SIGNED_V22_COMPLETE_BUNDLE_VERIFIED')
+          PY
+      - name: Publish complete release bundle as downloadable archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: SC-VPS-v22-signed-complete
+          path: dist/
+          if-no-files-found: error
+          compression-level: 9
+          retention-days: 30
