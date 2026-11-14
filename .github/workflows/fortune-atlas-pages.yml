@@ -25,6 +25,10 @@ jobs:
               if name.endswith('.webp'):
                   assert Path(name).stat().st_size>10000,name
                   assert Path(name).read_bytes()[:4]==b'RIFF',name
+              if name.endswith('.svg'):
+                  import xml.etree.ElementTree as ET
+                  svg=ET.fromstring(Path(name).read_text())
+                  assert svg.tag.endswith('svg') and 'viewBox' in svg.attrib,name
               if name.endswith('.png'):
                   blob=Path(name).read_bytes()
                   assert blob[:8]==b'\x89PNG\r\n\x1a\n',name
