@@ -201,7 +201,7 @@ ok(!I.readingPresentation(yearConsult).answer.startsWith('2027 年的重點')&&I
 // Wheel-first flow is data-free, retains the selected method, then opens a separate profile screen.
 element('dob').value='';
 app.showView('home',false);
-ok(app.spinDiscovery()===true&&element('wheelResult').innerHTML.includes('填生日')&&element('wheelResult').dataset.system&&app.getNavigationState().currentView==='home','Wheel animates and reveals one of 12 schools before any birth date is entered');
+ok(app.spinDiscovery()===true&&element('wheelResult').innerHTML.includes('轉盤選中')&&element('wheelResult').dataset.system&&app.getNavigationState().currentView==='home','Wheel animates and reveals one of 12 schools before any birth date is entered');
 const firstWheelSelection=element('wheelResult').dataset.system;
 element('reopenReading').onclick();
 ok(app.getDirectSchool()===firstWheelSelection&&app.getNavigationState().currentView==='profile'&&app.getJourneyMode()==='direct','Reveal CTA opens the separate birth-data page with the original random result');

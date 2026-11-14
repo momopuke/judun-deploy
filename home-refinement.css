@@ -225,7 +225,7 @@ body.game-edition #home .wheel-selection{flex:1!important;text-align:left!import
 body.game-edition #home .wheel-selection span{color:#d6ba86!important;font-size:12px!important;letter-spacing:1px!important}
 body.game-edition #home .wheel-selection b{color:#fff0cb!important;font-size:clamp(19px,2vw,24px)!important;white-space:nowrap!important}
 body.game-edition #home .result-reopen{
- font:700 15px/1.4 inherit!important;border:1px solid #ffe1a9!important;border-radius:13px!important;
+ font-size:15px!important;font-weight:700!important;line-height:1.4!important;font-family:var(--serif)!important;border:1px solid #ffe1a9!important;border-radius:13px!important;
  background:linear-gradient(145deg,#fbe7b5,#dda661)!important;color:#382315!important;
  padding:13px 16px!important;cursor:pointer!important;white-space:nowrap!important;
  box-shadow:0 4px 0 #966135!important
@@ -235,7 +235,7 @@ body.game-edition #home .home-actions{position:relative;z-index:2;display:flex;j
 body.game-edition #home .home-actions button{
  min-width:155px;min-height:45px;padding:9px 19px;border:1px solid #b69ac1aa;border-radius:15px;
  color:#ecdeef;background:linear-gradient(140deg,#4d3b65a8,#342d4aab);
- font:600 15px/1.3 inherit;cursor:pointer;
+ font-size:15px;font-weight:600;line-height:1.3;font-family:var(--serif);cursor:pointer;
  box-shadow:inset 0 1px #ffffff18,0 4px 0 #15102199;
  transition:background .2s,transform .2s
 }
