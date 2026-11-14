@@ -1,15 +1,15 @@
 {
   "name": "FATE ATLAS 合參命理",
-  "version": "3.13.0",
-  "edition": "Central interactive astrolabe, persistent menus and continuous biography-led report",
+  "version": "3.13.1",
+  "edition": "Centered interactive astrolabe, stable dropdowns, narrative sourced stories, new royal Ziwei celestial illustration",
   "release_date": "2026-11-14",
   "source_branch": "gh-pages",
-  "hosted_url": "https://momopuke.github.io/judun-deploy/?v=3.13.0",
-  "sha256_index_html": "99b978dc1a5474c8f62040974ef881918f7a5bb8a28ebca308f4c2be36928aea",
+  "hosted_url": "https://momopuke.github.io/judun-deploy/?v=3.13.1",
+  "sha256_index_html": "5f7840ed01d859360bc1cca8bf511547e90703ce08154f1381712de8456fd243",
   "sha256_engine": "9839e78f2b09d703a1c9238f140a37521081a0dde7b71fbebecfc919659c7f92",
   "assets": {
-    "index.html": "99b978dc1a5474c8f62040974ef881918f7a5bb8a28ebca308f4c2be36928aea",
-    "app.js": "91ae0c3602347f188f93225c6764e29e618e96428d48633315918d1d10de1777",
+    "index.html": "5f7840ed01d859360bc1cca8bf511547e90703ce08154f1381712de8456fd243",
+    "app.js": "8b8182398f84a58007f75bc38695fc4a999fecc0f8e1eeed97b6faa933e939f1",
     "atlas.css": "0d13736eb29b8f2e99886c926cd265691aac76de4bb177580ecbd454439a8734",
     "sky-engine.js": "68d06103e3a7ebd955920a4679fe54f4832587244aa0780be5604ca95073e82f",
     "engines-v1.2.0.js": "9839e78f2b09d703a1c9238f140a37521081a0dde7b71fbebecfc919659c7f92",
@@ -33,7 +33,7 @@
     "assets/schools/vedic.webp": "32dc71ea6895acd922a916f8d375a2d40f7e8428f08288690d5f2e854e369398",
     "assets/schools/western.webp": "8425ed8c7a2e9b51db2d61acd5401ef3afcb2e7209869976c41520eb2350835b",
     "assets/schools/ziwei.webp": "88711c2c699f4115e72743dec7885a4f8f8db7e81d6429954531602ba11614c0",
-    "interpretation-engine.js": "4c26a82b2a60c3d688b6b3fd1b84e04656e31ddde40786366a05c743c5fc89f4",
+    "interpretation-engine.js": "7873f95b2c72c382210ab3688cf15f2fc68c2647095cdd2bae96f53465724681",
     "interpretation.css": "f08cf7e92dd970e212728243e5a0c191ddb6c5501de2013b8b6e2c243c9d1df9",
     "journey.css": "ec39ec6ecd9f15b626f19b9c42c4243771dcc9750df8e885dd80bcf4d0ad1e08",
     "visual-refresh.css": "9e3d7bb860df6cbc5ea83955665ed560f9ee25814e75785bbb199d97b16f668d",
@@ -54,7 +54,8 @@
     "assets/comic/western.webp": "0f636bf2ab53f7d3b3c87c03f3f4099093fb04f492f090b6a0437d9eab2439bd",
     "assets/comic/ziwei.webp": "c2dfcb4c43890a52c3e13b665060300b9610ecc56730f8e751be4cdbeb00b6c6",
     "home-refinement.css": "a4d44c27e15f62770b663e5ae239da5b47fea81256311cd6d20b832a26523793",
-    "qa-engine.cjs": "cbd566c123a7446c63addafb26b8d4e3894bb2fc789f86a37dac418123cddc46"
+    "qa-engine.cjs": "ce6c9689af8be4a56b2690e0ece08eab47e0da170adf61f2fb3406374c592e86",
+    "assets/schools/ziwei-royal.svg": "1c31ddefb4d1b52d722af2fde90ffa692f9560a0c9f0dc733795e1b24174e7f6"
   },
   "vendors": {
     "iztro": "2.6.5",
@@ -111,7 +112,7 @@
     "optional_life_examples": true,
     "direct_switch_preserves_inputs": true
   },
-  "reading_layout": "Continuous interpretive article and a complete visible sourced biography, with calculation and weights kept in one final disclosure",
+  "reading_layout": "continuous editorial narrative, comic and sourced biographies shown before one final disclosure for technical calculations and weighting",
   "homepage_modes": [
     "幫我合參",
     "自己選系統"
@@ -136,7 +137,9 @@
       "western",
       "ziwei"
     ],
-    "story_structure": "person introduction, circumstances, choice, outcome, relevant reflection, source"
+    "story_structure": "person introduction, circumstances, choice, outcome, relevant reflection, source",
+    "ziwei_art": "assets/schools/ziwei-royal.svg",
+    "story_layout": "all nine historically sourced figures introduced with identity and context before their decisions and outcomes"
   },
   "navigation": {
     "top_level": [
@@ -165,8 +168,8 @@
   },
   "homepage_wheel": {
     "default_visible": true,
-    "desktop": "centered and full-size",
-    "mobile": "centered and touch-ready",
-    "interactive": true
+    "desktop": "large centered interactive wheel",
+    "mobile": "large centered interactive wheel",
+    "real_interaction": true
   }
 }
