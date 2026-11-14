@@ -1,12 +1,12 @@
 {
   "schema": "judun-autodeploy-v1",
-  "release_id": "v1.2.185-staging-recovery-20261114",
-  "base_artifact_id": "JUDUN-1.2.184-STAGINGBOOTCHECK20261114",
-  "target_artifact_id": "JUDUN-1.2.185-STAGINGRECOVERY20261114",
-  "target_build_instance_id": "1.2.185-20261114-STAGINGRECOVERY",
-  "expected_display_version": "v1.2.185",
+  "release_id": "v1.2.186-price-gap-20261115",
+  "base_artifact_id": "JUDUN-1.2.185-STAGINGRECOVERY20261114",
+  "target_artifact_id": "JUDUN-1.2.186-PRICEGAP20261115",
+  "target_build_instance_id": "1.2.186-20261115-PRICEGAP",
+  "expected_display_version": "v1.2.186",
   "expected_managed_file_count": 88,
-  "payload_path": "releases/v1.2.185-staging-recovery-20261114.cms.b64",
-  "payload_sha256": "d3e813ab22c6e9c88361b2db27ebd50e9e17f411be5946c98ffd5aa77c83a719",
+  "payload_path": "releases/v1.2.186-price-gap-20261115.cms.b64",
+  "payload_sha256": "8ec3aa3fa181ede67e17b62006cb35281db4c588ef90248fa92acf8cc185f2c5",
   "noop": false
 }
