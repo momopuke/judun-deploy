@@ -204,3 +204,4 @@ Poll UTC 2026-11-14T03:45:28.189Z: hourly real-host verification; retain signed 
 VPS CPU v21 verification pulse UTC 2026-11-14T04:11:02.752Z
 VPS v22 final live-acceptance receipt check UTC 2026-11-14T04:21:00.524Z
 VPS final seq22 acceptance UTC 2026-11-14T04:23:14.563Z
+Poll UTC 2026-11-14T05:29:14Z: hourly real-host verification; retain signed channel seq22.
