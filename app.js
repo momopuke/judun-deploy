@@ -1,5 +1,5 @@
 (()=>{'use strict';
-const VERSION='3.12.0';
+const VERSION='3.13.0';
 const DEFAULT={ziwei:24,bazi:18,iching:10,meihua:8,liuyao:6,western:8,vedic:8,numerology:6,tarotBirth:4,tarotDraw:2,nineStar:3,maya:3};
 const MODULES=[
 {id:'ziwei',name:'紫微斗數',icon:'✺',desc:'十二宮、十四主星、生年四化、大限',status:'engine',detail:'接入 iztro v2.6.5 排盤核心，提供時辰、參數與時區即可計算十二宮、星曜與生年四化；未填時辰保留未計算。未校正真太陽時與不同流派參數。'},
