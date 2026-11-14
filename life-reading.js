@@ -176,16 +176,18 @@ function sentence(text) {
  const line=String(text||'').trim();
  return line&&!/[。！？?!]$/.test(line)?line+'。':line;
 }
+const STORY_INTRO={"tao":"陶淵明是東晉時代的詩人，以田園詩和《桃花源記》留名後世。他的故事不是單純厭倦官場，而是一個必須養家的人，如何面對收入與生活信念之間的拉扯。","curie":"瑪麗・居禮出生於波蘭，後來在法國研究放射性，是兩度獲頒諾貝爾獎的科學家。她的重要發現，起於一個微小、卻一直無法用既有理論解釋的測量差距。","austen":"珍・奧斯汀是英國小說家，《傲慢與偏見》讓許多人記住她對婚姻、家庭與人際關係的敏銳觀察。而在小說之外，她自己也曾面對牽動人情與未來生活的婚約決定。","franklin":"班傑明・富蘭克林不只參與美國建國，也是印刷商、發明家與外交官。看似能處理許多事情的他，也曾認真面對自己反覆出現的習慣與失誤。","hokusai":"葛飾北齋是日本江戶時代的浮世繪畫家，著名的《神奈川沖浪裏》就出自他筆下。他令人印象深刻的不只是一幅畫，而是年歲漸長後，依然願意換個角度畫熟悉的世界。","tu":"屠呦呦是中國藥學家，因青蒿素研究獲得諾貝爾生理學或醫學獎。這段經歷不是一次突然的靈光乍現，而是研究團隊長期試驗、遇到瓶頸後重新檢查方法的過程。","johnson":"凱瑟琳・強森是 NASA 的數學家，參與美國早期太空任務的軌道計算。在電子電腦開始接手複雜運算的年代，她的工作提醒我們，關鍵的數字仍需要仔細核對。","keller":"海倫・凱勒是美國作家與社會倡議者，幼年失去視力和聽力；安妮・蘇利文則是陪她學習的重要老師。兩人的故事關乎一個難題：當人無法用熟悉的方法理解語言，如何真正溝通？","walker":"C. J. 沃克女士是美國護髮產品企業家，從親自向顧客銷售，一步步建立培訓與銷售網絡。她的故事不只是事業規模擴大，更是思考如何讓自己會做的事變成別人也能接續的工作。"};
 function renderStory(p,s){
- const e=escape;
- return `<details class="people-story" open data-story="${e(p.key)}">
- <summary>${e(p.name)} <span>${e(p.title)}</span></summary>
- <div class="people-body"><span class="people-era">${e(p.era)}</span>
- <p>${e(p.fact)}</p><p>${e(p.choice)}</p><p>${e(p.result)}</p>
+ const e=escape,intro=STORY_INTRO[p.key]||'這段歷史經歷有其時代與個人處境，看看當事人如何處理真實的選擇。';
+ return `<article class="people-story" data-story="${e(p.key)}">
+ <header class="story-heading"><span class="story-kicker">人物小傳 · ${e(p.era)}</span>
+ <h4>${e(p.name)}：${e(p.title)}</h4>
+ <p class="story-deck">${e(intro)}</p></header>
+ <div class="people-body"><p>${e(p.fact)}</p><p>${e(p.choice)}</p><p>${e(p.result)}</p>
  <div class="people-question"><h4>把這段經歷帶回你的問題</h4>
- <p>這次的解讀重點是「${e(plain(s.title))}」。${e(p.why)}</p><p>${e(p.question)}</p></div>
+ <p>${e(p.why)}</p><p>${e(p.question)}</p></div>
  <a href="${e(p.url)}" target="_blank" rel="noopener noreferrer">閱讀史料 · ${e(p.source)} ↗</a>
- <small class="people-note">僅比較這段經歷與本次提醒。</small></div></details>`;
+ <small class="people-note">歷史經驗供生活借鏡，不代表命理推論已被驗證。</small></div></article>`;
 }
 function render(input={}) {
  const s=scenario(input);
