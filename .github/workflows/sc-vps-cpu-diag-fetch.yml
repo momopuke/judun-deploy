@@ -54,3 +54,4 @@ jobs:
               print(f'CPU_DIAG_{i}_ENCRYPTED_REPORT_B64={msg}')
           print('CPU_DIAG_READ_PASS')
           PY
+# v22 post-signed deployment receipt verification 2026-11-14T04:22:09.616Z
