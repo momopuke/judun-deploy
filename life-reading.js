@@ -197,6 +197,7 @@ function render(input={}) {
  const step=s.action&&s.action!==s.meaning?sentence(s.action):'';
  return `<section class="result-bridge" data-life-key="${e(s.key)}" data-life-system="${e(s.id)}">
  <header class="bridge-head"><h3>${e(s.comic.title)}</h3></header>
+ <p class="bridge-intro">這幅漫畫是用「${e(s.basis)}」這條命理線索改寫的生活情境，不是在說你已經經歷了相同的事。</p>
  <div class="bridge-steps">${s.comic.panels.map((panel,index)=>comicPanel(s.id,index,panel)).join('')}</div>
  <p class="bridge-caption"><strong>回到你的問題</strong> 這次的線索是「${e(s.basis)}」。${e(meaning)}${e(step)}</p>
 ${s.person?renderStory(s.person,s):''}</section>`;

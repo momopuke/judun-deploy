@@ -259,3 +259,16 @@ body.game-edition #home .home-actions button:focus-visible{outline:2px solid #f3
  body.game-edition #home.hero{padding:9px 12px 12px!important}
 }
 @media(prefers-reduced-motion:reduce){body.game-edition #home .wheel-center:after{animation:none!important}body.game-edition #home .wheel-center{transition:none!important}}
+
+/* v3.13.3: reading like a coherent article, not disconnected text cards */
+.reading-friendly .reading-analysis.narrative-reading{max-width:915px!important;padding:clamp(24px,3.4vw,40px)!important;background:linear-gradient(155deg,#30243d,#282137)!important;border:1px solid #9380a27d!important;border-radius:21px!important;box-shadow:0 16px 35px #0805142e!important}
+.reading-friendly .narrative-reading h3{margin:0 0 23px!important;color:#fbdbaa!important;font:600 clamp(25px,2.6vw,31px)/1.45 var(--serif)!important}
+.reading-friendly .narrative-reading p.narrative-paragraph,.reading-friendly .narrative-reading p.lens-explanation{display:block!important;margin:0 0 19px!important;padding:0!important;border:0!important;background:transparent!important;color:#f0e4f2!important;font-size:clamp(17px,1.7vw,19px)!important;line-height:1.95!important;letter-spacing:.007em!important;text-align:left!important}
+.reading-friendly .narrative-reading p.narrative-context{font-size:clamp(18px,1.85vw,20px)!important;color:#ffead1!important}
+.reading-friendly .narrative-reading .narrative-paragraph strong,.reading-friendly .narrative-reading .lens-explanation strong{color:#f9d6a3!important}
+.reading-friendly .narrative-reading .reading-perspectives{margin:25px 0!important;padding:22px 0 5px!important;border-top:1px solid #a48fa45d!important;border-bottom:1px solid #a48fa45d!important}
+.reading-friendly .narrative-reading .reading-perspectives h4{color:#f3d5ad!important;font:600 clamp(20px,2vw,24px)/1.5 var(--serif)!important;margin:0 0 19px!important}
+.reading-friendly .narrative-reading p.narrative-conclusion{color:#ffeacb!important}
+.reading-friendly .narrative-reading p.narrative-boundary{margin:24px 0 0!important;padding:15px 0 0!important;border-top:1px solid #8e7c925b!important;font-size:16px!important;line-height:1.9!important;color:#dbcee0!important}
+.reading-friendly .life-explainer .bridge-intro{max-width:870px;margin:12px auto 20px;font-size:17px;line-height:1.86;color:#e3d6eb}
+@media(max-width:750px){.reading-friendly .reading-analysis.narrative-reading{padding:22px 18px!important}.reading-friendly .narrative-reading p.narrative-paragraph,.reading-friendly .narrative-reading p.lens-explanation{font-size:17px!important;line-height:1.92!important}}

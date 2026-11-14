@@ -6,7 +6,7 @@ const ids={};function element(id){return ids[id]||(ids[id]={value:'',innerHTML:'
 element('dob').value='1990-01-01';element('topic').value='overview';
 let exportedBlob;const doc={body:{dataset:{},appendChild(){}},createElement(){return {click(){},remove(){}}},getElementById:element,querySelectorAll(){return[]},querySelector(){return null}};
 const c={console,Date,Intl,crypto,performance:{now:()=>0},requestAnimationFrame:fn=>fn(4000),btoa,atob,Blob,URL:{createObjectURL(b){exportedBlob=b;return 'blob:test'},revokeObjectURL(){}},document:doc,location:{hash:'',protocol:'https:',hostname:'example.test'},alert(){},clearTimeout(){},setTimeout(){},navigator:{},history:{}};c.window=c;c.self=c;vm.createContext(c);
-for(const f of ['iztro-v2.6.5.min.js','engines-v1.2.0.js','astronomy-v2.1.19.min.js','sky-engine.js','discovery-engine.js','interpretation-engine.js','life-reading.js','app.js'])vm.runInContext(fs.readFileSync(__dirname+'/'+f,'utf8'),c,{filename:f});
+for(const f of ['iztro-v2.6.5.min.js','engines-v1.2.0.js','astronomy-v2.1.19.min.js','sky-engine.js','discovery-engine.js','narrative-engine.js','interpretation-engine.js','life-reading.js','app.js'])vm.runInContext(fs.readFileSync(__dirname+'/'+f,'utf8'),c,{filename:f});
 const sky=c.FateSky,app=c.__fortuneTest,e=c.FateEngine;
 const discovery=c.FateDiscovery;
 for(let i=0;i<12;i++){const start=i*437+31,p=discovery.plan(i,start,5,i%2?9:-9),relative=((-p.target%360)+360)%360;ok(relative>=i*30&&relative<(i+1)*30&&p.target>=start+1800,'Wheel pointer lands inside selected sector '+i)}
@@ -173,6 +173,15 @@ app.showView('finish',false);ok(element('finishAction').textContent.length>0&&el
 element('dob').value='';ok(app.prepareJourney()===false&&app.getNavigationState().currentView==='profile','Missing birthday retains the editable profile');
 element('dob').value='1990-01-01';element('topic').value='career';element('readingQuestion').value='現在適合換工作嗎？';element('readingQuestion').listeners.change();app.startConsultation();
 
+// Test the real narrative output against specific questions, computed inputs and guardrails.
+const storyCareer=I.render(I.interpret('bazi',ready,{topic:'career',question:'我想創業，應該怎麼開始？'},events));
+ok(storyCareer.includes('創業先要解決兩個問題')&&storyCareer.includes('實際線索')&&storyCareer.includes('最小版本')&&storyCareer.includes('現實結果與象徵不同'),'Single reading follows question, calculated symbol, example and reality check');
+ok(storyCareer.indexOf('這個結果怎麼理解')<storyCareer.indexOf('生活漫畫與人物故事')&&storyCareer.indexOf('生活漫畫與人物故事')<storyCareer.indexOf('解讀依據與提醒'),'Illustration follows prose and precedes technical evidence');
+const storyLove=I.render(I.interpret('numerology',ready,{topic:'love',question:'他喜歡我嗎？'},events));
+ok(storyLove.includes('不能替另一個人宣布心意')&&storyLove.includes('主動安排見面'),'Relationship prose does not invent another person thoughts');
+const storyCombined=I.renderConsultation(I.consultation(ready,{topic:'career',question:'現在適合換工作嗎？'},events));
+ok(storyCombined.includes('考慮轉職時')&&storyCombined.includes('其實際線索')&&storyCombined.includes('從命理線索到白話解釋')&&storyCombined.includes('串成一個決定'),'Synthesis connects concern, calculated basis, school views and practical decision');
+ok(storyCombined.includes('不是準確率')&&storyCombined.includes('同一生日'),'Weights and shared birthday are not independent evidence');
 // Reading hierarchy and deduplication retain distinct information and source evidence.
 const duplicateReading={...consult,answer:'先把薪資、工時與成長機會列清楚再比較。',first:'先把薪資、工時與成長機會列清楚再比較',watch:'忽略實際工時'};
 const brief=I.readingPresentation(duplicateReading),briefHtml=I.renderConsultation(duplicateReading);

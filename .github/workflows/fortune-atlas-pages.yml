@@ -1,4 +1,4 @@
-name: FATE ATLAS v3.13.2 verify deployed release
+name: FATE ATLAS v3.13.3 verify deployed release
 on:
   push:
     branches: [gh-pages]
@@ -19,7 +19,7 @@ jobs:
           import hashlib,json
           from pathlib import Path
           data=json.loads(Path('version.json').read_text())
-          assert data['version']=='3.13.2'
+          assert data['version']=='3.13.3'
           for name,sha in data['assets'].items():
               assert hashlib.sha256(Path(name).read_bytes()).hexdigest()==sha,name
               if name.endswith('.webp'):
@@ -36,6 +36,7 @@ jobs:
           print('ALL_SOURCE_HASHES_PASS')
           PY
           node --check app.js
+          node --check narrative-engine.js
           node --check interpretation-engine.js
           node --check sky-engine.js
           node qa-engine.cjs
@@ -53,12 +54,12 @@ jobs:
           for attempt in range(16):
               try:
                   def fetch(name):
-                      req=urllib.request.Request(base+name+'?v=3.13.2-'+str(attempt),headers={'User-Agent':'FateAtlas-Release-QA','Cache-Control':'no-cache'})
+                      req=urllib.request.Request(base+name+'?v=3.13.3-'+str(attempt),headers={'User-Agent':'FateAtlas-Release-QA','Cache-Control':'no-cache'})
                       with urllib.request.urlopen(req,timeout=15) as r:
                           assert r.status==200
                           return r.read()
                   live=json.loads(fetch('version.json'))
-                  assert live['version']=='3.13.2'
+                  assert live['version']=='3.13.3'
                   for name,sha in expected['assets'].items():
                       assert hashlib.sha256(fetch(name)).hexdigest()==sha,name
                   assert live['assets']==expected['assets']
@@ -72,12 +73,12 @@ jobs:
           PY
       - name: Build complete reproducible release ZIP
         run: |
-          git archive --format=zip --output=FATE-ATLAS_v3.13.2_FULL.zip HEAD
-          unzip -t FATE-ATLAS_v3.13.2_FULL.zip | tail -2
+          git archive --format=zip --output=FATE-ATLAS_v3.13.3_FULL.zip HEAD
+          unzip -t FATE-ATLAS_v3.13.3_FULL.zip | tail -2
       - name: Store verified full-source release artifact
         uses: actions/upload-artifact@v4
         with:
-          name: FATE-ATLAS-v3.13.2-full-source
-          path: FATE-ATLAS_v3.13.2_FULL.zip
+          name: FATE-ATLAS-v3.13.3-full-source
+          path: FATE-ATLAS_v3.13.3_FULL.zip
           if-no-files-found: error
           retention-days: 90

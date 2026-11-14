@@ -219,6 +219,7 @@ function directPresentation(r){
  return {answer,action:repeatedReadingText(answer,step)?'':step,reason:repeatedReadingText(answer,reason)?'':reason,risk:repeatedReadingText(answer,profile.risk)?'':plainReading(profile.risk)};
 }
 function renderSingleAnalysis(r,p){
+ if(root.FateNarrative?.single)return root.FateNarrative.single(r,p);
  const profile=r.profiles?.[0];
  const evidence=r.evidence||[], anchor=evidence[r.anchorIndex||0];
  if(!profile||!anchor)return '';
@@ -246,12 +247,12 @@ function render(r,{compact=false,cover='',contextBar='',calculation=''}={}){
   ${readingStep(p.action)}${contextBar}
  </div>${cover}</div>
 ${!compact?renderSingleAnalysis(r,p):''}
+${comic?`<section class="life-explainer"><h3>生活漫畫與人物故事</h3>${comic}</section>`:''}
  <section class="reading-limits simple-reasons"><h3>解讀依據與提醒</h3>
 ${compact?detailLine('這次的提醒',p.reason)+detailLine('值得留意',p.risk):''}
 ${evidence.map(o=>`<article><b>${e(o.label)} · ${e(o.observed)}</b><p>${e(readingSentence(o.meaning))}</p></article>`).join('')}
 ${technical.map(t=>`<p>${e(t)}</p>`).join('')}${calculation}${limits.length||r.scope?`<h4>解讀範圍</h4>${limits.map(t=>`<p>${e(t)}</p>`).join('')}${r.scope?`<p>${e(r.scope)}</p>`:''}`:''}
  </section>
-${comic?`<section class="life-explainer"><h3>生活漫畫與人物故事</h3>${comic}</section>`:''}
  </section>`;
 }
 
@@ -386,6 +387,7 @@ function renderAnnualDetails(r){
  <section class="reading-month-details"><h5>每月主題</h5><div class="annual-months">${y.months.map(m=>`<div><b>${m.month} 月</b><span>${e(m.title)}</span></div>`).join('')}</div></section></section>`;
 }
 function renderConsultationAnalysis(r,p){
+ if(root.FateNarrative?.combined)return root.FateNarrative.combined(r,p,{annualDetails:renderAnnualDetails});
  if(!r.lenses.length)return '';
  const e=escape, covered=[p.answer,p.action];
  const readings=r.lenses.map(l=>{
