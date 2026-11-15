@@ -1,0 +1,40 @@
+name: P0 19 R12 official dependency isolated probe (no product source)
+on:
+  push:
+    branches:
+      - ci/p0-19-r12-dependency-probe-20261115
+    paths:
+      - .github/workflows/p0-19-r12-dependency-probe.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  official-wheels:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      PIP_INDEX_URL: https://pypi.org/simple
+      PIP_DISABLE_PIP_VERSION_CHECK: '1'
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - name: Python 3.11 isolated venv and official wheel verification
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -m venv /tmp/judun-r12-venv
+          . /tmp/judun-r12-venv/bin/activate
+          python -m pip install --only-binary=:all: nh3==0.3.7 google-genai==2.19.0 fastapi==0.141.1
+          python - <<'PY'
+          import nh3, google.genai, fastapi, hashlib, pathlib
+          print('OFFICIAL_DEPENDENCY_IMPORT_PASS')
+          for m in (nh3,google.genai,fastapi):
+              print('MODULE',m.__name__,getattr(m,'__version__','n/a'),getattr(m,'__file__','namespace'))
+          print('nh3_sanitizer',nh3.clean('<script>bad()</script><p>safe</p>'))
+          PY
+          python -m pip freeze | sort | tee /tmp/r12-pip-freeze.txt
+      - name: Assert no production secret or source use
+        shell: bash
+        run: |
+          test -z "${ECPAY_MERCHANT_ID:-}"
+          test -z "${GEMINI_API_KEY:-}"
+          echo 'NO_PRODUCT_SOURCE_NO_PRODUCTION_SECRETS_NO_DEPLOY'
