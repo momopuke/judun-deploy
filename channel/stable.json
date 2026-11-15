@@ -1,12 +1,12 @@
 {
   "schema": "judun-autodeploy-v1",
-  "release_id": "v1.2.187-quote-risk-20261115",
-  "base_artifact_id": "JUDUN-1.2.186-PRICEGAP20261115",
-  "target_artifact_id": "JUDUN-1.2.187-QUOTERISK20261115",
-  "target_build_instance_id": "1.2.187-20261115-QUOTERISK",
-  "expected_display_version": "v1.2.187",
+  "release_id": "v1.2.188-risk-review-20261115",
+  "base_artifact_id": "JUDUN-1.2.187-QUOTERISK20261115",
+  "target_artifact_id": "JUDUN-1.2.188-RISKREVIEW20261115",
+  "target_build_instance_id": "1.2.188-20261115-RISKREVIEW",
+  "expected_display_version": "v1.2.188",
   "expected_managed_file_count": 88,
-  "payload_path": "releases/v1.2.187-quote-risk-20261115.cms.b64",
-  "payload_sha256": "9137f759c2c569dd1aad18854986af20bd9ddac136a43c72c332dcd7b5d00680",
+  "payload_path": "releases/v1.2.188-risk-review-20261115.cms.b64",
+  "payload_sha256": "69fa1b41b4ff88644f91138dda80eb8b1155cfaa95a3dc3f86e1adae03d37c8b",
   "noop": false
 }
