@@ -1,0 +1,19 @@
+name: JUDUN isolated signed live readonly probe (never deploy)
+on:
+  push:
+    branches:
+      - audit/live-readonly-20261117-r9
+    paths:
+      - ".github/workflows/judun-live-readonly-r9.yml"
+      - "p0/live_readonly_probe_20261117.py"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  live-readonly:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify signed channel + public HTTPS build and deep SHA (GET only)
+        run: python3 p0/live_readonly_probe_20261117.py
