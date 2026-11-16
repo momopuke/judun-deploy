@@ -15,7 +15,7 @@ from pathlib import Path
 BASE = "https://judun.142-93-91-214.sslip.io"
 ROOT = Path(__file__).resolve().parents[1]
 channel_bytes = (ROOT / "channel/stable.json").read_bytes()
-sig = base64.b64decode((ROOT / "channel/stable.json.sig.b64").read_bytes(), validate=True)
+sig = base64.b64decode(b"".join((ROOT / "channel/stable.json.sig.b64").read_bytes().split()), validate=True)
 assert len(sig) == 64, "SIGNATURE_INVALID_SIZE"
 public_key = (ROOT / "keys/release_signing_public.pem").read_bytes()
 assert hashlib.sha256(public_key).hexdigest() == "17c8b563d224568447c3af1db57c8bb9ce51dbeac6c21371e909bc3a5635a8db", "TRUST_ROOT_CHANGED"
