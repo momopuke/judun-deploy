@@ -11,6 +11,9 @@ on:
       - ".github/scripts/verify_release.py"
       - ".github/workflows/verify-v1286-live.yml"
       - ".github/workflows/judun-p0-unified-acceptance.yml"
+      - ".github/workflows/release-pr-gate.yml"
+      - "ops/main-release-protection.json"
+      - "ops/RELEASE_CONTROL.md"
   pull_request:
     paths:
       - "p0/**"
@@ -22,6 +25,9 @@ on:
       - ".github/scripts/verify_release.py"
       - ".github/workflows/verify-v1286-live.yml"
       - ".github/workflows/judun-p0-unified-acceptance.yml"
+      - ".github/workflows/release-pr-gate.yml"
+      - "ops/main-release-protection.json"
+      - "ops/RELEASE_CONTROL.md"
   workflow_dispatch:
 permissions:
   contents: read
@@ -53,8 +59,18 @@ jobs:
               ".github/scripts/verify_release.py",
               ".github/workflows/judun-p0-unified-acceptance.yml",
               ".github/workflows/verify-v1286-live.yml",
+              ".github/workflows/release-pr-gate.yml",
+              ".github/workflows/judun-report-entry-live.yml",
+              ".github/workflows/v147-company-onboarding-live.yml",
+              ".github/workflows/probe-live.yml",
+              ".github/workflows/judun-report-navigation-live.yml",
+              ".github/workflows/v145-private-evidence-live.yml",
+              "ops/main-release-protection.json",
+              "ops/RELEASE_CONTROL.md",
               "p3/direct_deploy_publish.py",
               "p3/test_direct_deploy_publish.py",
+              "p3/release_pr_gate.py",
+              "p3/test_release_pr_gate.py",
           }
           exact = tooling | {"P0_UNIFIED_README.md"}
           forbidden = [
@@ -225,7 +241,8 @@ jobs:
         run: python3 .github/scripts/verify_release.py package
       - name: Validate public direct-deploy publisher and acceptance gate
         run: |
-          python3 -m py_compile p3/direct_deploy_publish.py
+          python3 -m py_compile p3/direct_deploy_publish.py p3/release_pr_gate.py
           python3 -m unittest discover -s p3 -p 'test_direct_deploy_publish.py' -v
+          python3 -m unittest discover -s p3 -p 'test_release_pr_gate.py' -v
       - name: Confirm this workflow does not publish to VPS
         run: echo "GITHUB_MAIN_SIGNED_CHANNEL_VERIFIED; NO_DEPLOYMENT_PERFORMED"

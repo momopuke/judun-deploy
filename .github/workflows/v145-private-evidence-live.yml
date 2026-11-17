@@ -1,6 +1,7 @@
 name: JUDUN private evidence and customer entry live verification
 on:
   push:
+    branches: [main]
     paths:
       - channel/stable.json
       - .github/workflows/v145-private-evidence-live.yml

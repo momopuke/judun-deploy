@@ -1,6 +1,7 @@
 name: JUDUN report navigation live regression
 on:
   push:
+    branches: [main]
     paths:
       - "channel/stable.json"
       - ".github/workflows/judun-report-navigation-live.yml"

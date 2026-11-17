@@ -1,6 +1,7 @@
 name: JUDUN company onboarding live verification
 on:
   push:
+    branches: [main]
     paths:
       - channel/stable.json
       - .github/workflows/v147-company-onboarding-live.yml

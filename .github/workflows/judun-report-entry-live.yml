@@ -1,6 +1,7 @@
 name: JUDUN report-entry compatibility live check
 on:
   push:
+    branches: [main]
     paths:
       - ".github/workflows/judun-report-entry-live.yml"
       - "channel/stable.json"

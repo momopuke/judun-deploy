@@ -2,6 +2,7 @@ name: Verify JUDUN signed release and production
 
 on:
   push:
+    branches: [main]
     paths:
       - ".github/workflows/verify-v1286-live.yml"
       - ".github/scripts/verify_release.py"
