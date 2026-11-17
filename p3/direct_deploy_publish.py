@@ -1,9 +1,9 @@
-"""Publish an existing trusted, signed JUDUN release atomically to main.
+"""Submit an existing trusted, signed JUDUN release as an atomic pull request.
 
 Requires an already approved CMS release produced by the ORIGINAL private
 source builder and Ed25519 signer; never creates or reads signing private keys.
 The existing VPS pull-agent performs its own base match, backup, and deep SHA.
-Default action is preflight only. --publish is an explicit write action.
+Default action is preflight only. --publish opens a PR without merging it.
 """
 from __future__ import annotations
 import argparse
@@ -17,7 +17,8 @@ import subprocess
 import tempfile
 import time
 from urllib.error import HTTPError, URLError
-from urllib.request import HTTPRedirectHandler, Request, build_opener, urlopen
+from urllib.parse import urlencode
+from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 REPO = "momopuke/judun-deploy"
 API = "https://api.github.com/repos/" + REPO
@@ -188,7 +189,7 @@ def github(method, path, token, body=None, missing_ok=False):
         headers["Authorization"] = "Bearer " + token
     req = Request(API + path, data=data, method=method, headers=headers)
     try:
-        with urlopen(req, timeout=30) as res:
+        with build_opener(RejectRedirects()).open(req, timeout=30) as res:
             raw = res.read(3000001)
     except HTTPError as error:
         if missing_ok and error.code == 404:
@@ -213,12 +214,13 @@ def _github_contents(raw):
 
 def publish_atomic(manifest, signature_b64, cms_b64, parsed, pubkey, token,
                    check_current_live):
-    """One fast-forward commit changes the 3 channel files simultaneously."""
+    """Submit one candidate commit for review; never write the main ref."""
     ref = github("GET", "/git/ref/heads/main", token)
     head = ref["object"]["sha"]
-    commit = github("GET", "/git/commits/" + head, token)
-    channel = github("GET", "/contents/channel/stable.json?ref=main", token)
-    key_file = github("GET", "/contents/keys/release_signing_public.pem?ref=main", token)
+    if not isinstance(head, str) or not re.fullmatch(r"[0-9a-f]{40}", head):
+        deny("PUBLISH_MAIN_REF_UNVERIFIED")
+    channel = github("GET", "/contents/channel/stable.json?ref=" + head, token)
+    key_file = github("GET", "/contents/keys/release_signing_public.pem?ref=" + head, token)
     if _github_contents(key_file) != load(pubkey, 4096):
         deny("PUBLISH_KEY_NOT_PINNED_TO_MAIN")
     try:
@@ -227,9 +229,25 @@ def publish_atomic(manifest, signature_b64, cms_b64, parsed, pubkey, token,
         deny("INSTALLED_CHANNEL_UNVERIFIED")
     if installed.get("target_artifact_id") != parsed["base_artifact_id"]:
         deny("CHANNEL_BASE_NOT_LIVE_BASE")
-    if github("GET", "/contents/" + parsed["payload_path"] + "?ref=main",
+    if github("GET", "/contents/" + parsed["payload_path"] + "?ref=" + head,
               token, missing_ok=True) is not None:
         deny("RELEASE_PAYLOAD_PATH_EXISTS")
+    nonce = hashlib.sha256(manifest).hexdigest()[:24]
+    branch = "release/" + parsed["release_id"] + "-" + nonce
+    ref_path = "/git/ref/heads/" + branch
+    ref_name = "refs/heads/" + branch
+    candidate = github("GET", ref_path, token, missing_ok=True)
+    parent = head
+    if candidate is not None:
+        sha = candidate.get("object", {}).get("sha")
+        if not isinstance(sha, str) or not re.fullmatch(r"[0-9a-f]{40}", sha):
+            deny("PUBLISH_REF_RESPONSE_UNVERIFIED")
+        actual = github("GET", "/git/commits/" + sha, token)
+        parents = [p.get("sha") for p in actual.get("parents", [])]
+        if len(parents) != 1 or not isinstance(parents[0], str) or not re.fullmatch(r"[0-9a-f]{40}", parents[0]):
+            deny("PUBLISH_CANDIDATE_COMMIT_IDENTITY_MISMATCH")
+        parent = parents[0]
+    commit = github("GET", "/git/commits/" + parent, token)
     if check_current_live is not None:
         check_current_live()  # check again immediately before forming commit
     items = [
@@ -245,35 +263,55 @@ def publish_atomic(manifest, signature_b64, cms_b64, parsed, pubkey, token,
                           "sha": blob["sha"]})
     tree = github("POST", "/git/trees", token, {
         "base_tree": commit["tree"]["sha"], "tree": tree_rows})
-    release = github("POST", "/git/commits", token, {
-        "message": "JUDUN signed release " + parsed["release_id"],
-        "tree": tree["sha"], "parents": [head]})
-    # force=false: any intervening branch movement rejects this publication.
-    confirmed = github("PATCH", "/git/refs/heads/main", token,
-                       {"sha": release["sha"], "force": False})
-    if confirmed.get("object", {}).get("sha") != release["sha"]:
+    for (_, content), row in zip(items, tree_rows, strict=True):
+        if row["sha"] != git_blob_oid(content):
+            deny("PUBLISH_BLOB_IDENTITY_MISMATCH")
+    latest = github("GET", "/git/ref/heads/main", token)["object"]["sha"]
+    if not isinstance(latest, str) or not re.fullmatch(r"[0-9a-f]{40}", latest):
+        deny("PUBLISH_MAIN_REF_UNVERIFIED")
+    if latest != head:
+        def read_file(path):
+            return _github_contents(github("GET", f"/contents/{path}?ref={latest}", token))
+        if (read_file("channel/stable.json") != _github_contents(channel)
+                or read_file("keys/release_signing_public.pem") != load(pubkey, 4096)
+                or github("GET", "/contents/" + parsed["payload_path"] + "?ref=" + latest,
+                          token, missing_ok=True) is not None):
+            deny("PUBLISH_SIGNED_BASE_CHANGED")
+    if candidate is None:
+        release = github("POST", "/git/commits", token, {
+            "message": "JUDUN signed release " + parsed["release_id"],
+            "tree": tree["sha"], "parents": [head]})
+        github("POST", "/git/refs", token, {"ref": ref_name, "sha": release["sha"]})
+        candidate = github("GET", ref_path, token)
+        if candidate.get("object", {}).get("sha") != release["sha"]:
+            deny("PUBLISH_REF_RESPONSE_UNVERIFIED")
+    sha = candidate.get("object", {}).get("sha")
+    if not isinstance(sha, str) or not re.fullmatch(r"[0-9a-f]{40}", sha):
         deny("PUBLISH_REF_RESPONSE_UNVERIFIED")
-    # A successful HTTP write is not enough. Re-read the canonical branch and
-    # its immutable tree; verify all three files are in the SAME commit.
-    published = github("GET", "/git/ref/heads/main", token)
-    if published.get("object", {}).get("sha") != release["sha"]:
-        deny("PUBLISH_REF_CHANGED_AFTER_UPDATE")
-    actual_commit = github("GET", "/git/commits/" + release["sha"], token)
-    if (actual_commit.get("tree", {}).get("sha") != tree["sha"]
-            or [p.get("sha") for p in actual_commit.get("parents", [])] != [head]):
-        deny("PUBLISH_COMMIT_IDENTITY_MISMATCH")
-    indexed_tree = github("GET", "/git/trees/" + tree["sha"] + "?recursive=1", token)
-    if indexed_tree.get("truncated") is not False:
-        deny("PUBLISH_TREE_UNVERIFIABLE")
-    index = {f.get("path"): f for f in indexed_tree.get("tree", [])
-             if isinstance(f, dict)}
-    for expected in tree_rows:
-        actual = index.get(expected["path"], {})
-        if (actual.get("sha") != expected["sha"]
-                or actual.get("type") != "blob"
-                or actual.get("mode") != "100644"):
-            deny("PUBLISH_CHANNEL_NOT_ATOMIC")
-    return release["sha"]
+    actual = github("GET", "/git/commits/" + sha, token)
+    if (actual.get("tree", {}).get("sha") != tree["sha"]
+            or [p.get("sha") for p in actual.get("parents", [])] != [parent]):
+        deny("PUBLISH_CANDIDATE_COMMIT_IDENTITY_MISMATCH")
+    params = urlencode({"state": "open", "head": REPO.split("/")[0] + ":" + branch, "base": "main"})
+    matches = github("GET", "/pulls?" + params, token)
+    if not isinstance(matches, list) or len(matches) > 1:
+        deny("PUBLISH_PULL_REQUEST_AMBIGUOUS")
+    request = matches[0] if matches else github("POST", "/pulls", token, {
+        "title": "Release " + parsed["expected_display_version"],
+        "head": branch, "base": "main",
+        "body": (
+            "Signed channel manifest and encrypted release payload. "
+            "Merge after the release gate passes to start deployment. "
+            "Verify both sites after merge."
+        ),
+    })
+    num = request.get("number")
+    if (type(num) is not int or num < 1 or request.get("state") != "open"
+            or request.get("head", {}).get("sha") != sha
+            or request.get("head", {}).get("ref") != branch
+            or request.get("base", {}).get("ref") != "main"):
+        deny("PUBLISH_PULL_REQUEST_UNVERIFIED")
+    return {"candidate_commit": sha, "pull_request": f"https://github.com/{REPO}/pull/{num}"}
 
 
 def git_blob_oid(content):
@@ -454,7 +492,8 @@ def run():
     ap.add_argument("--candidate-acceptance", type=Path,
                     help="Private candidate QA receipt required for a new publication")
     operation = ap.add_mutually_exclusive_group()
-    operation.add_argument("--publish", action="store_true")
+    operation.add_argument("--publish", action="store_true",
+                           help="Open a signed release PR without merging or deploying")
     operation.add_argument("--verify-published", action="store_true",
                            help="Read back a previously published signed channel and check the VPS")
     a = ap.parse_args()
@@ -503,14 +542,10 @@ def run():
         token = os.environ.get("GITHUB_TOKEN", "")
         if not token:
             deny("GITHUB_TOKEN_ENV_REQUIRED")
-        stage_base = site_get(STAGING, "/health/build", token=stage_token)
-        if stage_base.get("payment_mode") != "test_unlock":
-            deny("STAGING_TEST_PAYMENT_MODE_REQUIRED")
-        new_sha = publish_atomic(manifest, sig, cms, parsed,
-                                 a.public_key, token, check)
-        print("DIRECT_DEPLOY_SIGNED_CHANNEL_PUBLISHED", new_sha, flush=True)
-        verify_dual_site(parsed, stage_token)
-        print("PAYMENT_AND_REPORT_PDF_E2E_STILL_REQUIRED")
+        stage_result = verify_staging_live(parsed, stage_token, attempts=1)
+        print("STAGING_RELEASE_CANDIDATE_PASS", json.dumps(stage_result), flush=True)
+        request = publish_atomic(manifest, sig, cms, parsed, a.public_key, token, check)
+        print("DIRECT_DEPLOY_RELEASE_PR_OPENED_NOT_DEPLOYED", json.dumps(request), flush=True)
         return 0
     except (ValueError, KeyError, TypeError) as exc:
         msg = str(exc)

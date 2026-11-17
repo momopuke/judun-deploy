@@ -124,20 +124,26 @@ class SignedChannelPublisherTests(TestCase):
                 with self.assertRaises(ValueError):
                     pub.check_live(build, deep | drift, base, digest)
 
-    def test_atomic_publisher_writes_no_partial_ref_and_checks_source_key(self):
+    def test_publisher_opens_one_exact_release_pr_without_writing_main(self):
         m, sig, cms = self.sample()
         info = json.loads(m)
         pinned = self.pubkey.read_bytes()
         old = json.dumps({"target_artifact_id": info["base_artifact_id"]}).encode()
+        branch = "release/" + info["release_id"] + "-" + sha256(m).hexdigest()[:24]
+        existing = False
+        existing_pr = False
         calls = []
         def fake_http(method, endpoint, token, body=None, missing_ok=False):
+            nonlocal existing, existing_pr
             calls.append((method, endpoint, body))
-            if endpoint.startswith("/git/refs/") and method == "PATCH":
-                return {"object": {"sha": "e"*40}}
-            if endpoint.startswith("/git/ref/"):
-                return {"object": {"sha": "e"*40 if any(
-                    method == "PATCH" and name.startswith("/git/refs/")
-                    for method, name, _ in calls) else "a"*40}}
+            if endpoint == "/git/ref/heads/main" and method == "GET":
+                return {"object": {"sha": "a"*40}}
+            if endpoint == "/git/ref/heads/" + branch and method == "GET":
+                return {"object": {"sha": "e"*40}} if existing else None
+            if endpoint == "/git/refs" and method == "POST":
+                self.assertEqual(body, {"ref": "refs/heads/" + branch, "sha": "e"*40})
+                existing = True
+                return {}
             if endpoint.startswith("/git/commits/"):
                 if endpoint.endswith("e"*40):
                     return {"tree": {"sha": "d"*40}, "parents": [{"sha": "a"*40}]}
@@ -149,22 +155,27 @@ class SignedChannelPublisherTests(TestCase):
             if endpoint.startswith("/contents/releases/"):
                 return None
             if endpoint == "/git/blobs":
-                return {"sha": "c"*40}
+                return {"sha": pub.git_blob_oid(base64.b64decode(body["content"]))}
             if endpoint == "/git/trees":
                 return {"sha": "d"*40}
-            if endpoint.startswith("/git/trees/"):
-                return {"truncated": False, "tree": [
-                    {"path": name, "sha": "c"*40, "type": "blob", "mode": "100644"}
-                    for name in (info["payload_path"], "channel/stable.json.sig.b64",
-                                 "channel/stable.json")]}
             if endpoint == "/git/commits":
                 return {"sha": "e"*40}
+            request = {"number": 24, "state": "open",
+                       "head": {"sha": "e"*40, "ref": branch}, "base": {"ref": "main"}}
+            if endpoint.startswith("/pulls?") and method == "GET":
+                return [request] if existing_pr else []
+            if endpoint == "/pulls" and method == "POST":
+                self.assertEqual(body["head"], branch)
+                self.assertEqual(body["base"], "main")
+                existing_pr = True
+                return request
             raise AssertionError(endpoint)
         verify_called = []
         with mock.patch.object(pub, "github", side_effect=fake_http):
             result = pub.publish_atomic(m, sig, cms, info,
                                         self.pubkey, "test-only", lambda: verify_called.append(True))
-        self.assertEqual(result, "e"*40)
+        self.assertEqual(result, {"candidate_commit": "e"*40,
+                                  "pull_request": f"https://github.com/{pub.REPO}/pull/24"})
         self.assertEqual(verify_called, [True])
         posts = [call for call in calls if call[0] == "POST" and call[1] == "/git/blobs"]
         self.assertEqual(len(posts), 3)
@@ -172,12 +183,13 @@ class SignedChannelPublisherTests(TestCase):
                           if end == "/git/trees")["tree"]],
                          [info["payload_path"], "channel/stable.json.sig.b64",
                           "channel/stable.json"])
-        updates = [call for call in calls if call[0] == "PATCH"
-                   and call[1] == "/git/refs/heads/main"]
-        self.assertEqual(len(updates), 1)
-        self.assertEqual(updates[0][2]["force"], False)
-        self.assertEqual(calls[-1][0:2],
-                         ("GET", "/git/trees/" + "d"*40 + "?recursive=1"))
+        self.assertFalse(any(method == "PATCH" for method, _, _ in calls))
+        with mock.patch.object(pub, "github", side_effect=fake_http):
+            self.assertEqual(pub.publish_atomic(
+                m, sig, cms, info, self.pubkey, "test-only", None), result)
+        for endpoint in ("/git/refs", "/git/commits", "/pulls"):
+            self.assertEqual(sum(method == "POST" and path == endpoint
+                                 for method, path, _ in calls), 1)
 
     def test_existing_payload_and_stale_channel_refused_before_git_writes(self):
         m, sig, cms = self.sample()

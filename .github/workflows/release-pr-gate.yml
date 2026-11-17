@@ -1,0 +1,30 @@
+name: JUDUN release PR gate
+
+on:
+  pull_request_target:
+    branches: [main]
+    types: [opened, reopened, synchronize, ready_for_review, edited]
+
+permissions:
+  contents: read
+  statuses: write
+
+concurrency:
+  group: judun-release-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  release-pr-gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Check out the trusted base only
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate Git objects and report against the PR head
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 p3/release_pr_gate.py
