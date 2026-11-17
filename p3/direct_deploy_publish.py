@@ -27,7 +27,18 @@ HEX64 = re.compile(r"[0-9a-f]{64}\Z")
 ARTIFACT = re.compile(r"JUDUN-1\.2\.\d+-[A-Za-z0-9_-]{6,80}\Z")
 PAYLOAD_PATH = re.compile(r"releases/[A-Za-z0-9._-]+\.cms\.b64\Z")
 RELEASE_KEY_SHA256 = "17c8b563d224568447c3af1db57c8bb9ce51dbeac6c21371e909bc3a5635a8db"
-V189_PAYLOAD_SHA256 = "7343b43890b80bb330e5d0a50053301e71c091ea7a791b4a683ba605d8496b42"
+V189_RELEASE = {
+    "schema": "judun-autodeploy-v1",
+    "release_id": "v1.2.189-startup-fix-20261117",
+    "base_artifact_id": "JUDUN-1.2.188-RISKREVIEW20261115",
+    "target_artifact_id": "JUDUN-1.2.189-CODEX20261117",
+    "target_build_instance_id": "1.2.189-CODEX-20261117-STARTUP-FIX",
+    "expected_display_version": "v1.2.189",
+    "expected_managed_file_count": 98,
+    "payload_path": "releases/v1.2.189-startup-fix-20261117.cms.b64",
+    "payload_sha256": "7343b43890b80bb330e5d0a50053301e71c091ea7a791b4a683ba605d8496b42",
+    "noop": False,
+}
 V189_TREE_SHA256 = "ca831e119db0ff9d35a114ef6ee52edc55c1ba4cf6598a9ddc0b986e2029ca4d"
 CANDIDATE_CHECKS = frozenset({
     "isolated_startup", "quote_scoring", "basic_to_promax", "report_pdf",
@@ -316,12 +327,8 @@ def expected_target_integrity(target):
     tree = target.get("expected_source_tree_sha256")
     # v189 already shipped. Its exact signed CMS digest selects the recorded
     # tree from its release bundle. New packages must sign the tree themselves.
-    if "expected_source_tree_sha256" not in target and target.get("payload_sha256") == V189_PAYLOAD_SHA256:
-        if (target.get("release_id"), target.get("target_artifact_id"),
-                target.get("target_build_instance_id"), count) == (
-                "v1.2.189-startup-fix-20261117", "JUDUN-1.2.189-CODEX20261117",
-                "1.2.189-CODEX-20261117-STARTUP-FIX", 98):
-            tree = V189_TREE_SHA256
+    if target == V189_RELEASE:
+        tree = V189_TREE_SHA256
     if not isinstance(tree, str) or not HEX64.fullmatch(tree):
         deny("SIGNED_TARGET_SOURCE_TREE_REQUIRED")
     return count, tree
@@ -331,9 +338,7 @@ def expected_candidate_receipt(target, *, allow_v189=False):
     digest = target.get("candidate_acceptance_sha256")
     if isinstance(digest, str) and HEX64.fullmatch(digest):
         return digest
-    if (allow_v189 and "candidate_acceptance_sha256" not in target
-            and target.get("payload_sha256") == V189_PAYLOAD_SHA256
-            and target.get("release_id") == "v1.2.189-startup-fix-20261117"):
+    if allow_v189 and target == V189_RELEASE:
         return None
     deny("SIGNED_CANDIDATE_ACCEPTANCE_REQUIRED")
 

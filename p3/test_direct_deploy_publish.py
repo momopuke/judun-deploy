@@ -327,6 +327,25 @@ class SignedChannelPublisherTests(TestCase):
         with self.assertRaisesRegex(ValueError, "SIGNED_CANDIDATE_ACCEPTANCE_REQUIRED"):
             pub.expected_candidate_receipt(json.loads(manifest), allow_v189=True)
 
+    def test_legacy_exemption_applies_only_to_the_existing_channel(self):
+        target = json.loads((Path(__file__).resolve().parents[1] / "channel/stable.json").read_bytes())
+        # The fixture is the historical manifest, not the moving stable
+        # channel once a newer signed release has been installed.
+        if target["release_id"] != pub.V189_RELEASE["release_id"]:
+            target = pub.V189_RELEASE.copy()
+        self.assertEqual(pub.expected_target_integrity(target), (98, pub.V189_TREE_SHA256))
+        self.assertIsNone(pub.expected_candidate_receipt(target, allow_v189=True))
+        for changed_fields in (
+            {"base_artifact_id": "JUDUN-1.2.187-OTHER"},
+            {"target_artifact_id": "JUDUN-1.2.189-OTHER"},
+            {"target_build_instance_id": "1.2.189-OTHER"},
+            {"expected_managed_file_count": 95},
+            {"expected_source_tree_sha256": pub.V189_TREE_SHA256},
+        ):
+            with self.subTest(changed_fields=changed_fields), self.assertRaisesRegex(
+                    ValueError, "SIGNED_CANDIDATE_ACCEPTANCE_REQUIRED"):
+                pub.expected_candidate_receipt(target | changed_fields, allow_v189=True)
+
     def test_post_publish_old_live_version_cannot_claim_success(self):
         m, sig, cms = self.sample()
         info = json.loads(m)
