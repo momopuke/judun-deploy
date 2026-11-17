@@ -280,3 +280,5 @@ Poll UTC 2026-11-16T21:09:18Z: hourly real-host verification; preserve signed ch
 Poll UTC 2026-11-16T21:46:43Z: hourly real-host verification; retain signed channel seq23.
 Poll UTC 2026-11-16T23:31:36.478Z: hourly real-host verification; retain signed channel seq23.
 Poll UTC 2026-11-16T23:50:07.175Z: hourly real-host verification; retain signed channel seq23.
+
+Poll UTC 2026-11-17T01:06:46Z: hourly encrypted host telemetry readback; retain signed channel seq23.
