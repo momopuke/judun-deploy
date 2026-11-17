@@ -1,64 +1,68 @@
-"""Verify this commit's signed target and deep production integrity."""
-import base64, hashlib, json, re, subprocess, sys, tempfile, time
-import urllib.error, urllib.request
-from pathlib import Path, PurePosixPath
+"""Check the signed package or confirm its deployment over HTTPS."""
 
-BASE = "https://judun.142-93-91-214.sslip.io"
+import argparse
+import hashlib
+import json
+import os
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "p3"))
+
+from direct_deploy_publish import (
+    PAYLOAD_PATH,
+    RELEASE_KEY_SHA256,
+    deny,
+    expected_candidate_receipt,
+    expected_target_integrity,
+    load,
+    parse_signed_manifest,
+    verify_dual_site,
+    verify_target_live,
+)
+
 
 def verify_package():
-    path = Path("channel/stable.json")
-    m = json.loads(path.read_text())
-    assert m["schema"] == "judun-autodeploy-v1"
-    for key in ("release_id", "target_artifact_id", "target_build_instance_id", "expected_display_version"):
-        assert isinstance(m.get(key), str) and m[key], key
-    relative = PurePosixPath(m["payload_path"])
-    assert not relative.is_absolute() and ".." not in relative.parts and relative.parts[0] == "releases"
-    assert re.fullmatch(r"[0-9a-f]{64}", m["payload_sha256"])
-    payload = base64.b64decode("".join(Path(relative).read_text().split()), validate=True)
-    assert hashlib.sha256(payload).hexdigest() == m["payload_sha256"], "payload SHA256 mismatch"
-    signature = base64.b64decode("".join(Path("channel/stable.json.sig.b64").read_text().split()), validate=True)
-    with tempfile.NamedTemporaryFile() as sig:
-        sig.write(signature); sig.flush()
-        subprocess.run(["openssl", "pkeyutl", "-verify", "-pubin", "-inkey", "keys/release_signing_public.pem", "-rawin", "-in", str(path), "-sigfile", sig.name], check=True)
-    print("SIGNED_RELEASE_PASS", m["release_id"], flush=True)
-    return m
+    raw = load(ROOT / "channel/stable.json", 8192)
+    manifest = json.loads(raw)
+    path = manifest.get("payload_path") if isinstance(manifest, dict) else None
+    if not isinstance(path, str) or not PAYLOAD_PATH.fullmatch(path):
+        deny("SIGNED_PAYLOAD_PATH_INVALID")
+    key = ROOT / "keys/release_signing_public.pem"
+    if hashlib.sha256(load(key, 4096)).hexdigest() != RELEASE_KEY_SHA256:
+        deny("PINNED_RELEASE_KEY_MISMATCH")
+    target = parse_signed_manifest(
+        raw,
+        load(ROOT / "channel/stable.json.sig.b64", 1024),
+        load(ROOT / path, 30000000),
+        key,
+    )
+    expected_target_integrity(target)
+    expected_candidate_receipt(target, allow_v189=True)
+    print("SIGNED_RELEASE_PASS", target["release_id"], flush=True)
+    return target
 
-def get_json(path):
-    req = urllib.request.Request(BASE + path, headers={"Cache-Control": "no-cache"})
-    with urllib.request.urlopen(req, timeout=15) as response:
-        return json.load(response)
 
-def verify_live(m):
-    deadline = time.monotonic() + 720
-    last = "not checked"
-    while time.monotonic() < deadline:
-        try:
-            b = get_json("/health/build")
-            expected = m["target_artifact_id"]
-            if b.get("artifact_id") != expected or b.get("build_instance_id") != m["target_build_instance_id"]:
-                last = "Waiting for target; live=" + str(b.get("artifact_id"))
-            else:
-                assert b.get("display_version") == m["expected_display_version"], "display version mismatch"
-                d = get_json("/health/artifact?deep=true")
-                assert d.get("status") == "ok", "deep integrity failed"
-                assert d.get("artifact_id") == expected, "deep artifact mismatch"
-                assert d.get("build_instance_id") == m["target_build_instance_id"], "deep build mismatch"
-                assert d.get("mismatch_count") == 0, "managed file drift"
-                assert int(d.get("files_verified") or 0) == int(d.get("manifest_file_count") or 0) >= 52, "incomplete verification"
-                if "expected_managed_file_count" in m:
-                    assert d["files_verified"] == m["expected_managed_file_count"], "signed managed file count mismatch"
-                if "expected_source_tree_sha256" in m:
-                    assert d.get("source_tree_sha256") == m["expected_source_tree_sha256"], "signed source tree mismatch"
-                assert get_json("/health/ready").get("status") == "ready", "runtime not ready"
-                print("LIVE_DEEP_VERIFY_PASS", json.dumps({"version": b["display_version"], "artifact_id": expected, "files_verified": d["files_verified"]}), flush=True)
-                return
-        except (urllib.error.URLError, TimeoutError, AssertionError, ValueError) as exc:
-            last = type(exc).__name__ + ": " + str(exc)
-        print(last, flush=True)
-        time.sleep(10)
-    raise SystemExit("Production verification failed: " + last)
+def run():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("mode", choices=("package", "live", "dual"))
+    args = parser.parse_args()
+    try:
+        target = verify_package()
+        if args.mode == "package":
+            return 0
+        if args.mode == "dual":
+            verify_dual_site(target, os.environ.get("JUDUN_STAGE_AUTH_TOKEN"))
+        else:
+            print("LIVE_DEEP_VERIFY_PASS", json.dumps(verify_target_live(target)), flush=True)
+        return 0
+    except (ValueError, OSError) as exc:
+        message = str(exc)
+        print(message if message.startswith("DIRECT_DEPLOY_") else "RELEASE_VERIFICATION_FAILED",
+              file=sys.stderr)
+        return 1
+
 
 if __name__ == "__main__":
-    target = verify_package()
-    if sys.argv[1:] == ["live"]: verify_live(target)
-    elif sys.argv[1:] != ["package"]: raise SystemExit("Usage: verify_release.py package|live")
+    raise SystemExit(run())

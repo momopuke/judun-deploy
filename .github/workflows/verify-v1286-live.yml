@@ -5,13 +5,15 @@ on:
     paths:
       - ".github/workflows/verify-v1286-live.yml"
       - ".github/scripts/verify_release.py"
+      - "p3/direct_deploy_publish.py"
+      - "p3/test_direct_deploy_publish.py"
       - "channel/stable.json"
       - "channel/stable.json.sig.b64"
       - "releases/**"
   workflow_dispatch:
 
 concurrency:
-  group: judun-production-verification
+  group: judun-production-verification-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -23,6 +25,8 @@ jobs:
     timeout-minutes: 14
     steps:
       - uses: actions/checkout@v5
+      - name: Verify release guard regression cases
+        run: python3 -m unittest discover -s p3 -p 'test_direct_deploy_publish.py'
       - name: Verify signed release channel and payload
         run: python3 .github/scripts/verify_release.py package
       - name: Verify production identity and all managed files

@@ -17,14 +17,33 @@ import subprocess
 import tempfile
 import time
 from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
+from urllib.request import HTTPRedirectHandler, Request, build_opener, urlopen
 
 REPO = "momopuke/judun-deploy"
 API = "https://api.github.com/repos/" + REPO
 LIVE = "https://judun.142-93-91-214.sslip.io"
+STAGING = "https://judun-test.tony870490.chatgpt.site"
 HEX64 = re.compile(r"[0-9a-f]{64}\Z")
 ARTIFACT = re.compile(r"JUDUN-1\.2\.\d+-[A-Za-z0-9_-]{6,80}\Z")
 PAYLOAD_PATH = re.compile(r"releases/[A-Za-z0-9._-]+\.cms\.b64\Z")
+RELEASE_KEY_SHA256 = "17c8b563d224568447c3af1db57c8bb9ce51dbeac6c21371e909bc3a5635a8db"
+V189_RELEASE = {
+    "schema": "judun-autodeploy-v1",
+    "release_id": "v1.2.189-startup-fix-20261117",
+    "base_artifact_id": "JUDUN-1.2.188-RISKREVIEW20261115",
+    "target_artifact_id": "JUDUN-1.2.189-CODEX20261117",
+    "target_build_instance_id": "1.2.189-CODEX-20261117-STARTUP-FIX",
+    "expected_display_version": "v1.2.189",
+    "expected_managed_file_count": 98,
+    "payload_path": "releases/v1.2.189-startup-fix-20261117.cms.b64",
+    "payload_sha256": "7343b43890b80bb330e5d0a50053301e71c091ea7a791b4a683ba605d8496b42",
+    "noop": False,
+}
+V189_TREE_SHA256 = "ca831e119db0ff9d35a114ef6ee52edc55c1ba4cf6598a9ddc0b986e2029ca4d"
+CANDIDATE_CHECKS = frozenset({
+    "isolated_startup", "quote_scoring", "basic_to_promax", "report_pdf",
+    "rollback_after_migration",
+})
 
 
 def deny(reason):
@@ -126,20 +145,38 @@ def check_live(build, deep, base, expected_tree):
         deny("LIVE_DEEP_SHA_NOT_VERIFIED")
 
 
-def live_get(path):
-    req = Request(LIVE + path, headers={
-        "Cache-Control": "no-cache", "User-Agent": "JudunSignedPublish/1"})
+class RejectRedirects(HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+def site_get(origin, path, *, token=None):
+    if origin not in (LIVE, STAGING) or not path.startswith("/") or path.startswith("//"):
+        deny("SITE_OR_PATH_INVALID")
+    if token and origin != STAGING:
+        deny("STAGING_AUTH_ORIGIN_MISMATCH")
+    url = origin + path
+    headers = {"Cache-Control": "no-cache", "User-Agent": "JudunSignedPublish/1"}
+    if token:
+        headers["OAI-Sites-Authorization"] = "Bearer " + token
+    req = Request(url, headers=headers)
     try:
-        with urlopen(req, timeout=20) as res:
+        with build_opener(RejectRedirects()).open(req, timeout=10) as res:
             raw = res.read(1000001)
-            if res.status != 200 or len(raw) > 1000000:
+            if res.status != 200 or res.geturl() != url or len(raw) > 1000000:
                 deny("LIVE_UNEXPECTED_RESPONSE")
         obj = json.loads(raw)
-    except (HTTPError, URLError, OSError, ValueError, UnicodeError):
-        deny("LIVE_UNAVAILABLE")
+    except HTTPError as exc:
+        deny(f"LIVE_HTTP_{exc.code}")
+    except (URLError, OSError, json.JSONDecodeError, UnicodeError):
+        deny("LIVE_RESPONSE_UNAVAILABLE")
     if not isinstance(obj, dict):
         deny("LIVE_RESPONSE_SHAPE")
     return obj
+
+
+def live_get(path):
+    return site_get(LIVE, path)
 
 
 def github(method, path, token, body=None, missing_ok=False):
@@ -283,31 +320,129 @@ def verify_published_channel(manifest, signature_b64, cms_b64, target, pubkey, t
     return head
 
 
-def verify_target_live(target, *, attempts=36, interval=10):
-    """The signed channel is not a deployment until the VPS reports deep SHA."""
+def expected_target_integrity(target):
+    count = target.get("expected_managed_file_count")
+    if type(count) is not int or count <= 0:
+        deny("SIGNED_TARGET_FILE_COUNT_REQUIRED")
+    tree = target.get("expected_source_tree_sha256")
+    # v189 already shipped. Its exact signed CMS digest selects the recorded
+    # tree from its release bundle. New packages must sign the tree themselves.
+    if target == V189_RELEASE:
+        tree = V189_TREE_SHA256
+    if not isinstance(tree, str) or not HEX64.fullmatch(tree):
+        deny("SIGNED_TARGET_SOURCE_TREE_REQUIRED")
+    return count, tree
+
+
+def expected_candidate_receipt(target, *, allow_v189=False):
+    digest = target.get("candidate_acceptance_sha256")
+    if isinstance(digest, str) and HEX64.fullmatch(digest):
+        return digest
+    if allow_v189 and target == V189_RELEASE:
+        return None
+    deny("SIGNED_CANDIDATE_ACCEPTANCE_REQUIRED")
+
+
+def check_candidate_receipt(target, receipt):
+    digest = expected_candidate_receipt(target)
+    if hashlib.sha256(receipt).hexdigest() != digest:
+        deny("CANDIDATE_ACCEPTANCE_SHA_MISMATCH")
+    data = json.loads(receipt)
+    count, tree = expected_target_integrity(target)
+    expected = {
+        "schema": "judun-candidate-acceptance-v1",
+        "release_id": target["release_id"],
+        "base_artifact_id": target["base_artifact_id"],
+        "target_artifact_id": target["target_artifact_id"],
+        "target_build_instance_id": target["target_build_instance_id"],
+        "payload_sha256": target["payload_sha256"],
+        "source_tree_sha256": tree,
+        "managed_file_count": count,
+    }
+    if (not isinstance(data, dict)
+            or any(data.get(key) != value for key, value in expected.items())):
+        deny("CANDIDATE_ACCEPTANCE_IDENTITY_MISMATCH")
+    checks = data.get("checks")
+    if not isinstance(checks, dict) or not CANDIDATE_CHECKS <= checks.keys():
+        deny("CANDIDATE_ACCEPTANCE_CHECK_MISSING")
+    for name in sorted(CANDIDATE_CHECKS):
+        result = checks[name]
+        if (not isinstance(result, dict) or result.get("status") != "pass"
+                or not isinstance(result.get("evidence"), str)
+                or not result["evidence"].strip()):
+            deny("CANDIDATE_ACCEPTANCE_CHECK_NOT_PASSED: " + name)
+
+
+def check_target_build(build, target, tree, payment_mode):
+    if (build.get("status") != "ok" or build.get("manifest_status") != "ok"
+            or build.get("artifact_id") != target["target_artifact_id"]
+            or build.get("build_instance_id") != target["target_build_instance_id"]
+            or build.get("display_version") != target["expected_display_version"]
+            or build.get("version") != target["expected_display_version"].removeprefix("v")
+            or build.get("source_tree_sha256") != tree):
+        deny("LIVE_TARGET_BUILD_MISMATCH")
+    if build.get("payment_mode") != payment_mode:
+        deny("LIVE_PAYMENT_MODE_MISMATCH")
+
+
+def verify_target_live(target, *, getter=None, payment_mode="ecpay_live",
+                       attempts=36, interval=10, timeout=420):
+    """Verify the expected release against one site's health endpoints."""
+    count, tree = expected_target_integrity(target)
+    get = live_get if getter is None else getter
+    deadline = time.monotonic() + timeout
+    reason = "NOT_CHECKED"
     for attempt in range(attempts):
         try:
-            build = live_get("/health/build")
-            if (build.get("artifact_id") == target["target_artifact_id"]
-                    and build.get("build_instance_id") == target["target_build_instance_id"]
-                    and build.get("display_version") == target["expected_display_version"]):
-                deep = live_get("/health/artifact?deep=true")
-                tree_sha = build.get("source_tree_sha256")
-                if not isinstance(tree_sha, str) or not HEX64.fullmatch(tree_sha):
-                    deny("TARGET_SOURCE_TREE_SHA_MISSING")
-                # Apply the same release-identity checks before and after a
-                # rollout. Matching artifact labels alone cannot rule out
-                # mixed responses from different releases.
-                check_live(build, deep, target["target_artifact_id"], tree_sha)
-                if live_get("/health/ready").get("status") == "ready":
-                    return {"artifact_id": target["target_artifact_id"],
-                            "version": target["expected_display_version"],
-                            "managed_files": deep["files_verified"]}
-        except ValueError:
-            pass
-        if attempt + 1 < attempts:
-            time.sleep(interval)
-    deny("PUBLISHED_BUT_VPS_DEPLOYMENT_NOT_VERIFIED")
+            build = get("/health/build")
+            check_target_build(build, target, tree, payment_mode)
+            deep = get("/health/artifact?deep=true")
+            check_live(build, deep, target["target_artifact_id"], tree)
+            if deep["files_verified"] != count:
+                deny("LIVE_SIGNED_FILE_COUNT_MISMATCH")
+            ready = get("/health/ready")
+            if ready.get("status") != "ready" or ready.get("version") != build["version"]:
+                deny("LIVE_READINESS_MISMATCH")
+            check_target_build(get("/health/build"), target, tree, payment_mode)
+            return {"artifact_id": target["target_artifact_id"],
+                    "build_instance_id": target["target_build_instance_id"],
+                    "version": target["expected_display_version"],
+                    "source_tree_sha256": tree, "managed_files": count,
+                    "payment_mode": payment_mode}
+        except ValueError as exc:
+            reason = str(exc)
+            if reason in {"DIRECT_DEPLOY_LIVE_HTTP_401", "DIRECT_DEPLOY_LIVE_HTTP_403"}:
+                break
+        remaining = deadline - time.monotonic()
+        if attempt + 1 == attempts or remaining <= 0:
+            break
+        time.sleep(min(interval, remaining))
+    deny("PUBLISHED_BUT_VPS_DEPLOYMENT_NOT_VERIFIED: " + reason)
+
+
+def verify_staging_live(target, token, *, attempts=36):
+    if not token:
+        deny("STAGING_AUTH_REQUIRED")
+    try:
+        return verify_target_live(
+            target, getter=lambda path: site_get(STAGING, path, token=token),
+            payment_mode="test_unlock", attempts=attempts,
+        )
+    except ValueError as exc:
+        deny("STAGING_NOT_VERIFIED: " + str(exc))
+
+
+def verify_dual_site(target, token):
+    if not token:
+        deny("STAGING_AUTH_REQUIRED")
+    production = verify_target_live(target)
+    print("LIVE_DEEP_VERIFY_PASS", json.dumps(production), flush=True)
+    staging = verify_staging_live(target, token)
+    # The second site may take longer to start. Reconfirm production before
+    # reporting a successful check of both sites.
+    verify_target_live(target, attempts=1)
+    print("DUAL_SITE_HEALTH_PASS",
+          json.dumps({"production": production, "staging": staging}), flush=True)
 
 
 def run():
@@ -316,6 +451,8 @@ def run():
         ap.add_argument("--" + name, required=True, type=Path)
     ap.add_argument("--expected-base-artifact", required=True)
     ap.add_argument("--expected-source-tree-sha256", required=True)
+    ap.add_argument("--candidate-acceptance", type=Path,
+                    help="Private candidate QA receipt required for a new publication")
     operation = ap.add_mutually_exclusive_group()
     operation.add_argument("--publish", action="store_true")
     operation.add_argument("--verify-published", action="store_true",
@@ -327,23 +464,38 @@ def run():
         manifest = load(a.manifest, 8192)
         sig = load(a.signature, 1024)
         cms = load(a.payload, 30000000)
+        if hashlib.sha256(load(a.public_key, 4096)).hexdigest() != RELEASE_KEY_SHA256:
+            deny("PINNED_RELEASE_KEY_MISMATCH")
         parsed = parse_signed_manifest(manifest, sig, cms, a.public_key)
         if parsed["base_artifact_id"] != a.expected_base_artifact:
             deny("EXPECTED_BASE_ARTIFACT")
+        expected_target_integrity(parsed)
+        if a.publish and not a.candidate_acceptance:
+            deny("CANDIDATE_ACCEPTANCE_FILE_REQUIRED")
+        if a.candidate_acceptance:
+            check_candidate_receipt(parsed, load(a.candidate_acceptance, 32768))
+            print("CANDIDATE_ACCEPTANCE_IDENTITY_PASS", flush=True)
+        elif expected_candidate_receipt(parsed, allow_v189=True) and not a.verify_published:
+            deny("CANDIDATE_ACCEPTANCE_FILE_REQUIRED")
+        stage_token = os.environ.get("JUDUN_STAGE_AUTH_TOKEN")
+        if (a.publish or a.verify_published) and not stage_token:
+            deny("STAGING_AUTH_REQUIRED")
         if a.verify_published:
             verified_commit = verify_published_channel(
                 manifest, sig, cms, parsed, a.public_key,
                 os.environ.get("GITHUB_TOKEN", ""))
             print("DIRECT_DEPLOY_SIGNED_CHANNEL_RECOVERED", verified_commit, flush=True)
-            accepted = verify_target_live(parsed)
-            print("DIRECT_DEPLOY_VPS_ARTIFACT_DEEP_SHA_PASS",
-                  json.dumps(accepted), flush=True)
+            verify_dual_site(parsed, stage_token)
             print("PAYMENT_AND_REPORT_PDF_E2E_STILL_REQUIRED")
             return 0
         def check():
             check_live(live_get("/health/build"),
                        live_get("/health/artifact?deep=true"),
                        parsed["base_artifact_id"], a.expected_source_tree_sha256)
+            ready = live_get("/health/ready")
+            if (ready.get("status") != "ready"
+                    or ready.get("version") != parsed["base_artifact_id"].split("-")[1]):
+                deny("LIVE_BASE_READINESS_MISMATCH")
         check()
         if not a.publish:
             print("DIRECT_DEPLOY_SIGNED_PREFLIGHT_PASS; NO_PUBLICATION")
@@ -351,11 +503,13 @@ def run():
         token = os.environ.get("GITHUB_TOKEN", "")
         if not token:
             deny("GITHUB_TOKEN_ENV_REQUIRED")
+        stage_base = site_get(STAGING, "/health/build", token=stage_token)
+        if stage_base.get("payment_mode") != "test_unlock":
+            deny("STAGING_TEST_PAYMENT_MODE_REQUIRED")
         new_sha = publish_atomic(manifest, sig, cms, parsed,
                                  a.public_key, token, check)
         print("DIRECT_DEPLOY_SIGNED_CHANNEL_PUBLISHED", new_sha, flush=True)
-        accepted = verify_target_live(parsed)
-        print("DIRECT_DEPLOY_VPS_ARTIFACT_DEEP_SHA_PASS", json.dumps(accepted), flush=True)
+        verify_dual_site(parsed, stage_token)
         print("PAYMENT_AND_REPORT_PDF_E2E_STILL_REQUIRED")
         return 0
     except (ValueError, KeyError, TypeError) as exc:
