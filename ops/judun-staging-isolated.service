@@ -1,0 +1,43 @@
+[Unit]
+Description=Judun independent candidate staging
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+DynamicUser=yes
+User=judun-staging
+StateDirectory=judun-staging
+StateDirectoryMode=0700
+WorkingDirectory=/var/lib/judun-staging
+EnvironmentFile=/var/lib/judun-stage-deploy/staging.env
+Environment=MAX_MODEL_CONCURRENT_REQUESTS=2
+Environment=OCR_FILE_PARALLELISM=1
+Environment=ITEM_ANALYSIS_PARALLELISM=1
+Environment=PAID_THEME_PARALLELISM=1
+Environment=DATA_RETENTION_DAYS=7
+Environment=OMP_NUM_THREADS=1
+Environment=OPENBLAS_NUM_THREADS=1
+Environment=MKL_NUM_THREADS=1
+Environment=XDG_CACHE_HOME=/var/lib/judun-staging/cache
+Environment=HOME=/var/lib/judun-staging
+Environment=ANONYMIZED_TELEMETRY=false
+ExecStart=/srv/judun-staging/venv/bin/python -I -B /srv/judun-staging/staging_release.py serve
+Restart=on-failure
+RestartSec=4
+TimeoutStopSec=20
+CPUWeight=15
+CPUQuota=55%
+MemoryHigh=420M
+MemoryMax=640M
+TasksMax=192
+Nice=8
+UMask=0077
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
+InaccessiblePaths=-/var/www/advisor -/srv/judun -/var/lib/judun -/var/lib/advisor -/opt/judun-autodeploy -/var/lib/judun-autodeploy
+
+[Install]
+WantedBy=multi-user.target

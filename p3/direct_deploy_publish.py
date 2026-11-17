@@ -243,10 +243,16 @@ def publish_atomic(manifest, signature_b64, cms_b64, parsed, pubkey, token,
         if not isinstance(sha, str) or not re.fullmatch(r"[0-9a-f]{40}", sha):
             deny("PUBLISH_REF_RESPONSE_UNVERIFIED")
         actual = github("GET", "/git/commits/" + sha, token)
-        parents = [p.get("sha") for p in actual.get("parents", [])]
-        if len(parents) != 1 or not isinstance(parents[0], str) or not re.fullmatch(r"[0-9a-f]{40}", parents[0]):
+        parents = [entry.get("sha") for entry in actual.get("parents", [])]
+        if len(parents) not in (1, 2) or not all(
+            isinstance(sha, str) and re.fullmatch(r"[0-9a-f]{40}", sha) for sha in parents
+        ):
             deny("PUBLISH_CANDIDATE_COMMIT_IDENTITY_MISMATCH")
-        parent = parents[0]
+        # GitHub's Update branch operation can merge main into the candidate.
+        # In that case the resulting tree must equal main plus the three files.
+        parent = parents[-1]
+    else:
+        parents = [head]
     commit = github("GET", "/git/commits/" + parent, token)
     if check_current_live is not None:
         check_current_live()  # check again immediately before forming commit
@@ -290,7 +296,7 @@ def publish_atomic(manifest, signature_b64, cms_b64, parsed, pubkey, token,
         deny("PUBLISH_REF_RESPONSE_UNVERIFIED")
     actual = github("GET", "/git/commits/" + sha, token)
     if (actual.get("tree", {}).get("sha") != tree["sha"]
-            or [p.get("sha") for p in actual.get("parents", [])] != [parent]):
+            or [entry.get("sha") for entry in actual.get("parents", [])] != parents):
         deny("PUBLISH_CANDIDATE_COMMIT_IDENTITY_MISMATCH")
     params = urlencode({"state": "open", "head": REPO.split("/")[0] + ":" + branch, "base": "main"})
     matches = github("GET", "/pulls?" + params, token)

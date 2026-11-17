@@ -12,6 +12,6 @@ Do not place the payload decryption private key or the release signing private k
 4. 正式啟動或完整性驗證失敗時，使用既有回退流程，再確認上一版的身分、深度完整性與就緒。若只有測試站異常，先確認正式仍正常，再追查測試站。代理尚未套用時，查代理回執後決定下一步。
 5. 總管交付兩站網址、版本與獨立品管結果，並保存完整可解壓交付包。健康驗證、實際功能驗收與正式金流測試各自留證。
 
-正式站與目前測試站共用應用程式路徑。發布前候選測試應使用獨立程式目錄與隔離資料，在確認遷移和回退後再推正式。
+正式站與舊測試服務共用應用程式路徑。請按 [發布作業](ops/RELEASE_CONTROL.md) 啟用分支規則與 [隔離測試服務](ops/JUDUN_STAGING_ISOLATION.md)。發布前先用隔離程式目錄與測試資料驗證同一候選版本、資料遷移和回退。
 
 QA 回執為 JSON，`schema` 是 `judun-candidate-acceptance-v1`。填入 `release_id`、`base_artifact_id`、`target_artifact_id`、`target_build_instance_id`、`payload_sha256`、`source_tree_sha256` 和 `managed_file_count`。在 `checks` 分別記錄 `isolated_startup`、`quote_scoring`、`basic_to_promax`、`report_pdf`、`rollback_after_migration` 的 `status` 與可供覆核的 `evidence`。全部實測通過後才填 `pass`。簽章前將回執原始位元組的 SHA256 寫入清單。私有回執與原始證據隨交付包保存。
