@@ -290,6 +290,43 @@ class SignedChannelPublisherTests(TestCase):
             with self.subTest(field=field), self.assertRaisesRegex(ValueError, "SIGNED_TARGET_"):
                 pub.verify_target_live(target, attempts=1)
 
+    def test_candidate_acceptance_is_bound_to_the_signed_release(self):
+        manifest, _, _ = self.sample()
+        target = json.loads(manifest)
+        evidence = {
+            "schema": "judun-candidate-acceptance-v1",
+            **{key: target[key] for key in ("release_id", "base_artifact_id",
+                "target_artifact_id", "target_build_instance_id", "payload_sha256")},
+            "source_tree_sha256": target["expected_source_tree_sha256"],
+            "managed_file_count": target["expected_managed_file_count"],
+            "checks": {name: {"status": "pass", "evidence": "fixture evidence"}
+                       for name in pub.CANDIDATE_CHECKS},
+        }
+        receipt = json.dumps(evidence).encode()
+        target["candidate_acceptance_sha256"] = sha256(receipt).hexdigest()
+        pub.check_candidate_receipt(target, receipt)
+        with self.assertRaisesRegex(ValueError, "CANDIDATE_ACCEPTANCE_SHA_MISMATCH"):
+            pub.check_candidate_receipt(target, receipt + b" ")
+        for invalid, expected_error in (
+            (evidence | {"target_build_instance_id": "different-instance"},
+             "CANDIDATE_ACCEPTANCE_IDENTITY_MISMATCH"),
+            (evidence | {"checks": {}}, "CANDIDATE_ACCEPTANCE_CHECK_MISSING"),
+            (evidence | {"checks": evidence["checks"] | {
+                "rollback_after_migration": {"status": "fail", "evidence": "old app cannot read DB"}
+            }}, "CANDIDATE_ACCEPTANCE_CHECK_NOT_PASSED"),
+        ):
+            invalid_receipt = json.dumps(invalid).encode()
+            with self.subTest(error=expected_error), self.assertRaisesRegex(ValueError, expected_error):
+                pub.check_candidate_receipt(
+                    target | {"candidate_acceptance_sha256": sha256(invalid_receipt).hexdigest()},
+                    invalid_receipt,
+                )
+
+    def test_non_v189_cannot_use_unsigned_candidate_receipt(self):
+        manifest, _, _ = self.sample()
+        with self.assertRaisesRegex(ValueError, "SIGNED_CANDIDATE_ACCEPTANCE_REQUIRED"):
+            pub.expected_candidate_receipt(json.loads(manifest), allow_v189=True)
+
     def test_post_publish_old_live_version_cannot_claim_success(self):
         m, sig, cms = self.sample()
         info = json.loads(m)

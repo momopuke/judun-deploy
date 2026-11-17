@@ -14,6 +14,7 @@ from direct_deploy_publish import (
     PAYLOAD_PATH,
     RELEASE_KEY_SHA256,
     deny,
+    expected_candidate_receipt,
     expected_target_integrity,
     load,
     parse_signed_manifest,
@@ -38,6 +39,7 @@ def verify_package():
         key,
     )
     expected_target_integrity(target)
+    expected_candidate_receipt(target, allow_v189=True)
     print("SIGNED_RELEASE_PASS", target["release_id"], flush=True)
     return target
 

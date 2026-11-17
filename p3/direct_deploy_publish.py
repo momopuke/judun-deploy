@@ -29,6 +29,10 @@ PAYLOAD_PATH = re.compile(r"releases/[A-Za-z0-9._-]+\.cms\.b64\Z")
 RELEASE_KEY_SHA256 = "17c8b563d224568447c3af1db57c8bb9ce51dbeac6c21371e909bc3a5635a8db"
 V189_PAYLOAD_SHA256 = "7343b43890b80bb330e5d0a50053301e71c091ea7a791b4a683ba605d8496b42"
 V189_TREE_SHA256 = "ca831e119db0ff9d35a114ef6ee52edc55c1ba4cf6598a9ddc0b986e2029ca4d"
+CANDIDATE_CHECKS = frozenset({
+    "isolated_startup", "quote_scoring", "basic_to_promax", "report_pdf",
+    "rollback_after_migration",
+})
 
 
 def deny(reason):
@@ -323,6 +327,47 @@ def expected_target_integrity(target):
     return count, tree
 
 
+def expected_candidate_receipt(target, *, allow_v189=False):
+    digest = target.get("candidate_acceptance_sha256")
+    if isinstance(digest, str) and HEX64.fullmatch(digest):
+        return digest
+    if (allow_v189 and "candidate_acceptance_sha256" not in target
+            and target.get("payload_sha256") == V189_PAYLOAD_SHA256
+            and target.get("release_id") == "v1.2.189-startup-fix-20261117"):
+        return None
+    deny("SIGNED_CANDIDATE_ACCEPTANCE_REQUIRED")
+
+
+def check_candidate_receipt(target, receipt):
+    digest = expected_candidate_receipt(target)
+    if hashlib.sha256(receipt).hexdigest() != digest:
+        deny("CANDIDATE_ACCEPTANCE_SHA_MISMATCH")
+    data = json.loads(receipt)
+    count, tree = expected_target_integrity(target)
+    expected = {
+        "schema": "judun-candidate-acceptance-v1",
+        "release_id": target["release_id"],
+        "base_artifact_id": target["base_artifact_id"],
+        "target_artifact_id": target["target_artifact_id"],
+        "target_build_instance_id": target["target_build_instance_id"],
+        "payload_sha256": target["payload_sha256"],
+        "source_tree_sha256": tree,
+        "managed_file_count": count,
+    }
+    if (not isinstance(data, dict)
+            or any(data.get(key) != value for key, value in expected.items())):
+        deny("CANDIDATE_ACCEPTANCE_IDENTITY_MISMATCH")
+    checks = data.get("checks")
+    if not isinstance(checks, dict) or not CANDIDATE_CHECKS <= checks.keys():
+        deny("CANDIDATE_ACCEPTANCE_CHECK_MISSING")
+    for name in sorted(CANDIDATE_CHECKS):
+        result = checks[name]
+        if (not isinstance(result, dict) or result.get("status") != "pass"
+                or not isinstance(result.get("evidence"), str)
+                or not result["evidence"].strip()):
+            deny("CANDIDATE_ACCEPTANCE_CHECK_NOT_PASSED: " + name)
+
+
 def check_target_build(build, target, tree, payment_mode):
     if (build.get("status") != "ok" or build.get("manifest_status") != "ok"
             or build.get("artifact_id") != target["target_artifact_id"]
@@ -401,6 +446,8 @@ def run():
         ap.add_argument("--" + name, required=True, type=Path)
     ap.add_argument("--expected-base-artifact", required=True)
     ap.add_argument("--expected-source-tree-sha256", required=True)
+    ap.add_argument("--candidate-acceptance", type=Path,
+                    help="Private candidate QA receipt required for a new publication")
     operation = ap.add_mutually_exclusive_group()
     operation.add_argument("--publish", action="store_true")
     operation.add_argument("--verify-published", action="store_true",
@@ -418,6 +465,13 @@ def run():
         if parsed["base_artifact_id"] != a.expected_base_artifact:
             deny("EXPECTED_BASE_ARTIFACT")
         expected_target_integrity(parsed)
+        if a.publish and not a.candidate_acceptance:
+            deny("CANDIDATE_ACCEPTANCE_FILE_REQUIRED")
+        if a.candidate_acceptance:
+            check_candidate_receipt(parsed, load(a.candidate_acceptance, 32768))
+            print("CANDIDATE_ACCEPTANCE_IDENTITY_PASS", flush=True)
+        elif expected_candidate_receipt(parsed, allow_v189=True) and not a.verify_published:
+            deny("CANDIDATE_ACCEPTANCE_FILE_REQUIRED")
         stage_token = os.environ.get("JUDUN_STAGE_AUTH_TOKEN")
         if (a.publish or a.verify_published) and not stage_token:
             deny("STAGING_AUTH_REQUIRED")
