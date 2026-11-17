@@ -36,6 +36,8 @@ class SignedChannelPublisherTests(TestCase):
             "target_artifact_id": "JUDUN-1.2.127-ABCDEF987654",
             "target_build_instance_id": "1.2.127-20261022-P1-ABCDEF987654",
             "expected_display_version": "v1.2.127",
+            "expected_managed_file_count": 81,
+            "expected_source_tree_sha256": "a" * 64,
             "payload_path": "releases/v1.2.127-p1.cms.b64",
             "payload_sha256": sha256(cms).hexdigest(),
             "noop": False,
@@ -201,20 +203,23 @@ class SignedChannelPublisherTests(TestCase):
         target = info["target_artifact_id"]
         build = {"artifact_id": target, "build_instance_id": info["target_build_instance_id"],
                  "display_version": info["expected_display_version"],
-                 "version": "1.2.127", "source_tree_sha256": "a"*64}
+                 "version": "1.2.127", "source_tree_sha256": "a"*64,
+                 "status": "ok", "manifest_status": "ok", "payment_mode": "ecpay_live"}
         deep = {"artifact_id": target, "build_instance_id": info["target_build_instance_id"],
                 "version": "1.2.127", "source_tree_sha256": "a"*64,
                 "status": "ok", "deep_verified": True, "mismatch_count": 0,
                 "files_verified": 81, "manifest_file_count": 81}
         def live_good(path):
             return ({"/health/build": build, "/health/artifact?deep=true": deep,
-                     "/health/ready": {"status": "ready"}})[path]
+                     "/health/ready": {"status": "ready", "version": "1.2.127"}})[path]
         with mock.patch.object(pub, "live_get", side_effect=live_good):
             result = pub.verify_target_live(info, attempts=1, interval=0)
         self.assertEqual(result["managed_files"], 81)
         self.assertEqual(result["version"], "v1.2.127")
 
         for drift in ({"mismatch_count": 1}, {"manifest_file_count": 82},
+                      {"manifest_file_count": 82, "files_verified": 82},
+                      {"deep_verified": False}, {"deep_verified": None},
                       {"version": "1.2.126"},
                       {"source_tree_sha256": "b"*64},
                       {"artifact_id": "JUDUN-1.2.126-5D4BA415AA32"}):
@@ -234,7 +239,8 @@ class SignedChannelPublisherTests(TestCase):
         build = {"artifact_id": info["target_artifact_id"],
                  "build_instance_id": info["target_build_instance_id"],
                  "display_version": "v1.2.127", "version": "1.2.127",
-                 "source_tree_sha256": "a"*64}
+                 "source_tree_sha256": "a"*64,
+                 "status": "ok", "manifest_status": "ok", "payment_mode": "ecpay_live"}
         deep = build | {"status": "ok", "deep_verified": True,
                         "mismatch_count": 0, "files_verified": 81,
                         "manifest_file_count": 81}
@@ -246,12 +252,43 @@ class SignedChannelPublisherTests(TestCase):
             def live(path):
                 return {"/health/build": build | drift,
                         "/health/artifact?deep=true": deep,
-                        "/health/ready": {"status": "ready"}}[path]
+                        "/health/ready": {"status": "ready", "version": "1.2.127"}}[path]
             with self.subTest(drift=drift):
                 with mock.patch.object(pub, "live_get", side_effect=live):
                     with self.assertRaisesRegex(
                             ValueError, "DIRECT_DEPLOY_PUBLISHED_BUT_VPS_DEPLOYMENT_NOT_VERIFIED"):
                         pub.verify_target_live(info, attempts=1, interval=0)
+
+    def test_previous_readiness_and_wrong_payment_mode_cannot_pass(self):
+        manifest, _, _ = self.sample()
+        target = json.loads(manifest)
+        build = {
+            "artifact_id": target["target_artifact_id"],
+            "build_instance_id": target["target_build_instance_id"],
+            "version": "1.2.127", "display_version": "v1.2.127",
+            "status": "ok", "manifest_status": "ok", "payment_mode": "test_unlock",
+            "source_tree_sha256": "a" * 64,
+        }
+        deep = build | {"deep_verified": True, "mismatch_count": 0,
+                        "files_verified": 81, "manifest_file_count": 81}
+        states = {"/health/build": build, "/health/artifact?deep=true": deep,
+                  "/health/ready": {"status": "ready", "version": "1.2.126"}}
+        with self.assertRaisesRegex(ValueError, "LIVE_READINESS_MISMATCH"):
+            pub.verify_target_live(target, getter=states.__getitem__,
+                                   attempts=1, payment_mode="test_unlock")
+        states["/health/ready"]["version"] = "1.2.127"
+        with self.assertRaisesRegex(ValueError, "LIVE_PAYMENT_MODE_MISMATCH"):
+            pub.verify_target_live(target, getter=states.__getitem__, attempts=1)
+        self.assertEqual(pub.verify_target_live(target, getter=states.__getitem__,
+                                               attempts=1, payment_mode="test_unlock")["managed_files"], 81)
+
+    def test_future_signed_releases_require_both_target_pins(self):
+        manifest, _, _ = self.sample()
+        for field in ("expected_managed_file_count", "expected_source_tree_sha256"):
+            target = json.loads(manifest)
+            del target[field]
+            with self.subTest(field=field), self.assertRaisesRegex(ValueError, "SIGNED_TARGET_"):
+                pub.verify_target_live(target, attempts=1)
 
     def test_post_publish_old_live_version_cannot_claim_success(self):
         m, sig, cms = self.sample()
