@@ -1,0 +1,82 @@
+name: JUDUN staging public read-only QA 20261118
+on:
+  push:
+    branches:
+      - audit/judun-dual-site-20261118-0305
+permissions:
+  contents: read
+jobs:
+  staging-public-readonly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Public staging HTTPS and release identity (GET only, no secrets)
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, sys, urllib.request, urllib.error
+          BASE = "https://judun-test.tony870490.chatgpt.site"
+          paths = ["/", "/health/build", "/health/artifact?deep=true",
+                   "/health/ready", "/matching/", "/cooperation/"]
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, request, fp, code, msg, hdrs, newurl):
+                  return None
+          opener = urllib.request.build_opener(NoRedirect())
+          results = {}
+          failed = []
+          for path in paths:
+              url = BASE + path
+              req = urllib.request.Request(url, headers={
+                  "User-Agent": "Judun-stage-readonly-audit/20261118",
+                  "Cache-Control": "no-cache"})
+              try:
+                  with opener.open(req, timeout=12) as resp:
+                      raw = resp.read(131072)
+                      status = resp.status
+                      final_url = resp.url
+                  if final_url != url:
+                      raise RuntimeError("redirect from pinned staging origin")
+                  data = None
+                  if path.startswith("/health/"):
+                      data = json.loads(raw.decode("utf-8"))
+                  results[path] = {"http": status, "bytes": len(raw), "json": data}
+                  print("STAGING_HTTP", path, status, len(raw), flush=True)
+              except urllib.error.HTTPError as exc:
+                  results[path] = {"http": exc.code, "error": str(exc)}
+                  failed.append(f"{path}: HTTP {exc.code}")
+                  print("STAGING_FAIL", path, "HTTP", exc.code, flush=True)
+              except Exception as exc:
+                  results[path] = {"error": type(exc).__name__ + ": " + str(exc)}
+                  failed.append(f"{path}: {type(exc).__name__}: {exc}")
+                  print("STAGING_FAIL", path, repr(exc), flush=True)
+          build = (results.get("/health/build") or {}).get("json") or {}
+          deep = (results.get("/health/artifact?deep=true") or {}).get("json") or {}
+          ready = (results.get("/health/ready") or {}).get("json") or {}
+          print("STAGING_BUILD_SUMMARY", json.dumps({
+             "version": build.get("version", build.get("display_version")),
+             "artifact_id": build.get("artifact_id"),
+             "payment_mode": build.get("payment_mode")
+          }, ensure_ascii=False), flush=True)
+          print("STAGING_DEEP_SUMMARY", json.dumps({
+             "status": deep.get("status"),
+             "files_verified": deep.get("files_verified"),
+             "mismatch_count": deep.get("mismatch_count"),
+             "deep_verified": deep.get("deep_verified")
+          }, ensure_ascii=False), flush=True)
+          print("STAGING_READY_SUMMARY", json.dumps({
+             "status": ready.get("status"), "version": ready.get("version")
+          }, ensure_ascii=False), flush=True)
+          version = str(build.get("version") or build.get("display_version") or "").lstrip("v")
+          if version != "1.2.188":
+              failed.append("staging version != 1.2.188")
+          if build.get("payment_mode") != "test_unlock":
+              failed.append("staging not in test_unlock mode")
+          if deep.get("status") != "ok" or deep.get("mismatch_count") != 0 or int(deep.get("files_verified") or 0) != 88:
+              failed.append("staging deep integrity != 88/88, status ok, 0 mismatch")
+          if ready.get("status") != "ready":
+              failed.append("staging not ready")
+          if failed:
+              print("STAGING_PUBLIC_QA_BLOCKED", json.dumps(failed,ensure_ascii=False), flush=True)
+              sys.exit(1)
+          print("STAGING_PUBLIC_READONLY_SMOKE_PASS (not payment/report E2E)", flush=True)
+          PY
