@@ -7,6 +7,9 @@ on:
       - "p2/**"
       - "p3/**"
       - "P0_UNIFIED_README.md"
+      - "README.md"
+      - ".github/scripts/verify_release.py"
+      - ".github/workflows/verify-v1286-live.yml"
       - ".github/workflows/judun-p0-unified-acceptance.yml"
   pull_request:
     paths:
@@ -15,6 +18,9 @@ on:
       - "p2/**"
       - "p3/**"
       - "P0_UNIFIED_README.md"
+      - "README.md"
+      - ".github/scripts/verify_release.py"
+      - ".github/workflows/verify-v1286-live.yml"
       - ".github/workflows/judun-p0-unified-acceptance.yml"
   workflow_dispatch:
 permissions:
@@ -23,14 +29,18 @@ jobs:
   release-boundary:
     runs-on: ubuntu-latest
     timeout-minutes: 3
+    outputs:
+      tooling_only: ${{ steps.boundary.outputs.tooling_only }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Reject any accidental edits to signed production release surfaces
+        id: boundary
         shell: bash
         run: |
           python3 - <<'PY'
+          import os
           import subprocess
           changed = subprocess.check_output(
               ["git", "diff", "--name-only", "origin/main...HEAD"], text=True
@@ -38,21 +48,29 @@ jobs:
           allowed = (
               "p0/", "p1/", "p2/", "p3/",
           )
-          exact = {
-              "P0_UNIFIED_README.md",
+          tooling = {
+              "README.md",
+              ".github/scripts/verify_release.py",
               ".github/workflows/judun-p0-unified-acceptance.yml",
+              ".github/workflows/verify-v1286-live.yml",
+              "p3/direct_deploy_publish.py",
+              "p3/test_direct_deploy_publish.py",
           }
+          exact = tooling | {"P0_UNIFIED_README.md"}
           forbidden = [
               name for name in changed
               if not name.startswith(allowed) and name not in exact
           ]
           if forbidden:
               raise SystemExit("RELEASE_BOUNDARY_FAILURE: " + repr(forbidden))
+          tooling_only = bool(changed) and set(changed) <= tooling
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              print("tooling_only=" + str(tooling_only).lower(), file=output)
           print("SIGNED_CHANNEL_UNCHANGED", True)
           print("APPROVED_DIFF_FILES", len(changed))
           PY
   quality:
-    if: github.ref != 'refs/heads/main'
+    if: github.ref != 'refs/heads/main' && needs.release-boundary.outputs.tooling_only != 'true'
     needs: release-boundary
     runs-on: ubuntu-latest
     timeout-minutes: 4
@@ -106,7 +124,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
   homepage-preview:
-    if: github.ref != 'refs/heads/main'
+    if: github.ref != 'refs/heads/main' && needs.release-boundary.outputs.tooling_only != 'true'
     needs: release-boundary
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -197,7 +215,8 @@ jobs:
           retention-days: 14
 
   main-signed-publisher:
-    if: github.ref == 'refs/heads/main'
+    needs: release-boundary
+    if: github.ref == 'refs/heads/main' || needs.release-boundary.outputs.tooling_only == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 4
     steps:
