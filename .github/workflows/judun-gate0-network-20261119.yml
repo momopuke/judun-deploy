@@ -55,3 +55,14 @@ jobs:
               print("SSH_NETWORK_ROUTE_UNAVAILABLE: This is NOT proof the VPS is down.")
           print("NOT_A_DEPLOYMENT: no shell, no credentials, no signing, no changes.")
           PY
+
+      - name: Identify whether an existing authorized GitHub SSH credential is configured (never read value)
+        env:
+          DEPLOY_CREDENTIAL_PRESENT: ${{ (secrets.JUDUN_VPS_SSH_KEY != '' || secrets.JUDUN_SSH_KEY != '' || secrets.VPS_SSH_KEY != '' || secrets.VPS_SSH_PRIVATE_KEY != '' || secrets.SSH_PRIVATE_KEY != '' || secrets.DEPLOY_SSH_KEY != '') && 'yes' || 'no' }}
+        run: |
+          if [ "$DEPLOY_CREDENTIAL_PRESENT" = yes ]; then
+            echo 'EXISTING_RECOGNIZED_SSH_SECRET_PRESENT=yes; no attempt to use or display it'
+          else
+            echo 'EXISTING_RECOGNIZED_SSH_SECRET_PRESENT=no; this checks only known names, not all possible credentials'
+          fi
+          echo 'NOT_AUTHORIZED_TO_LOGIN: no SSH command or deployment performed'
