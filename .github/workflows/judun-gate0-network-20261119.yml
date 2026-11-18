@@ -66,3 +66,31 @@ jobs:
             echo 'EXISTING_RECOGNIZED_SSH_SECRET_PRESENT=no; this checks only known names, not all possible credentials'
           fi
           echo 'NOT_AUTHORIZED_TO_LOGIN: no SSH command or deployment performed'
+
+      - name: Verify current public build, deep artifact and readiness without any writes
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          import urllib.error
+          import urllib.request
+          bases = {"production": "https://judun.142-93-91-214.sslip.io",
+                   "staging": "https://judun-test.tony870490.chatgpt.site"}
+          paths = ("/health/build", "/health/artifact?deep=true", "/health/ready")
+          allowed = ("status", "version", "artifact_id", "build_instance_id",
+                     "source_tree_sha256", "payment_mode", "files_verified",
+                     "manifest_file_count", "mismatch_count", "deep_verified")
+          for site, base in bases.items():
+              for path in paths:
+                  req=urllib.request.Request(base+path, headers={"Cache-Control":"no-cache","User-Agent":"judun-gate0-read-only/2"})
+                  try:
+                      with urllib.request.urlopen(req, timeout=13) as response:
+                          data=json.loads(response.read(128*1024))
+                          if not isinstance(data, dict):
+                              raise ValueError("Invalid health document")
+                          public={key:data[key] for key in allowed if key in data}
+                          print("JUDUN_PUBLIC_HEALTH",json.dumps({"site":site,"path":path,"http":response.status,"fields":public},ensure_ascii=False))
+                  except (urllib.error.HTTPError,urllib.error.URLError,TimeoutError,ValueError,OverflowError) as error:
+                      print("JUDUN_PUBLIC_HEALTH",json.dumps({"site":site,"path":path,"error":type(error).__name__,"http":getattr(error,"code",None)}))
+          print("READ_ONLY_HEALTH_COMPLETE; no changes or secrets")
+          PY
