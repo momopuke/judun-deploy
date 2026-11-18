@@ -275,7 +275,7 @@ def initialize(root, name):
         return chosen
 
 
-def process_state(root, target, restart, wait_for_health):
+def process_state(root, target, restart, wait_for_health, *, before_switch=None):
     pending = root / ".switch-pending.json"
     previous = verify_snapshot(selection(root))
     target = verify_snapshot(release_dir(root, check_name(target)))
@@ -284,6 +284,8 @@ def process_state(root, target, restart, wait_for_health):
     wait_for_health(previous)
     if previous == target:
         return target
+    if before_switch is not None:
+        before_switch()
     with tempfile.TemporaryDirectory(prefix=".journal-", dir=root) as work:
         journal = Path(work) / pending.name
         with journal.open("x", encoding="utf-8") as file:
