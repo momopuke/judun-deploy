@@ -142,3 +142,33 @@ class ReleasePullRequestGateTests(TestCase):
             with self.assertRaisesRegex(ValueError, "unavailable live base"):
                 gate.classify_and_verify(self.base, head, True)
         live.assert_called_once_with(self.base_metadata, attempts=1)
+
+    def test_workflow_reports_on_event_head_and_rejects_newer_push(self):
+        gate.git("checkout", "-qb", "candidate", self.base)
+        self.write("README.md", b"Unrelated documentation")
+        head = self.commit("Docs")
+        gate.git("update-ref", "refs/pull/24/head", head)
+        gate.git("remote", "add", "origin", self.repo)
+        event = self.directory / "event.json"
+        event.write_text(json.dumps({"pull_request": {
+            "number": 24,
+            "head": {"sha": head, "repo": {"full_name": "synthetic/fork"}},
+            "base": {"ref": "main"},
+        }}))
+        with (
+            mock.patch.dict(os.environ, {"GITHUB_EVENT_PATH": str(event),
+                                        "GITHUB_REPOSITORY": gate.release.REPO,
+                                        "GITHUB_RUN_ID": "1234",
+                                        "GITHUB_TOKEN": "synthetic-workflow-token"}),
+            mock.patch.object(gate.release, "github") as status,
+            mock.patch("builtins.print"),
+        ):
+            self.assertEqual(gate.run(), 0)
+            gate.git("update-ref", "refs/pull/24/head", self.base)
+            self.assertEqual(gate.run(), 1)
+        self.assertEqual([call.args[:2] for call in status.call_args_list],
+                         [("POST", "/statuses/" + head)] * 4)
+        self.assertEqual([call.args[3]["state"] for call in status.call_args_list],
+                         ["pending", "success", "pending", "failure"])
+        self.assertTrue(all(call.args[3]["context"] == gate.CONTEXT
+                            for call in status.call_args_list))

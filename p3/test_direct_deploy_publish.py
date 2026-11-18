@@ -132,14 +132,16 @@ class SignedChannelPublisherTests(TestCase):
         branch = "release/" + info["release_id"] + "-" + sha256(m).hexdigest()[:24]
         existing = False
         existing_pr = False
+        current_main = "a"*40
+        candidate_sha = "e"*40
         calls = []
         def fake_http(method, endpoint, token, body=None, missing_ok=False):
             nonlocal existing, existing_pr
             calls.append((method, endpoint, body))
             if endpoint == "/git/ref/heads/main" and method == "GET":
-                return {"object": {"sha": "a"*40}}
+                return {"object": {"sha": current_main}}
             if endpoint == "/git/ref/heads/" + branch and method == "GET":
-                return {"object": {"sha": "e"*40}} if existing else None
+                return {"object": {"sha": candidate_sha}} if existing else None
             if endpoint == "/git/refs" and method == "POST":
                 self.assertEqual(body, {"ref": "refs/heads/" + branch, "sha": "e"*40})
                 existing = True
@@ -147,6 +149,9 @@ class SignedChannelPublisherTests(TestCase):
             if endpoint.startswith("/git/commits/"):
                 if endpoint.endswith("e"*40):
                     return {"tree": {"sha": "d"*40}, "parents": [{"sha": "a"*40}]}
+                if endpoint.endswith("f"*40):
+                    return {"tree": {"sha": "d"*40}, "parents": [
+                        {"sha": "e"*40}, {"sha": current_main}]}
                 return {"tree": {"sha": "b"*40}}
             if endpoint.startswith("/contents/channel/stable.json"):
                 return {"content": base64.b64encode(old).decode()}
@@ -161,7 +166,7 @@ class SignedChannelPublisherTests(TestCase):
             if endpoint == "/git/commits":
                 return {"sha": "e"*40}
             request = {"number": 24, "state": "open",
-                       "head": {"sha": "e"*40, "ref": branch}, "base": {"ref": "main"}}
+                       "head": {"sha": candidate_sha, "ref": branch}, "base": {"ref": "main"}}
             if endpoint.startswith("/pulls?") and method == "GET":
                 return [request] if existing_pr else []
             if endpoint == "/pulls" and method == "POST":
@@ -187,9 +192,49 @@ class SignedChannelPublisherTests(TestCase):
         with mock.patch.object(pub, "github", side_effect=fake_http):
             self.assertEqual(pub.publish_atomic(
                 m, sig, cms, info, self.pubkey, "test-only", None), result)
+            current_main = "c"*40
+            candidate_sha = "f"*40
+            self.assertEqual(pub.publish_atomic(
+                m, sig, cms, info, self.pubkey, "test-only", None),
+                result | {"candidate_commit": candidate_sha})
         for endpoint in ("/git/refs", "/git/commits", "/pulls"):
             self.assertEqual(sum(method == "POST" and path == endpoint
                                  for method, path, _ in calls), 1)
+
+    def test_cli_requires_exact_staging_candidate_before_opening_pr(self):
+        m, sig, cms = self.sample()
+        info = json.loads(m)
+        options = ["publisher", "--publish", "--public-key", str(self.pubkey),
+                   "--expected-base-artifact", info["base_artifact_id"],
+                   "--expected-source-tree-sha256", info["expected_source_tree_sha256"]]
+        for name, value in (("manifest", m), ("signature", sig), ("payload", cms),
+                            ("candidate-acceptance", b"private synthetic receipt")):
+            path = self.root / ("cli-" + name)
+            path.write_bytes(value)
+            options.extend(["--" + name, str(path)])
+        with (
+            mock.patch("sys.argv", options),
+            mock.patch.dict(pub.os.environ, {"JUDUN_STAGE_AUTH_TOKEN": "synthetic-stage",
+                                               "GITHUB_TOKEN": "synthetic-git"}),
+            mock.patch.object(pub, "RELEASE_KEY_SHA256", sha256(self.pubkey.read_bytes()).hexdigest()),
+            mock.patch.object(pub, "check_candidate_receipt") as qa,
+            mock.patch.object(pub, "check_live"),
+            mock.patch.object(pub, "live_get", return_value={"status": "ready", "version": "1.2.126"}),
+            mock.patch.object(pub, "verify_staging_live", side_effect=ValueError("stage unavailable")) as stage,
+            mock.patch.object(pub, "publish_atomic", return_value={"pull_request": "synthetic"}) as publish,
+            mock.patch.object(pub, "verify_dual_site") as post_merge,
+            mock.patch("builtins.print") as output,
+        ):
+            self.assertEqual(pub.run(), 2)
+            publish.assert_not_called()
+            stage.assert_called_once_with(info, "synthetic-stage", attempts=1)
+            stage.side_effect = None
+            stage.return_value = {"status": "ready"}
+            self.assertEqual(pub.run(), 0)
+            self.assertEqual(qa.call_count, 2)
+            publish.assert_called_once()
+            post_merge.assert_not_called()
+            self.assertEqual(output.call_args.args[0], "DIRECT_DEPLOY_RELEASE_PR_OPENED_NOT_DEPLOYED")
 
     def test_existing_payload_and_stale_channel_refused_before_git_writes(self):
         m, sig, cms = self.sample()
