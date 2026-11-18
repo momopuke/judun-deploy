@@ -1,0 +1,20 @@
+[Unit]
+Description=Install the signed Judun staging candidate requested in GitHub
+After=network-online.target judun-staging-isolated.service
+Wants=network-online.target
+ConditionPathExists=/srv/judun-staging/isolated.enabled
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 -I -B /srv/judun-staging/staging_deploy_request.py
+StateDirectory=judun-staging-pull
+StateDirectoryMode=0700
+WorkingDirectory=/var/lib/judun-staging-pull
+TimeoutStartSec=8min
+UMask=0077
+ProtectSystem=strict
+ReadWritePaths=/srv/judun-staging
+ProtectHome=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
+InaccessiblePaths=-/var/www/advisor -/srv/judun -/var/lib/judun -/var/lib/advisor -/opt/judun-autodeploy -/var/lib/judun-autodeploy

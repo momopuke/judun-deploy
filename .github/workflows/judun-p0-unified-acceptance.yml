@@ -18,6 +18,9 @@ on:
       - "ops/enable_judun_staging_isolation.sh"
       - "ops/judun-staging-isolated.service"
       - "ops/judun-staging-legacy-guard.conf"
+      - "ops/JUDUN_CHAT_STAGING.md"
+      - "ops/judun-staging-pull.service"
+      - "ops/judun-staging-pull.timer"
   pull_request:
     paths:
       - "p0/**"
@@ -36,6 +39,9 @@ on:
       - "ops/enable_judun_staging_isolation.sh"
       - "ops/judun-staging-isolated.service"
       - "ops/judun-staging-legacy-guard.conf"
+      - "ops/JUDUN_CHAT_STAGING.md"
+      - "ops/judun-staging-pull.service"
+      - "ops/judun-staging-pull.timer"
   workflow_dispatch:
 permissions:
   contents: read
@@ -79,12 +85,17 @@ jobs:
               "ops/enable_judun_staging_isolation.sh",
               "ops/judun-staging-isolated.service",
               "ops/judun-staging-legacy-guard.conf",
+              "ops/JUDUN_CHAT_STAGING.md",
+              "ops/judun-staging-pull.service",
+              "ops/judun-staging-pull.timer",
               "p3/direct_deploy_publish.py",
               "p3/test_direct_deploy_publish.py",
               "p3/release_pr_gate.py",
               "p3/test_release_pr_gate.py",
               "p3/staging_release.py",
               "p3/test_staging_release.py",
+              "p3/staging_deploy_request.py",
+              "p3/test_staging_deploy_request.py",
           }
           exact = tooling | {"P0_UNIFIED_README.md"}
           forbidden = [
@@ -261,6 +272,7 @@ jobs:
       - name: Validate staging snapshot and service switch tooling
         run: |
           bash -n ops/enable_judun_staging_isolation.sh
-          python3 -m unittest discover -s p3 -p 'test_staging_release.py' -v
+          python3 -m unittest discover -s p3 -p 'test_staging*.py' -v
+          systemd-analyze verify --recursive-errors=no ops/judun-staging-pull.service ops/judun-staging-pull.timer
       - name: Confirm this workflow does not publish to VPS
         run: echo "GITHUB_MAIN_SIGNED_CHANNEL_VERIFIED; NO_DEPLOYMENT_PERFORMED"
