@@ -9,8 +9,7 @@ import re
 import subprocess
 import sys
 import tempfile
-from urllib.error import HTTPError
-from urllib.request import ProxyHandler, build_opener
+from urllib.request import ProxyHandler, Request, build_opener
 from zipfile import BadZipFile
 
 if __name__ == "__main__":
@@ -26,7 +25,7 @@ from staging_release import (
 
 
 GITHUB = "https://raw.githubusercontent.com/momopuke/judun-deploy/"
-REQUEST = "judun-staging/staging/request.json"
+REQUEST = "https://nexus-cloud-workspace.tony870490.chatgpt.site/api/judun/staging-request"
 SCHEMA = "judun.staging-deploy.v1"
 KEY_SHA256 = "17c8b563d224568447c3af1db57c8bb9ce51dbeac6c21371e909bc3a5635a8db"
 CONFIG = Path("/etc/judun-staging-pull")
@@ -45,9 +44,17 @@ def strict_json(raw):
 
 
 def fetch(path, limit, destination=None):
-    url = GITHUB + path
+    headers = {"Cache-Control": "no-cache"}
+    if path == REQUEST:
+        url = REQUEST
+        token = read_regular(CONFIG / "nexus-read-token", 4096).decode("ascii").strip()
+        if not token or not re.fullmatch(r"[A-Za-z0-9._~+/=-]+", token):
+            raise ValueError("Invalid NEXUS read credential")
+        headers["OAI-Sites-Authorization"] = f"Bearer {token}"
+    else:
+        url = GITHUB + path
     opener = build_opener(ProxyHandler({}), NoRedirect())
-    with opener.open(url, timeout=20) as response:
+    with opener.open(Request(url, headers=headers), timeout=20) as response:
         if response.status != 200 or response.geturl() != url:
             raise ValueError("Unexpected GitHub response")
         if destination is None:
@@ -65,17 +72,13 @@ def fetch(path, limit, destination=None):
 
 
 def request_commit(get):
-    try:
-        request = strict_json(get(REQUEST, 2048))
-    except HTTPError as error:
-        if error.code == 404:
-            return None
-        raise
-    if (not isinstance(request, dict) or set(request) != {"candidate_commit"}
-            or not isinstance(request["candidate_commit"], str)
-            or not re.fullmatch(r"[0-9a-f]{40}", request["candidate_commit"])):
+    request = strict_json(get(REQUEST, 2048))
+    if not isinstance(request, dict) or set(request) != {"candidate_commit"}:
+        raise ValueError("Invalid NEXUS staging request")
+    commit = request["candidate_commit"]
+    if commit is not None and (not isinstance(commit, str) or not re.fullmatch(r"[0-9a-f]{40}", commit)):
         raise ValueError("A request must name one immutable candidate commit")
-    return request["candidate_commit"]
+    return commit
 
 
 def openssl(*args):
@@ -166,6 +169,8 @@ def install_request(root, state, config, get, restart, health):
         with store_lock(root):
             if verify_snapshot(selection(root)).name != expected_current:
                 raise ValueError("Staging baseline changed before switching")
+            if request_commit(get) != commit:
+                return {"status": "superseded", "commit": commit}
             process_state(root, target.name, restart, health,
                           before_switch=lambda: record_attempt(state, commit, target.name))
         return {"status": "installed", "commit": commit, "snapshot": target.name}

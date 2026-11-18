@@ -116,6 +116,27 @@ class StagingRequestTest(unittest.TestCase):
         self.assertEqual(self.restarts, [self.target.name])
         self.assertEqual(self.downloads.count(self.prefix + ".cms"), 1)
 
+    def test_no_request_leaves_the_running_snapshot_in_place(self):
+        self.files[channel.REQUEST] = b'{"candidate_commit":null}'
+        self.assertEqual(self.install(), {"status": "no_request"})
+        self.assertEqual(self.downloads, [channel.REQUEST])
+        self.assertFalse(self.restarts)
+
+    def test_superseded_request_cannot_switch_the_snapshot(self):
+        self.approve()
+        original_fetch = self.fetch
+
+        def replace_request(path, limit, destination=None):
+            response = original_fetch(path, limit, destination)
+            if path.endswith(".cms"):
+                self.files[channel.REQUEST] = json.dumps({"candidate_commit": "2" * 40}).encode()
+            return response
+
+        self.fetch = replace_request
+        self.assertEqual(self.install()["status"], "superseded")
+        self.assertEqual(stage.verify_snapshot(stage.selection(self.root)), self.previous)
+        self.assertFalse(self.restarts)
+
     def test_tampered_manifest_is_rejected_before_payload_download(self):
         self.approve()
         self.files[self.prefix + ".json"] += b" "

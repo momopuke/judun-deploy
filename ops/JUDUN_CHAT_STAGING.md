@@ -1,13 +1,14 @@
 # 從 ChatGPT 對話請求部署居盾測試版
 
-一般 ChatGPT 對話使用已連接的 GitHub 工具，將要驗收的候選提交寫到 `momopuke/judun-deploy` 的 `judun-staging` 分支。既有 VPS 的測試服務定期讀取請求，驗簽、安裝並檢查候選。候選的獨立 QA 和正式發布沿用 [居盾發布作業](RELEASE_CONTROL.md)。
+一般 ChatGPT 對話透過已連接的私人 NEXUS 外掛送出要驗收的候選。既有 VPS 的測試服務定期讀取 NEXUS 請求，從 GitHub 取得已簽候選包，驗簽、安裝並檢查候選。候選的獨立 QA 和正式發布沿用 [居盾發布作業](RELEASE_CONTROL.md)。
 
 ## 發布執行環境一次啟用
 
 1. 依 [居盾候選測試站隔離](JUDUN_STAGING_ISOLATION.md) 確認既有測試網址指向獨立候選服務，並以現行已驗收版本建立基準。使用相容的獨立 Python 環境。
 2. 由既有受授權的發布執行環境將 `p3/staging_release.py` 與 `p3/staging_deploy_request.py` 安裝到 `/srv/judun-staging`，檔案由 root 擁有。將儲存庫固定 Ed25519 公鑰 `keys/release_signing_public.pem` 安裝到 `/etc/judun-staging-pull/release_signing_public.pem`。
 3. 為測試站建立專用的 CMS 接收者憑證。將公開憑證安裝為 `/etc/judun-staging-pull/recipient.pem`，私鑰安裝為同目錄的 `recipient-key.pem`，權限由 root 管理且私鑰為 `0600`。授權建置程序以公開憑證加密候選包。
-4. 建立 `judun-staging` 分支。安裝 `ops/judun-staging-pull.service` 和 `ops/judun-staging-pull.timer` 後重新載入 systemd，啟用 timer。先以無請求、拒絕無效簽章、同基準成功切換與失敗回復四個情境驗收。比對正式站的版本與服務進程，並用原有 Sites 授權驗證對外測試網址。
+4. 使用已授權的 NEXUS Sites 程式讀取憑證，將其保存在 root 專用的 `/etc/judun-staging-pull/nexus-read-token`，設為 `0600`。測試站拉取程式只會將此憑證送往固定的 NEXUS 讀取端點。
+5. 安裝 `ops/judun-staging-pull.service` 和 `ops/judun-staging-pull.timer` 後重新載入 systemd，啟用 timer。先以無請求、拒絕無效簽章、同基準成功切換與失敗回復四個情境驗收。比對正式站的版本與服務進程，並用原有 Sites 授權驗證對外測試網址。
 
 ## 候選包
 
@@ -23,6 +24,6 @@
 
 ## 一般 ChatGPT 對話的使用方式
 
-指定已核對的候選版後，由 GitHub 工具在 `judun-staging` 分支新增或更新 `staging/request.json`。內容只包含一個欄位 `candidate_commit`，值為已簽候選包所在的完整 40 位 Git SHA。更新時帶入該檔案目前的 blob SHA，以 GitHub 的版本比對避免覆蓋另一筆請求。
+請 NEXUS 外掛呼叫 `nexus_request_judun_staging`，送出已核對的候選版。 `candidate_commit` 是已簽候選包所在的完整 40 位 Git SHA。外掛使用工作區版本比對及請求 ID，避免覆用過期版本或在重試時重複送出。
 
 服務從該不可變提交讀取候選檔、驗簽及檔案雜湊，核對目前測試基準後切換。每筆候選最多嘗試切換一次，失敗時既有安裝器回復上一版並重驗。中斷留下的切換紀錄由下一輪恢復。成功以既有測試網址的 `build`、`artifact?deep=true` 和 `ready` 讀回為準。獨立功能驗收通過後，由原發布流程將正式版送至正式簽章通道，最後將雙站回執與完整包記入 NEXUS。
