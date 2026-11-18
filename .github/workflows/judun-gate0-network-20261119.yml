@@ -1,0 +1,57 @@
+name: Judun Gate0 network-only diagnostic (never deploy)
+on:
+  push:
+    branches:
+      - diagnostics/judun-gate0-network-20261119
+    paths:
+      - .github/workflows/judun-gate0-network-20261119.yml
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Network route from GitHub runner to existing VPS
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Verify network only (no credentials, no shell, no changes)
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          import socket
+          import ssl
+          import time
+          import urllib.error
+          import urllib.request
+
+          host = "142.93.91.214"
+          base = "https://judun.142-93-91-214.sslip.io"
+          result = {"scope": "read_only_network", "source": "github_hosted_runner", "target": host}
+          for port in (22, 443):
+              started = time.monotonic()
+              try:
+                  with socket.create_connection((host, port), timeout=7):
+                      status = "tcp_connected"
+              except OSError as error:
+                  status = f"{type(error).__name__}:{getattr(error, 'errno', 'unknown')}"
+              result[f"tcp_{port}"] = status
+              result[f"tcp_{port}_seconds"] = round(time.monotonic() - started, 2)
+          req = urllib.request.Request(
+              base + "/health/ready",
+              headers={"User-Agent": "judun-gate0-read-only/1", "Cache-Control": "no-cache"},
+          )
+          try:
+              with urllib.request.urlopen(req, timeout=12) as response:
+                  result["https_ready_status"] = response.status
+                  result["https_ready_bytes"] = len(response.read(4096))
+          except (OSError, ValueError, urllib.error.HTTPError) as error:
+              result["https_ready_error"] = type(error).__name__
+          print("GATE0_NETWORK_DIAGNOSTIC", json.dumps(result, ensure_ascii=False))
+          if result["tcp_22"] == "tcp_connected":
+              print("SSH_NETWORK_ROUTE_AVAILABLE: Authentication/authorization is NOT verified.")
+          else:
+              print("SSH_NETWORK_ROUTE_UNAVAILABLE: This is NOT proof the VPS is down.")
+          print("NOT_A_DEPLOYMENT: no shell, no credentials, no signing, no changes.")
+          PY
