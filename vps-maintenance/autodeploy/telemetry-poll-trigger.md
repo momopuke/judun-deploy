@@ -347,3 +347,4 @@ Poll UTC 2026-11-18T22:28:27.528Z: hourly real-host verification; retain signed 
 
 Poll UTC 2026-11-18T22:45:51Z: hourly real-host verification; retain signed channel seq23.
 Poll UTC 2026-11-18T23:13:35.083Z: ad-hoc follow-up for upload_ready disk release; read encrypted host receipts, no VPS mutation.
+Poll UTC 2026-11-19T00:10:29.201Z: hourly real-host verification; retain signed channel seq23.
