@@ -376,3 +376,4 @@ Poll UTC 2026-11-19T16:52:08.270Z: hourly real-host verification; retain signed 
 Poll UTC 2026-11-19T17:51:17.199Z: hourly real-host verification; retain signed channel seq23.
 Poll UTC 2026-11-19T18:44:16.108Z: hourly real-host verification; retain signed channel seq23.
 Poll UTC 2026-11-19T20:32:51Z: hourly real-host verification; retain signed channel seq23.
+Poll UTC 2026-11-20T12:37:00Z: user-authorized CPU pressure remediation read-only receipt refresh; preserve signed seq23 and protected Recorder/Gateway/filestore; NOT final acceptance.
