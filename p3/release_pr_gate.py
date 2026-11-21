@@ -51,6 +51,27 @@ def read_signed_package(commit, public_key, *, historical=False):
     return parsed
 
 
+# Fail closed on obvious plaintext archives, secrets, and runtime databases.
+# The public signing key is deliberately allowed; its changes still go through
+# the existing release-root gate and can never pass as ordinary documentation.
+SENSITIVE_DIRS = frozenset({"payload", "uploads", "backups", "secrets", "private", ".ssh"})
+SENSITIVE_SUFFIXES = (".db", ".db-wal", ".db-shm", ".db-journal", ".sqlite",
+                      ".sqlite3", ".zip", ".tar", ".tar.gz", ".tgz",
+                      ".7z", ".rar", ".key", ".p12", ".pfx", ".bak")
+
+
+def reject_sensitive_paths(paths):
+    for path in paths:
+        parts = path.casefold().split("/")
+        name = parts[-1]
+        if (any(part in SENSITIVE_DIRS for part in parts[:-1])
+                or name == ".env" or name.startswith(".env.") or name.endswith(".env")
+                or name in {"id_ed25519", "id_rsa"}
+                or name.endswith(SENSITIVE_SUFFIXES)
+                or (name.endswith(".pem") and path != KEY)):
+            release.deny("PR_SENSITIVE_PATH_FORBIDDEN")
+
+
 def classify_and_verify(base, head, same_repository, *, check_live=True):
     """Return the checked scope. Never execute files from head."""
     if not all(isinstance(sha, str) and GIT_SHA.fullmatch(sha) for sha in (base, head)):
@@ -65,6 +86,7 @@ def classify_and_verify(base, head, same_repository, *, check_live=True):
     changes = {path: status for status, path in zip(fields[::2], fields[1::2], strict=True)}
     if len(changes) != len(fields) // 2:
         release.deny("PR_DUPLICATE_FILE_CHANGE")
+    reject_sensitive_paths(changes)
     if not any(path.split("/", 1)[0] in RELEASE_ROOTS for path in changes):
         return "non-release PR"
     if not same_repository:
