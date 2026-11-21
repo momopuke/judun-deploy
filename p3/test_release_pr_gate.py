@@ -75,6 +75,28 @@ class ReleasePullRequestGateTests(TestCase):
     def verify(self, head, *, base=None, same_repository=True):
         return gate.classify_and_verify(base or self.base, head, same_repository, check_live=False)
 
+
+    def test_sensitive_files_cannot_pass_as_non_release_pr(self):
+        forbidden = (
+            ".env", "config/.env.production", "config/site.env",
+            "data/app_data.db", "data/app_data.db-wal", "backup/copy.sqlite3",
+            "archive/v190_source.zip", "recovery/v190.tar.gz",
+            "config/private.pem", "config/credentials.key",
+            "payload/app.py", "uploads/quote.csv", "private/notes.txt",
+            "keys/id_ed25519", "backups/report.bak",
+        )
+        for path in forbidden:
+            with self.subTest(path=path):
+                self.write(path, b"synthetic only")
+                head = self.commit("Synthetic sensitive path")
+                with self.assertRaisesRegex(ValueError, "PR_SENSITIVE_PATH_FORBIDDEN"):
+                    self.verify(head)
+                gate.git("reset", "--hard", self.base)
+
+    def test_safe_documentation_remains_non_release_pr(self):
+        self.write("docs/release-safety.md", b"No secrets; synthetic documentation")
+        self.assertEqual(self.verify(self.commit("Safe documentation")), "non-release PR")
+
     def test_signed_release_survives_unrelated_main_changes(self):
         gate.git("checkout", "-qb", "candidate", self.base)
         self.release(191)
