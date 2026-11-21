@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="theme-color" content="#10233d" />
+<title>新竹中國醫 → 竹北 YouBike → 竹南｜互動行程</title>
+<meta name="description" content="11/24 週二中國醫新竹附醫搭 YouBike 至竹北車站，轉台鐵至竹南。改出發時間或火車班次，自動重新計算整段行程。" />
+<link rel="preconnect" href="https://unpkg.com" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyo0fK7fA8T+8+0=" crossorigin="" />
+<style>
+:root{--navy:#10233d;--navy2:#182f4f;--ink:#14283e;--sub:#61728a;--bg:#f5f7fb;--line:#dfe7f0;--blue:#146bd4;--teal:#078a7d;--gold:#e69b34;--white:#fff;--pink:#b33354;--radius:18px}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC","Microsoft JhengHei",Arial,sans-serif;font-size:15px;line-height:1.55}button,input,select{font:inherit}button,a{-webkit-tap-highlight-color:transparent}a{color:var(--blue)}.wrap{max-width:1160px;margin:0 auto;padding:0 20px}.hero{background:linear-gradient(135deg,#10233d,#194d76);color:#fff;padding:24px 0 31px}.eyebrow{font-size:12px;letter-spacing:1.5px;font-weight:700;color:#9be2df}.hero h1{margin:8px 0;font-weight:800;font-size:clamp(23px,3.8vw,37px);line-height:1.35}.hero p{margin:4px 0 16px;color:#dce8f6}.tags{display:flex;gap:8px;flex-wrap:wrap}.tag{background:#ffffff1f;border:1px solid #ffffff35;border-radius:22px;padding:5px 12px;font-size:12px}.layout{display:grid;grid-template-columns:minmax(340px,.98fr) minmax(400px,1.2fr);gap:18px;margin-top:-17px;position:relative;align-items:start}.panel{border:1px solid #e6edf4;background:white;border-radius:var(--radius);box-shadow:0 4px 20px #18365c0a;overflow:hidden}.pad{padding:22px}.kicker{font-size:11px;color:var(--sub);font-weight:800;letter-spacing:1px}.panel h2{font-size:19px;margin:4px 0 15px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field label{font-size:13px;display:block;margin-bottom:5px;color:#475872;font-weight:700}.field input,.field select{width:100%;border:1.5px solid var(--line);border-radius:12px;height:50px;padding:0 12px;background:#fff;color:var(--ink);outline:0;min-width:0}.field input:focus,.field select:focus{border-color:var(--blue);box-shadow:0 0 0 3px #146bd41a}.wide{grid-column:1 / -1}.hint{font-size:12px;color:var(--sub);margin-top:5px}.control-note{border-radius:10px;background:#eef6ff;color:#20527b;font-size:12px;padding:9px 11px;margin-top:15px}.tuning{margin-top:15px;padding-top:13px;border-top:1px solid var(--line)}.tuning summary{cursor:pointer;color:var(--sub);font-size:13px;font-weight:700}.tuning .sliders{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:15px}.slider-row label{font-size:12px;font-weight:600;color:var(--sub);display:flex;justify-content:space-between}.slider-row input{width:100%;accent-color:var(--blue)}.pills{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 0 14px}.pill{border:1px solid #dce9f4;background:#f7faff;border-radius:13px;padding:11px 10px}.pill small{display:block;font-size:11px;color:var(--sub)}.pill strong{font-size:23px;display:block;letter-spacing:-.6px}.pill span{font-size:11px;color:#6f8097}.banner{display:flex;align-items:flex-start;gap:10px;background:#eaf7f3;border:1px solid #c4e8da;border-radius:12px;color:#076f57;padding:11px 12px;margin-bottom:12px;font-size:13px;font-weight:650}.banner.warn{background:#fff2ec;border-color:#ffd2bd;color:#aa4628}.banner strong{font-size:15px}.timeline{position:relative;list-style:none;margin:8px 0 0;padding:0}.timeline li{display:grid;grid-template-columns:67px 25px minmax(0,1fr);gap:9px;min-height:69px}.timeline .when{font-weight:800;font-variant-numeric:tabular-nums;font-size:16px;padding-top:3px}.timeline .track{display:flex;align-items:center;flex-direction:column}.timeline .dot{width:14px;height:14px;border-radius:50%;border:4px solid var(--blue);background:white;flex-shrink:0;margin-top:7px;z-index:1}.timeline li:last-child .dot{border-color:var(--teal)}.timeline .stem{width:2px;background:#ccdced;flex:1;margin-top:5px;margin-bottom:3px}.timeline .desc{padding-bottom:20px}.timeline .desc b{font-size:14px}.timeline .desc small{display:block;color:var(--sub);font-size:12px;margin-top:2px}.timeline .desc .mini{font-size:11px;color:var(--teal);font-weight:700}.maphead{display:flex;justify-content:space-between;align-items:center;gap:9px;padding:17px 20px 10px}.maphead h2{margin:0;font-size:18px}.modes{display:flex;background:#eef3f8;padding:3px;border-radius:11px;gap:4px}.modes button{border:0;border-radius:9px;background:transparent;color:#47607d;padding:7px 11px;cursor:pointer;font-weight:700;font-size:12px}.modes button.active{background:white;color:var(--blue);box-shadow:0 1px 6px #12335a18}.maparea{height:480px;position:relative;background:#e8f0e8}#map{width:100%;height:100%}.map-fallback{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;text-align:center;background:linear-gradient(160deg,#eaf3ed,#e2eefa);padding:24px;color:#355472}.map-fallback svg{width:95%;max-height:270px;margin-bottom:10px}.map-fallback button{padding:8px 15px;border-radius:10px;border:1px solid var(--line);background:white;color:var(--blue)}.maplegend{padding:11px 17px;border-top:1px solid var(--line);font-size:12px;color:var(--sub)}.legend-dot{display:inline-block;width:16px;height:4px;vertical-align:middle;margin:0 5px 2px 4px;border-radius:2px;background:var(--blue)}.legend-dot.train{background:#bd7081}.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px 19px}.action{border:1px solid #ccdeef;background:#f8fbff;border-radius:11px;display:flex;justify-content:center;align-items:center;min-height:47px;color:#134e87;text-align:center;font-size:13px;font-weight:750;text-decoration:none;cursor:pointer;padding:8px}.action.primary{background:var(--blue);color:white;border-color:var(--blue)}.foot{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:16px 0 34px}.foot .panel{padding:17px 20px}.foot h3{font-size:14px;margin:0 0 8px}.foot p{font-size:12px;margin:6px 0;color:#60758c}.foot a{font-weight:700;font-size:12px}.sources{font-size:11px;color:#738398;padding:0 0 34px;line-height:1.8}.sources a{font-size:11px}.small-status{font-size:11px;color:#72839a}.leaflet-popup-content{font-family:-apple-system,'Noto Sans TC',sans-serif;font-size:13px;line-height:1.7}.leaflet-control-attribution{font-size:10px!important}.pin{background:#fff;border:2px solid #fff;box-shadow:0 3px 13px #1b315b50;border-radius:50%;font-size:18px;display:flex;align-items:center;justify-content:center;width:37px;height:37px}.copyright{text-align:center;color:#8491a1;font-size:11px;padding-bottom:20px}
+@media(max-width:860px){.layout{grid-template-columns:1fr;gap:14px}.maparea{height:410px}.hero{padding-bottom:34px}.foot{grid-template-columns:1fr 1fr}}@media(max-width:520px){.wrap{padding:0 12px}.hero{padding:20px 0 35px}.hero h1{font-size:25px}.pad{padding:17px}.pills{gap:6px}.pill{padding:9px}.pill strong{font-size:22px}.maparea{height:390px}.maphead{padding:14px 13px 9px}.actions{padding:12px;gap:7px}.foot{grid-template-columns:1fr;gap:10px}.form-grid{gap:9px}.field input,.field select{height:47px;padding:0 8px;font-size:14px}.timeline li{grid-template-columns:63px 23px minmax(0,1fr);gap:7px}.hero p{font-size:13px}}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<header class="hero"><div class="wrap"><div class="eyebrow">SMART JOURNEY · 交通時間連動規劃</div><h1>新竹中國醫 → 竹北車站 → 竹南</h1><p>11/24（二）晚上 · YouBike 2.0 騎到竹北後站還車，再搭台鐵直達竹南</p><div class="tags"><span class="tag">🚲 YouBike 2.0</span><span class="tag">🚉 台鐵直達</span><span class="tag">📱 手機可用</span><span class="tag">↻ 改時間自動重排</span></div></div></header>
+<main class="wrap"><div class="layout">
+<div>
+<section class="panel pad" aria-label="行程調整"><span class="kicker">01 / 調整時間</span><h2>你想幾點出發或搭車？</h2>
+<div class="form-grid">
+<div class="field"><label for="depart">🏥 醫院出發時間</label><input id="depart" type="time" value="18:00" min="15:00" max="23:55"><div class="hint">更改後自動挑選來得及的火車</div></div>
+<div class="field"><label for="train">🚉 指定竹北上車班次</label><select id="train" aria-label="竹北上車班次"></select><div class="hint">選火車後，反推安全的醫院出發時間</div></div>
+</div>
+<div id="modeNote" class="control-note">目前按醫院出發時間計算；預留進站緩衝，不安排極限趕車。</div>
+<details class="tuning"><summary>⚙️ 調整騎車速度與預留時間</summary><div class="sliders">
+<div class="slider-row"><label for="bike">騎車時間 <strong id="bikeN">25 分</strong></label><input type="range" id="bike" min="10" max="50" step="1" value="25"></div>
+<div class="slider-row"><label for="buffer">上車安全緩衝 <strong id="bufferN">8 分</strong></label><input type="range" id="buffer" min="5" max="30" step="1" value="8"></div>
+<div class="slider-row"><label for="walk">醫院步行／借車 <strong id="walkN">5 分</strong></label><input type="range" id="walk" min="2" max="15" step="1" value="5"></div>
+<div class="slider-row"><label for="enter">還車＋步行進站 <strong id="enterN">10 分</strong></label><input type="range" id="enter" min="5" max="20" step="1" value="10"></div>
+</div></details>
+</section>
+<section class="panel pad" style="margin-top:14px" aria-label="行程計算結果"><span class="kicker">02 / 自動更新的行程</span><h2>你的完整時間表</h2>
+<div class="pills"><div class="pill"><small>竹南抵達</small><strong id="arrival">19:10</strong><span>台鐵直達</span></div><div class="pill"><small>全程耗時</small><strong id="duration">70 分</strong><span>含等車</span></div><div class="pill"><small>預估車資</small><strong id="fare">$63</strong><span>一般車全票</span></div></div>
+<div id="banner" class="banner" role="status" aria-live="polite"><span>✓</span><span id="bannerText">預留足夠進站時間</span></div>
+<ol class="timeline" id="timeline" aria-live="polite"></ol>
+<div class="small-status" id="lastTrainNote" style="margin-top:8px"></div>
+</section>
+</div>
+<div>
+<section class="panel" aria-label="互動式地圖"><div class="maphead"><h2>🗺️ 互動路線地圖</h2><div class="modes"><button class="active" type="button" id="bikeView">騎車段</button><button type="button" id="allView">全程</button></div></div>
+<div class="maparea"><div id="map" role="application" aria-label="中國醫院區到竹北車站及竹南站地圖，可縮放拖動，點擊站點查看資訊"></div><div class="map-fallback" id="mapFallback"><svg viewBox="0 0 340 230" aria-label="行程示意路線" role="img"><path d="M50 186 L115 119 L187 45" fill="none" stroke="#146bd4" stroke-width="6" stroke-dasharray="9 7"/><path d="M187 45 L287 191" fill="none" stroke="#b33354" stroke-width="6" stroke-dasharray="7 8"/><circle cx="50" cy="186" r="15" fill="#fff" stroke="#146bd4" stroke-width="5"/><circle cx="187" cy="45" r="15" fill="#fff" stroke="#146bd4" stroke-width="5"/><circle cx="287" cy="191" r="15" fill="#fff" stroke="#b33354" stroke-width="5"/><text x="26" y="218" font-size="15" fill="#304d69">中國醫</text><text x="159" y="20" font-size="15" fill="#304d69">竹北</text><text x="255" y="224" font-size="15" fill="#304d69">竹南</text></svg><b>目前無法載入線上地圖</b><p>時間規劃功能仍可使用，點下方「騎車導航」開啟地圖。</p></div></div>
+<div class="maplegend"><span class="legend-dot"></span>自行車方向示意　<span class="legend-dot train"></span>鐵路連線示意<br>地圖線條<strong>不是道路／鐵軌精確路徑</strong>；騎車請用下方導航確認合法、可騎路線。</div>
+<div class="actions"><a class="action primary" id="bikeNav" target="_blank" rel="noopener noreferrer" href="#">🚲 Google 地圖騎車導航</a><a class="action" id="stationNav" target="_blank" rel="noopener noreferrer" href="#">📍 竹北後站還車定位</a><a class="action" target="_blank" rel="noopener noreferrer" href="https://www.youbike.com.tw/region/hsinchu/stations/">🅿️ 查 YouBike 可借／可還</a><a class="action" target="_blank" rel="noopener noreferrer" href="https://www.railway.gov.tw/tra-tip-web/tip">🚉 台鐵官方確認班次</a></div>
+</section>
+<section class="panel pad" style="margin-top:14px" aria-label="班次資訊"><span class="kicker">03 / 南下列車</span><h2>當晚可考慮的直達車</h2><div id="trainsPreview" style="font-size:13px"></div><button type="button" id="share" class="action" style="margin-top:16px;width:100%;background:#eef8f5;border-color:#cce8e0;color:#087c69">🔗 複製可分享的行程網址（保留你設定的時間）</button><div id="shareMsg" class="small-status" role="status" style="padding-top:7px"></div></section>
+</div>
+</div>
+<div class="foot"><section class="panel"><h3>📍 借車：中國醫藥大學新竹附設醫院站</h3><p>新竹縣竹北市博愛南路／興隆路一段路口（東北側）</p><p>醫院：興隆路一段199號。站點距醫院很近，請以現場路口指示為準。</p><a target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps/search/?api=1&query=%E4%B8%AD%E5%9C%8B%E9%86%AB%E8%97%A5%E5%A4%A7%E5%AD%B8%E6%96%B0%E7%AB%B9%E9%99%84%E8%A8%AD%E9%86%AB%E9%99%A2+YouBike">開啟借車點地圖 ↗</a></section><section class="panel"><h3>📍 還車：臺鐵竹北車站（後站）</h3><p>新竹縣竹北市新泰路37號（東南側）YouBike 2.0 站</p><p>完成還車確認後再進台鐵車站；若停車格已滿，需另外尋找可還站點。</p><a target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps/search/?api=1&query=%E8%87%BA%E9%90%B5%E7%AB%B9%E5%8C%97%E8%BB%8A%E7%AB%99%28%E5%BE%8C%E7%AB%99%29+YouBike">開啟還車點地圖 ↗</a></section></div>
+<div class="sources">資料說明：此頁使用固定的晚間表定班次來做<strong>互動式預估</strong>，不是台鐵即時資料或 11/24 當日停駛保證。出發當天請再次確認班次、誤點、YouBike 車量與還車空位；騎乘時間是可調估算值，不是 GPS 即時計算。資料參考：<a target="_blank" rel="noopener noreferrer" href="https://www.railway.gov.tw/">台鐵</a>、<a target="_blank" rel="noopener noreferrer" href="https://timetables.tw/routes/1180/1250">竹北至竹南班次</a>、<a target="_blank" rel="noopener noreferrer" href="https://www.youbike.com.tw/region/hsinchu/rate/">新竹縣 YouBike 官方費率</a>、<a target="_blank" rel="noopener noreferrer" href="https://www.cmu-hch.cmu.edu.tw/Contact/Location">醫院地址</a>。台鐵一般區間／區間快全票按53元估列；自強、莒光另依票價。</div><div class="copyright">為 2026/11/24（二）單日旅行安排製作 · 手機和電腦共用</div>
+</main>
+<script>
+'use strict';
+// 固定參考班次：竹北上車 → 竹南下車；所有時間均為臺灣當地時間（UTC+8）。
+const trains=[
+ ['2223','區間','16:51','17:19',53],['1207','區間','16:58','17:32',53],['2543','區間','17:14','17:42',53],['2233','區間','17:33','18:02',53],
+ ['1217','區間','18:04','18:32',53],['2237','區間','18:10','18:38',53],['2547','區間','18:15','18:47',53],['2243','區間','18:24','19:01',53],
+ ['2033','區間快','18:49','19:10',53],['277','自強','19:02','19:24',83],['1227','區間','19:06','19:40',53],['2253','區間','19:29','19:57',53],
+ ['2037','區間快','19:52','20:13',53],['1237','區間','20:17','20:45',53],['2263','區間','20:28','21:03',53],['653','莒光','20:52','21:19',64],
+ ['1247','區間','21:01','21:30',53],['1251','區間','21:20','21:51',53],['2275','區間','21:41','22:18',53],['2561','區間','21:58','22:27',53],
+ ['1257','區間','22:06','22:39',53],['1265','區間','22:42','23:09',53],['1267','區間','23:01','23:36',53],['157','自強','23:08','23:30',83]
+].map(([id,type,dep,arr,fare])=>({id,type,dep,arr,fare}));
+const $=id=>document.getElementById(id);
+const toM=s=>{const p=String(s).split(':').map(Number);return p[0]*60+p[1]};
+const fmt=m=>{if(!Number.isFinite(m))return '--:--';let day=m>=1440?'（隔日）':'';m=(m%1440+1440)%1440;return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0')+day};
+const state={mode:'depart',depart:toM('18:00'),train:'2033',bike:25,buffer:8,walk:5,enter:10};
+const qs=new URLSearchParams(location.search);if(/^\d\d:\d\d$/.test(qs.get('depart')||'')){const x=toM(qs.get('depart'));if(x>=0&&x<1440)state.depart=x}
+for(const k of ['bike','buffer','walk','enter']){const v=Number(qs.get(k));if(qs.has(k)&&Number.isFinite(v)&&v>=1&&v<100)state[k]=Math.round(v)}
+if(trains.some(t=>t.id===qs.get('train')))state.train=qs.get('train');if(qs.get('mode')==='train')state.mode='train';
+function totalMove(){return state.walk+state.bike+state.enter}
+function currentTrip(){
+ const move=totalMove();let train=null,start=state.depart;
+ if(state.mode==='train'){
+   train=trains.find(t=>t.id===state.train)||trains[0];start=toM(train.dep)-move-state.buffer;
+   if(start<0)start=0;
+ }else{
+   train=trains.find(t=>toM(t.dep)>=start+move+state.buffer)||null;
+ }
+ return {train,start,ride:start+state.walk,drop:start+state.walk+state.bike,ready:start+move,wait:train?toM(train.dep)-(start+move):0};
+}
+function render(){
+ const p=currentTrip(),t=p.train;state.depart=p.start;
+ $('depart').value=fmt(p.start).slice(0,5);$('train').value=t?t.id:'none';
+ ['bike','buffer','walk','enter'].forEach(k=>{$(k).value=state[k];$(k+'N').textContent=state[k]+' 分'});
+ $('arrival').textContent=t?t.arr:'—'; $('duration').textContent=t?(toM(t.arr)-p.start)+' 分':'—';
+ const bicycleCost=Math.ceil(state.bike/30)*10;$('fare').textContent=t?'$'+(bicycleCost+t.fare):'—';
+ const safe=t&&p.wait>=state.buffer;
+ $('banner').className='banner'+(safe?'':' warn');
+ $('bannerText').textContent=t?`可搭 ${t.dep} ${t.type}${t.id}；提前 ${p.wait} 分鐘完成進站（安全緩衝設定 ${state.buffer} 分）`:'目前已無已列出的直達竹南列車；請提早出發或查台鐵其他方案';
+ $('modeNote').textContent=state.mode==='train'?`已依你選擇的 ${t?t.dep:'—'} 班次，往前推算醫院最晚安全出發時間。若想改從醫院幾點走，直接改左側時間即可。`:'已依醫院出發時間自動挑選第一班「趕得上並保留緩衝」的直達車。你也可指定右側火車班次。';
+ const steps=[
+   [fmt(p.start),'離開中國醫新竹附醫',`興隆路一段199號，步行到院區附近 YouBike 站（${state.walk}分鐘）`],
+   [fmt(p.ride),'借 YouBike 2.0，開始騎車',`博愛南路／興隆路口東北側；預估騎車 ${state.bike} 分鐘`],
+   [fmt(p.drop),'竹北後站 YouBike 還車',`新泰路37號東南側；還車＋步行進站 ${state.enter} 分鐘`],
+   [fmt(p.ready),'完成還車並進站',`等待列車 ${t?p.wait:'—'} 分鐘；確認台鐵月台、電子看板`],
+   [t?t.dep:'—','竹北車站搭南下台鐵',t?`${t.type} ${t.id}，直達竹南，不需轉車`:'已無可搭乘的已列出班次'],
+   [t?t.arr:'—','抵達竹南火車站',t?`總耗時約 ${toM(t.arr)-p.start} 分鐘，火車全票 NT$${t.fare}`:'請改較早的出發時間']
+ ];
+ $('timeline').innerHTML=steps.map((x,i)=>`<li><time class="when">${x[0]}</time><span class="track"><i class="dot"></i>${i<steps.length-1?'<i class="stem"></i>':''}</span><span class="desc"><b>${x[1]}</b><small>${x[2]}</small></span></li>`).join('');
+ $('lastTrainNote').textContent='系統採固定列車表，不會讀取即時誤點；末班已列直達車為 23:08（自強157）。';
+ $('trainsPreview').innerHTML=trains.filter(x=>toM(x.dep)>=toM('18:00')).map(x=>`<button type="button" data-train="${x.id}" style="border:1px solid ${t&&x.id===t.id?'#7cbbfc':'#e4ebf1'};background:${t&&x.id===t.id?'#eff7ff':'#fff'};border-radius:9px;margin:0 6px 7px 0;padding:7px 9px;cursor:pointer;color:#24466a"><b>${x.dep}</b> → ${x.arr} · ${x.type}${x.id}</button>`).join('');
+ $('trainsPreview').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{$('train').value=b.dataset.train;state.train=b.dataset.train;state.mode='train';render();scrollTo({top:0,behavior:'smooth'})}));
+ const next=new URL(location.href);next.searchParams.set('depart',fmt(p.start).slice(0,5));next.searchParams.set('train',t?t.id:state.train);next.searchParams.set('mode',state.mode);['bike','buffer','walk','enter'].forEach(k=>next.searchParams.set(k,state[k]));history.replaceState(null,'',next.toString());
+ if(window.updateMapPopups)window.updateMapPopups(p);
+}
+$('train').innerHTML='<option value="none" disabled>無可搭直達車</option>'+trains.map(t=>`<option value="${t.id}">${t.dep}｜${t.type}${t.id} → ${t.arr}｜$${t.fare}</option>`).join('');
+$('depart').addEventListener('input',()=>{let v=$('depart').value;if(v&&/^\d\d:\d\d$/.test(v)){state.depart=toM(v);state.mode='depart';render()}});
+$('train').addEventListener('change',()=>{state.train=$('train').value;state.mode='train';render()});
+for(const k of ['bike','buffer','walk','enter'])$(k).addEventListener('input',()=>{state[k]=Number($(k).value);render()});
+$('bikeNav').href='https://www.google.com/maps/dir/?api=1&origin='+encodeURIComponent('中國醫藥大學新竹附設醫院 新竹縣竹北市興隆路一段199號')+'&destination='+encodeURIComponent('新竹縣竹北市新泰路37號')+'&travelmode=bicycling';
+$('stationNav').href='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent('新竹縣竹北市新泰路37號 YouBike 竹北車站後站');
+$('share').addEventListener('click',async()=>{const s=location.href;try{await navigator.clipboard.writeText(s);$('shareMsg').textContent='已複製網址，傳給手機打開就會保留目前的設定。'}catch(e){const i=document.createElement('input');i.value=s;document.body.append(i);i.select();try{document.execCommand('copy');$('shareMsg').textContent='已複製網址。'}catch(_){$('shareMsg').textContent='請複製瀏覽器網址列連結。'}i.remove()}});
+// Leaflet 為互動底圖，線條僅為方向示意；不得冒充可騎乘道路導航。
+const locations={hospital:[24.824037,121.001989],bikeStart:[24.82429,121.00191],bikeEnd:[24.83920,121.00882],zhubei:[24.839083,121.009111],zhunan:[24.68654,120.88041]};
+function showMapFallback(){ $('mapFallback').style.display='flex'; }
+function bootMap(){
+ if(typeof window.L==='undefined'){showMapFallback();return}
+ try{
+ const map=L.map('map',{zoomControl:true,scrollWheelZoom:false}).setView([24.8309,121.0046],14);
+ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'}).addTo(map);
+ const mk=(pos,emoji,title)=>L.marker(pos,{icon:L.divIcon({className:'',html:`<div class="pin" title="${title}">${emoji}</div>`,iconSize:[37,37],iconAnchor:[18,18]})}).addTo(map);
+ const a=mk(locations.hospital,'🏥','中國醫新竹院區'); const b=mk(locations.bikeStart,'🚲','醫院 YouBike 借車點');const c=mk(locations.bikeEnd,'🅿️','竹北後站 YouBike 還車');const d=mk(locations.zhubei,'🚉','竹北車站');const e=mk(locations.zhunan,'🏁','竹南車站');
+ const cycling=L.polyline([locations.bikeStart,locations.bikeEnd],{color:'#146bd4',weight:5,dashArray:'9,8',opacity:.85}).addTo(map);
+ const rail=L.polyline([locations.zhubei,locations.zhunan],{color:'#b33354',weight:4,dashArray:'9,10',opacity:.8}).addTo(map);
+ const bikeBounds=L.latLngBounds([locations.hospital,locations.bikeEnd]).pad(.26);const allBounds=L.latLngBounds([locations.hospital,locations.zhunan]).pad(.08);
+ const focus=(all)=>{map.fitBounds(all?allBounds:bikeBounds,{animate:true,maxZoom:14,padding:[25,25]});$('bikeView').classList.toggle('active',!all);$('allView').classList.toggle('active',all);};$('bikeView').onclick=()=>focus(false);$('allView').onclick=()=>focus(true);
+ focus(false);
+ window.updateMapPopups=p=>{a.bindPopup(`<b>🏥 中國醫新竹附醫</b><br>出發：${fmt(p.start)}<br>興隆路一段199號`);b.bindPopup(`<b>🚲 YouBike 借車站</b><br>約 ${fmt(p.ride)} 借車<br>博愛南路／興隆路一段（東北側）`);c.bindPopup(`<b>🅿️ YouBike 後站還車</b><br>約 ${fmt(p.drop)} 到達<br>新泰路37號（東南側）`);d.bindPopup(`<b>🚉 竹北站</b><br>搭車 ${p.train?p.train.dep:'—'}<br>${p.train?p.train.type+p.train.id:''}`);e.bindPopup(`<b>🏁 竹南站</b><br>抵達 ${p.train?p.train.arr:'—'}`)};
+ window.updateMapPopups(currentTrip());setTimeout(()=>map.invalidateSize(),180);
+ }catch(e){showMapFallback()}
+}
+render();
+</script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="" onload="bootMap()" onerror="showMapFallback()"></script>
+</body>
+</html>
