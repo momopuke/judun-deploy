@@ -21,6 +21,13 @@ on:
       - "ops/JUDUN_CHAT_STAGING.md"
       - "ops/judun-staging-pull.service"
       - "ops/judun-staging-pull.timer"
+      - "ops/automation_bridge.py"
+      - "ops/test_automation_bridge.py"
+      - "ops/activate_existing_staging_pull.sh"
+      - "ops/bootstrap_staging_github_pull.sh"
+      - "ops/staging-request.json"
+      - "ops/AUTOMATION_BRIDGE.md"
+      - ".github/workflows/automation-bridge-tests.yml"
   pull_request:
     paths:
       - "p0/**"
@@ -42,6 +49,13 @@ on:
       - "ops/JUDUN_CHAT_STAGING.md"
       - "ops/judun-staging-pull.service"
       - "ops/judun-staging-pull.timer"
+      - "ops/automation_bridge.py"
+      - "ops/test_automation_bridge.py"
+      - "ops/activate_existing_staging_pull.sh"
+      - "ops/bootstrap_staging_github_pull.sh"
+      - "ops/staging-request.json"
+      - "ops/AUTOMATION_BRIDGE.md"
+      - ".github/workflows/automation-bridge-tests.yml"
   workflow_dispatch:
 permissions:
   contents: read
@@ -88,6 +102,13 @@ jobs:
               "ops/JUDUN_CHAT_STAGING.md",
               "ops/judun-staging-pull.service",
               "ops/judun-staging-pull.timer",
+              "ops/automation_bridge.py",
+              "ops/test_automation_bridge.py",
+              "ops/activate_existing_staging_pull.sh",
+              "ops/bootstrap_staging_github_pull.sh",
+              "ops/staging-request.json",
+              "ops/AUTOMATION_BRIDGE.md",
+              ".github/workflows/automation-bridge-tests.yml",
               "p3/direct_deploy_publish.py",
               "p3/test_direct_deploy_publish.py",
               "p3/release_pr_gate.py",
