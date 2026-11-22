@@ -59,6 +59,15 @@ class BridgeTest(unittest.TestCase):
     def test_pinned_public_key_rejects_drift(self):
         self.assertFalse(bridge.regular_root_file(self.token, pin='0'*64))
 
+    def test_staging_recipient_certificate_drift_is_blocked(self):
+        assert bridge.STAGING_CERT_SHA256 == '8af33e638d5ba58efa24c192fb11e46f24ef7b2a5125460c2a63d5b668a2833e'
+        cert = self.root / 'recipient.pem'
+        cert.write_text('unexpected certificate')
+        cert.chmod(0o644)
+        with self.as_root(cert):
+            self.assertFalse(bridge.regular_root_file(
+                cert, pin=bridge.STAGING_CERT_SHA256))
+
     def test_authenticated_request_valid_null(self):
         r = Opener(Response(b'{"candidate_commit":null}'))
         with self.as_root(self.token):
