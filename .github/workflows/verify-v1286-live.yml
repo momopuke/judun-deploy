@@ -10,6 +10,8 @@ on:
       - "p3/test_direct_deploy_publish.py"
       - "p3/release_postcheck.py"
       - "p3/test_release_postcheck.py"
+      - "p3/release_failure_report.py"
+      - "p3/test_release_failure_report.py"
       - "channel/stable.json"
       - "channel/stable.json.sig.b64"
       - "releases/**"
@@ -146,8 +148,10 @@ jobs:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
-      - name: Fail-closed signing and postrelease QA regression
-        run: python3 -m unittest discover -s p3 -p 'test_release_postcheck.py' -v
+      - name: Fail-closed postrelease and failure-report regression
+        run: |
+          python3 -m unittest discover -s p3 -p 'test_release_postcheck.py' -v
+          python3 -m unittest discover -s p3 -p 'test_release_failure_report.py' -v
 
   postrelease-dual-site-recheck:
     # Run the live two-pass check only for a new signed release or explicit
@@ -186,3 +190,27 @@ jobs:
       - name: Explicit release blocker on attestation failure
         if: failure()
         run: echo 'POST_RELEASE_DUAL_SITE_BLOCKED; original signer/agent/rollback owner must investigate; NO_DEPLOYMENT_OR_ROLLBACK_BY_GITHUB'
+
+
+  report-failed-release:
+    # GitHub Actions' short-lived token is scoped to issue comments only here.
+    # Do not grant this job access to VPS, signer, or any Sites credential.
+    needs: [classify-push, verify, postrelease-guard-offline, postrelease-dual-site-recheck]
+    if: ${{ always() && (needs.verify.result == 'failure' || needs.verify.result == 'cancelled' || needs.classify-push.result == 'failure' || needs.postrelease-guard-offline.result == 'failure' || needs.postrelease-dual-site-recheck.result == 'failure' || needs.postrelease-dual-site-recheck.result == 'cancelled') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    permissions:
+      issues: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Write sanitized RCA checkpoint to existing release issue
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          JUDUN_VERIFY_RESULT: ${{ needs.verify.result }}
+          JUDUN_CLASSIFY_RESULT: ${{ needs.classify-push.result }}
+          JUDUN_OFFLINE_RESULT: ${{ needs.postrelease-guard-offline.result }}
+          JUDUN_DUAL_RESULT: ${{ needs.postrelease-dual-site-recheck.result }}
+        run: python3 -I -B p3/release_failure_report.py
