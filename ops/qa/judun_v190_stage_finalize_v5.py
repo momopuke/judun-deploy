@@ -379,11 +379,11 @@ else:
 '''
 
 def stage_namespace_prefix(pid, cmd, uid, gid, groups):
-    """Enter only the attested staging process mount namespace as non-root.
+    """Use the attested staging mount namespace with stage's nonroot identity.
 
-    DynamicUser StateDirectory can be visible in the service namespace while
-    the same UID cannot traverse /var/lib/private in the host namespace.
-    Never chmod, chown, copy the database or run the QA worker as root.
+    DynamicUser StateDirectory is accessible within the staging service mount
+    namespace, not necessarily from a host-namespace process with the same UID.
+    Never chmod, chown, copy the DB, or run the worker as root.
     """
     nsenter=shutil.which('nsenter')
     setpriv=shutil.which('setpriv')
@@ -394,7 +394,28 @@ def stage_namespace_prefix(pid, cmd, uid, gid, groups):
         current=[x.decode('utf-8','replace') for x in
                  (proc/'cmdline').read_bytes().split(b'\0') if x]
         status=(proc/'status').read_text()
-        ids=[int(x) for x in re.search(r'^Uid:\s*(.*)    jobid=preflight()
+        ids=[int(x) for x in re.search(r'^Uid:\s*(.*)$',status,re.M).group(1).split()]
+        gids=[int(x) for x in re.search(r'^Gid:\s*(.*)$',status,re.M).group(1).split()]
+        actual_groups=sorted(int(x) for x in re.search(r'^Groups:\s*(.*)$',status,re.M).group(1).split())
+        stage_ns=os.stat(proc/'ns/mnt')
+        host_ns=os.stat('/proc/self/ns/mnt')
+    except (OSError,ValueError,AttributeError):
+        stop('STAGE_PROCESS_CHANGED_BEFORE_NAMESPACE')
+    if (current!=cmd or len(ids)!=4 or len(gids)!=4 or
+        any(x!=uid for x in ids) or any(x!=gid for x in gids) or
+        actual_groups!=sorted(groups) or uid==0 or gid==0 or 0 in groups):
+        stop('STAGE_CREDENTIALS_CHANGED_BEFORE_NAMESPACE')
+    if (stage_ns.st_dev,stage_ns.st_ino)==(host_ns.st_dev,host_ns.st_ino):
+        stop('STAGE_NO_DISTINCT_MOUNT_NAMESPACE')
+    opts=['--groups',','.join(map(str,groups))] if groups else ['--clear-groups']
+    # nsenter obtains the original service mount, setpriv drops credentials
+    # before Python is invoked. No changes are made to stage systemd service.
+    return [nsenter,'--target',str(pid),'--mount','--',
+            setpriv,'--no-new-privs','--reuid',str(uid),
+            '--regid',str(gid),*opts,'--']
+
+def main():
+    jobid=preflight()
     pid,cwd,cmd,env,uid,gid,groups,appdir,runners,mode=stage_process()
     prefix=stage_namespace_prefix(pid,cmd,uid,gid,groups)
     if uid==0:stop('STAGE_PROCESS_AS_ROOT_REQUIRES_REVIEW')
@@ -411,93 +432,6 @@ def stage_namespace_prefix(pid, cmd, uid, gid, groups):
     if chosen is None:stop('STAGE_MOUNT_NAMESPACE_DEPENDENCY_OR_DB_ACCESS_FAILED')
     print('NATIVE_STAGE_PROCESS_AND_SOURCE=PASS',flush=True)
     r=subprocess.run([*prefix,str(chosen),'-I','-B','-c',WORKER,str(appdir),jobid],cwd=str(appdir),env=env,text=True,timeout=480)
-    if r.returncode:stop('NATIVE_WORKER_FAILED_RC_'+str(r.returncode))
-    b=get('/health/build');a=get('/health/artifact?deep=true');ready=get('/health/ready')
-    if not (b.get('artifact_id')==a.get('artifact_id')==ART and a.get('files_verified')==98 and a.get('mismatch_count')==0 and ready.get('status')=='ready'):
-        stop('STAGE_CHANGED_AFTER_QA')
-    print('POST_QA_STAGE_98_98_READY=PASS',flush=True)
-    print('PRODUCTION_NOT_TOUCHED=TRUE',flush=True)
-if __name__=='__main__':main(),status,re.M).group(1).split()]
-        gids=[int(x) for x in re.search(r'^Gid:\s*(.*)    jobid=preflight()
-    _,cwd,cmd,env,uid,gid,groups,appdir,runners,mode=stage_process()
-    if uid==0:stop('STAGE_PROCESS_AS_ROOT_REQUIRES_REVIEW')
-    # env is already reconstructed from the attested root-owned serve() contract
-    # (only when needed); the active daemon's env and files are untouched.
-    env.update(PYTHONDONTWRITEBYTECODE='1',OMP_NUM_THREADS='1',OPENBLAS_NUM_THREADS='1',MKL_NUM_THREADS='1')
-    chosen=None
-    for candidate in runners:
-        if not candidate.is_file() or not os.access(candidate,os.X_OK):continue
-        try:
-            pr=subprocess.run([str(candidate),'-I','-B','-c','import fastapi, sqlalchemy, google.genai'],cwd=str(appdir),env=env,user=uid,group=gid,extra_groups=groups,capture_output=True,text=True,timeout=12)
-            if pr.returncode==0:chosen=candidate;break
-        except Exception:continue
-    if chosen is None:stop('STAGE_PYTHON_ENV_UNKNOWN')
-    print('NATIVE_STAGE_PROCESS_AND_SOURCE=PASS',flush=True)
-    r=subprocess.run([str(chosen),'-I','-B','-c',WORKER,str(appdir),jobid],cwd=str(appdir),env=env,user=uid,group=gid,extra_groups=groups,text=True,timeout=480)
-    if r.returncode:stop('NATIVE_WORKER_FAILED_RC_'+str(r.returncode))
-    b=get('/health/build');a=get('/health/artifact?deep=true');ready=get('/health/ready')
-    if not (b.get('artifact_id')==a.get('artifact_id')==ART and a.get('files_verified')==98 and a.get('mismatch_count')==0 and ready.get('status')=='ready'):
-        stop('STAGE_CHANGED_AFTER_QA')
-    print('POST_QA_STAGE_98_98_READY=PASS',flush=True)
-    print('PRODUCTION_NOT_TOUCHED=TRUE',flush=True)
-if __name__=='__main__':main(),status,re.M).group(1).split()]
-        actual_groups=sorted(int(x) for x in re.search(r'^Groups:\s*(.*)    jobid=preflight()
-    _,cwd,cmd,env,uid,gid,groups,appdir,runners,mode=stage_process()
-    if uid==0:stop('STAGE_PROCESS_AS_ROOT_REQUIRES_REVIEW')
-    # env is already reconstructed from the attested root-owned serve() contract
-    # (only when needed); the active daemon's env and files are untouched.
-    env.update(PYTHONDONTWRITEBYTECODE='1',OMP_NUM_THREADS='1',OPENBLAS_NUM_THREADS='1',MKL_NUM_THREADS='1')
-    chosen=None
-    for candidate in runners:
-        if not candidate.is_file() or not os.access(candidate,os.X_OK):continue
-        try:
-            pr=subprocess.run([str(candidate),'-I','-B','-c','import fastapi, sqlalchemy, google.genai'],cwd=str(appdir),env=env,user=uid,group=gid,extra_groups=groups,capture_output=True,text=True,timeout=12)
-            if pr.returncode==0:chosen=candidate;break
-        except Exception:continue
-    if chosen is None:stop('STAGE_PYTHON_ENV_UNKNOWN')
-    print('NATIVE_STAGE_PROCESS_AND_SOURCE=PASS',flush=True)
-    r=subprocess.run([str(chosen),'-I','-B','-c',WORKER,str(appdir),jobid],cwd=str(appdir),env=env,user=uid,group=gid,extra_groups=groups,text=True,timeout=480)
-    if r.returncode:stop('NATIVE_WORKER_FAILED_RC_'+str(r.returncode))
-    b=get('/health/build');a=get('/health/artifact?deep=true');ready=get('/health/ready')
-    if not (b.get('artifact_id')==a.get('artifact_id')==ART and a.get('files_verified')==98 and a.get('mismatch_count')==0 and ready.get('status')=='ready'):
-        stop('STAGE_CHANGED_AFTER_QA')
-    print('POST_QA_STAGE_98_98_READY=PASS',flush=True)
-    print('PRODUCTION_NOT_TOUCHED=TRUE',flush=True)
-if __name__=='__main__':main(),status,re.M).group(1).split())
-        stage_ns=os.stat(proc/'ns/mnt')
-        host_ns=os.stat('/proc/self/ns/mnt')
-    except (OSError,ValueError,AttributeError):
-        stop('STAGE_PROCESS_CHANGED_BEFORE_NAMESPACE')
-    if (current!=cmd or len(ids)!=4 or len(gids)!=4 or
-        any(x!=uid for x in ids) or any(x!=gid for x in gids) or
-        actual_groups!=sorted(groups) or uid==0):
-        stop('STAGE_CREDENTIALS_CHANGED_BEFORE_NAMESPACE')
-    if (stage_ns.st_dev,stage_ns.st_ino)==(host_ns.st_dev,host_ns.st_ino):
-        stop('STAGE_NO_DISTINCT_MOUNT_NAMESPACE')
-    opts=['--groups',','.join(map(str,groups))] if groups else ['--clear-groups']
-    # nsenter enters the stage mount namespace, then setpriv drops all root
-    # credentials and supplementary groups before executing Python.
-    return [nsenter,'--target',str(pid),'--mount','--',
-            setpriv,'--no-new-privs','--reuid',str(uid),
-            '--regid',str(gid),*opts,'--']
-
-def main():
-    jobid=preflight()
-    _,cwd,cmd,env,uid,gid,groups,appdir,runners,mode=stage_process()
-    if uid==0:stop('STAGE_PROCESS_AS_ROOT_REQUIRES_REVIEW')
-    # env is already reconstructed from the attested root-owned serve() contract
-    # (only when needed); the active daemon's env and files are untouched.
-    env.update(PYTHONDONTWRITEBYTECODE='1',OMP_NUM_THREADS='1',OPENBLAS_NUM_THREADS='1',MKL_NUM_THREADS='1')
-    chosen=None
-    for candidate in runners:
-        if not candidate.is_file() or not os.access(candidate,os.X_OK):continue
-        try:
-            pr=subprocess.run([str(candidate),'-I','-B','-c','import fastapi, sqlalchemy, google.genai'],cwd=str(appdir),env=env,user=uid,group=gid,extra_groups=groups,capture_output=True,text=True,timeout=12)
-            if pr.returncode==0:chosen=candidate;break
-        except Exception:continue
-    if chosen is None:stop('STAGE_PYTHON_ENV_UNKNOWN')
-    print('NATIVE_STAGE_PROCESS_AND_SOURCE=PASS',flush=True)
-    r=subprocess.run([str(chosen),'-I','-B','-c',WORKER,str(appdir),jobid],cwd=str(appdir),env=env,user=uid,group=gid,extra_groups=groups,text=True,timeout=480)
     if r.returncode:stop('NATIVE_WORKER_FAILED_RC_'+str(r.returncode))
     b=get('/health/build');a=get('/health/artifact?deep=true');ready=get('/health/ready')
     if not (b.get('artifact_id')==a.get('artifact_id')==ART and a.get('files_verified')==98 and a.get('mismatch_count')==0 and ready.get('status')=='ready'):
