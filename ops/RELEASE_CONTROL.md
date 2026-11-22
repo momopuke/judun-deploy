@@ -73,3 +73,15 @@
 - 發生失敗並不代表自動修復成功；真正修復由原有授權部署專責負責，必須在 #22 紀錄 failure_id、root cause、最小修正與 regression test，才能重跑下一輪，不得把事件記錄本身當做 rollback/再次上線。
 - 此流程具事件驅動，可代替每小時輪詢檢查「有否失敗」，但**不能代替**已授權 staging-only health credential `JUDUN_STAGE_AUTH_TOKEN` 的一次性安全配置。正式版後驗缺授權仍會明確 FAIL 並留下可追溯事故。
 
+
+
+## 2026-11-22 Gate0 再前移：**先驗測試站，再允許簽章 PR 合併**
+
+過去 v1.2.190 的後驗簽章版雙站工作第一次真執行（run 45030491302）出現 `POST_RELEASE_STAGING_AUTH_MISSING`，代表即使已發布，後驗 CI 才發現 GitHub runner 沒有 stage health 讀取授權。這個阻擋點不得留到**下一次正式版本合併後**才發現。
+
+- 從本次改進起，既有唯一受保護 `judun/release-gate` 在驗證到真正 **signed release PR** 時，除了舊有的三檔、Ed25519、CMS、SHA、私有 QA receipt hash 與正式站基準，**強制**執行原 `verify_staging_live(candidate, stage_token, attempts=1)`；必須讀到**與正準備發布之 signed manifest 完全同 identity/tree/98+ 檔案**的測試站，且 stage `payment_mode=test_unlock`。驗不過前，主線 **不得合併 PR**。
+- 使用原 `pull_request_target` 的 **trusted base only** Python 程式，由 GitHub Actions Secret `JUDUN_STAGE_AUTH_TOKEN` 帶入 stage health 只讀授權。不從 PR 候選執行任何程式；不開放任意 Site URL、redirect、私鑰或登入操作；GitHub 自動化只擁有既有 `contents:read, statuses:write`。
+- 缺授權輸出 `DIRECT_DEPLOY_PR_STAGE_READ_ONLY_AUTH_MISSING`，測試站 401/403、舊版本或錯 SHA 則由既有 `DIRECT_DEPLOY_STAGING_NOT_VERIFIED` 等原 guard 拒絕；不得以假樣本、舊 token、裸公有 health 或「CI 顯示綠色」代替。
+- **一般非 release PR 完全不需要 stage token**，開發工具維護不受此依賴誤阻。下一版正式 release 必須在 GitHub Secrets 確實設定 staging-only **最小讀取權限**並由真實 Site API 接受後才能通過。本對話沒有 GitHub Secrets 或 Sites owner 管理權限，不會要求使用者把令牌貼上公開訊息，也不會把一般管理者大權限 token 偽稱 read-only。
+- 這只是「發布前阻斷不可驗收候選」，不是自動簽署新版本，也沒有取消發布後 **60 秒雙站再驗**、正式 VPS 原有回滾權限或私有 QA 完整責任。尚未用下一個新版本實測 stage+正式站+rollback 三輪全自動成功之前，零 FinalShell 目標保持**未驗收**。
+
