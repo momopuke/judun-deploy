@@ -25,7 +25,7 @@ from staging_release import (
 
 
 GITHUB = "https://raw.githubusercontent.com/momopuke/judun-deploy/"
-REQUEST = "https://nexus-cloud-workspace.tony870490.chatgpt.site/api/judun/staging-request"
+REQUEST = "main/ops/staging-request.json"
 SCHEMA = "judun.staging-deploy.v1"
 KEY_SHA256 = "17c8b563d224568447c3af1db57c8bb9ce51dbeac6c21371e909bc3a5635a8db"
 CONFIG = Path("/etc/judun-staging-pull")
@@ -45,14 +45,9 @@ def strict_json(raw):
 
 def fetch(path, limit, destination=None):
     headers = {"Cache-Control": "no-cache"}
-    if path == REQUEST:
-        url = REQUEST
-        token = read_regular(CONFIG / "nexus-read-token", 4096).decode("ascii").strip()
-        if not token or not re.fullmatch(r"[A-Za-z0-9._~+/=-]+", token):
-            raise ValueError("Invalid NEXUS read credential")
-        headers["OAI-Sites-Authorization"] = f"Bearer {token}"
-    else:
-        url = GITHUB + path
+    # Main is PR-protected. Candidate content remains cryptographically verified
+    # with the pinned Ed25519 key; a mutable request can never bypass signature.
+    url = GITHUB + path
     opener = build_opener(ProxyHandler({}), NoRedirect())
     with opener.open(Request(url, headers=headers), timeout=20) as response:
         if response.status != 200 or response.geturl() != url:
@@ -74,7 +69,7 @@ def fetch(path, limit, destination=None):
 def request_commit(get):
     request = strict_json(get(REQUEST, 2048))
     if not isinstance(request, dict) or set(request) != {"candidate_commit"}:
-        raise ValueError("Invalid NEXUS staging request")
+        raise ValueError("Invalid GitHub staging request")
     commit = request["candidate_commit"]
     if commit is not None and (not isinstance(commit, str) or not re.fullmatch(r"[0-9a-f]{40}", commit)):
         raise ValueError("A request must name one immutable candidate commit")
