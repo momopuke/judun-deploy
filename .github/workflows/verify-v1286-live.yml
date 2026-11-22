@@ -17,6 +17,7 @@ on:
       - "channel/stable.json"
       - "channel/stable.json.sig.b64"
       - "releases/**"
+      - "ops/oidc-verify-request.json"
   workflow_dispatch:
 
 concurrency:
@@ -45,7 +46,7 @@ jobs:
           HEAD_SHA: ${{ github.sha }}
         run: |
           python3 - <<'PY'
-          import os, re, subprocess
+          import os, re, subprocess, json
           from pathlib import Path
           if os.environ['EVENT_KIND'] == 'workflow_dispatch':
               changed = True
@@ -58,10 +59,24 @@ jobs:
               else:
                   filenames = subprocess.check_output(
                       ['git', 'diff', '--name-only', before, head, '--',
-                       'channel/stable.json', 'channel/stable.json.sig.b64', 'releases/'],
+                       'channel/stable.json', 'channel/stable.json.sig.b64',
+                       'releases/', 'ops/oidc-verify-request.json'],
                       text=True, timeout=20,
                   ).splitlines()
                   changed = bool(filenames)
+                  # Trusted protected-main, event-driven request to perform a
+                  # real two-pass OIDC staging check without new signed release.
+                  # A malformed request must FAIL closed, never silently skip.
+                  if 'ops/oidc-verify-request.json' in filenames:
+                      request = json.loads(Path('ops/oidc-verify-request.json').read_bytes())
+                      stable = json.loads(Path('channel/stable.json').read_bytes())
+                      if (not isinstance(request, dict)
+                              or set(request) != {'schema', 'release_id', 'nonce'}
+                              or request['schema'] != 'judun.oidc-stage-health-request.v1'
+                              or request['release_id'] != stable['release_id']
+                              or not isinstance(request['nonce'], str)
+                              or re.fullmatch(r'[0-9a-f]{16,64}', request['nonce']) is None):
+                          raise SystemExit('OIDC_REQUEST_INVALID_OR_STALE')
           with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as f:
               print('signed_release_changed=' + str(changed).lower(), file=f)
           print('SIGNED_RELEASE_PUBLICATION', changed)
@@ -181,8 +196,8 @@ jobs:
           PY
 
   postrelease-dual-site-recheck:
-    # Run the live two-pass check only for a new signed release or explicit
-    # operator dispatch. Tooling-only commits still run offline safety QA.
+    # Run live two-pass for signed release, explicit dispatch or a valid
+    # protected-main ops/oidc-verify-request.json change. Tool-only edits skip.
     # Read-only. Only the original authorized VPS agent can install or rollback.
     needs: [verify, classify-push]
     if: needs.classify-push.outputs.signed_release_changed == 'true'
