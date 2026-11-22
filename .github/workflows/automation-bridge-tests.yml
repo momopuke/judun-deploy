@@ -6,7 +6,11 @@ on:
       - 'ops/automation_bridge.py'
       - 'ops/test_automation_bridge.py'
       - 'ops/activate_existing_staging_pull.sh'
+      - 'ops/bootstrap_staging_github_pull.sh'
+      - 'ops/staging-request.json'
       - 'ops/AUTOMATION_BRIDGE.md'
+      - 'p3/staging_deploy_request.py'
+      - 'p3/test_staging_deploy_request.py'
       - '.github/workflows/automation-bridge-tests.yml'
 
 permissions:
@@ -15,12 +19,24 @@ permissions:
 jobs:
   bridge-offline-tests:
     runs-on: ubuntu-24.04
-    timeout-minutes: 3
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
-      - name: Fail-closed unit tests (no VPS secrets)
+      - name: Fail-closed bridge tests
         run: python3 -m unittest discover -s ops -p 'test_automation_bridge.py' -v
-      - name: Validate one-time activation script syntax
-        run: bash -n ops/activate_existing_staging_pull.sh
+      - name: Signed CMS request installer tests
+        run: python3 -m unittest discover -s p3 -p 'test_staging_deploy_request.py' -v
+      - name: Syntax validation of one-time bootstrap
+        run: |
+          bash -n ops/bootstrap_staging_github_pull.sh
+          bash -n ops/activate_existing_staging_pull.sh
+          python3 -m py_compile p3/staging_deploy_request.py ops/automation_bridge.py
+      - name: Disabled by default, strict schema
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          assert json.loads(Path('ops/staging-request.json').read_text()) == {'candidate_commit': None}
+          PY
