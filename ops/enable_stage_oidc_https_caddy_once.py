@@ -118,7 +118,7 @@ def production_identity():
 
 
 def candidate_caddies(items):
-    """Only an unambiguous host-network Docker Caddy with writable bind mount."""
+    """Find host-network Caddy; host-writable files may be Docker RO binds."""
     result = []
     for obj in items:
         if not isinstance(obj, dict) or not obj.get("State", {}).get("Running"):
@@ -133,12 +133,15 @@ def candidate_caddies(items):
         mounts = obj.get("Mounts") or []
         valid = []
         for m in mounts:
-            if m.get("Type") != "bind" or m.get("RW") is not True:
+            if m.get("Type") != "bind":
                 continue
             target = m.get("Destination", "")
-            if target == "/etc/caddy/Caddyfile":
+            # A read-only *container* bind is fine: root updates the host
+            # source in place, so Docker's pinned inode stays visible.
+            # Directory binds still require RW; those use atomic replace.
+            if target == "/etc/caddy/Caddyfile" and m.get("RW") in (True, False):
                 valid.append((len(target), Path(m["Source"]), True))
-            elif target == "/etc/caddy":
+            elif target == "/etc/caddy" and m.get("RW") is True:
                 valid.append((len(target), Path(m["Source"]) / "Caddyfile", False))
         if valid:
             valid.sort(key=lambda item: item[0], reverse=True)
@@ -159,6 +162,21 @@ def find_active_caddy():
     require(mode.st_uid == 0 and stat.S_ISREG(mode.st_mode)
             and 0 < mode.st_size <= 262144,
             "CADDY_CONFIG_OWNER_OR_SIZE_INVALID")
+    # Check host-side write access. Container RW=false does not imply that
+    # the root-owned host source is unwritable, and does not require remount.
+    # Opening without truncation is non-mutating; write_caddy_config still
+    # validates ownership and preserves the existing file inode.
+    try:
+        fd = os.open(config, os.O_WRONLY | os.O_CLOEXEC | os.O_NOFOLLOW)
+    except OSError:
+        raise Stop("CADDY_HOST_CONFIG_NOT_WRITABLE") from None
+    try:
+        opened = os.fstat(fd)
+        require(opened.st_ino == mode.st_ino and opened.st_dev == mode.st_dev
+                and opened.st_uid == 0 and stat.S_ISREG(opened.st_mode),
+                "CADDY_HOST_CONFIG_CHANGED")
+    finally:
+        os.close(fd)
     # Check the actual Caddy executable, never use nginx to serve TLS here.
     checked(["docker", "exec", ident, "caddy", "version"], "CADDY_BINARY_UNAVAILABLE")
     return ident, config, file_bind
