@@ -55,3 +55,12 @@
 - **失敗處理：**此工作只做唯讀驗收、輸出精確故障代碼並將該 Actions 標記失敗；不自動替換正式包或私下回退。正式 agent 的**原有**安全回退機制與正式發布者仍是唯一具權限的修復入口；需要保留失敗 run URL、舊新版本/target SHA 與 RCA，再由授權 owner 處理。
 - 仍需另外證明原 signer 的下一版安全自測、同 SHA 獨立 QA、一次真正 v191+ 測試站與正式站端到端發布，以及回滾演練。只有實際重跑、原代理與雙站複驗俱全才能宣稱「未來每版零 FinalShell」**完整達標**。
 
+
+## 2026-11-22 二次穩定化：真證據保留、避免不相關變更造成誤報
+
+- 首次健康驗證成功 **不再**上傳為「雙站已完成」證據。新 `p3/release_postcheck.py --phase minute` 在兩次網站結果、固定 signed channel manifest SHA、60 秒以上間隔均 PASS 後，才使用 `--final-receipt` 將 **`judun-postrelease-final-evidence.v1`** 回執以 mode 0600、不可覆寫的檔案寫入。GitHub Actions 只上傳這份真正 PASS 的雙次回執，不上傳未完成的初始回執。若任一失敗，沒有完成證據且 job FAIL，防止把「只跑一次」誤當結案。
+- `receipt` 改為在跨兩站核對**前後再次計算 GitHub signed manifest bytes SHA**。若期間 main channel 改變，立即 FAIL，避免切版競態。
+- 新增 `classify-push` 判斷 GitHub push 是否包含 `channel/stable.json`、對應簽章或 `releases/**`。**新正式 signed release** 或有權限的明確 `workflow_dispatch`，一定觸發正式站與 owner-only staging 的雙次實測；**只有文件／工具變更**時改跑獨立 offline guard，不對既有正式 v190 無端宣告雙站異常、也不消耗有權限的 Site owner session。未知 push base 則 fail-closed 視同正式變更。
+- 已知環境失敗 `POST_RELEASE_STAGING_AUTH_MISSING`：GitHub Actions Repository Secrets 尚未配置 `JUDUN_STAGE_AUTH_TOKEN`。這不是 v190 正式站故障，**當下一次有正式簽章發布時仍會使雙站 gate FAIL**；在最小權限測試站讀取身份合法接通前，不准宣稱自動雙站發布/自我回退已完成。
+- 一個新的只讀 checker 無權擅自回滾。若正式站版本錯誤，`verify` job 也 FAIL；由原受信任部署代理及有權限發布者針對真根因操作，禁止 GitHub Actions 偽造回滾。
+
