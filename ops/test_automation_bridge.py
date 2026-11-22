@@ -23,7 +23,7 @@ class Opener:
     def __init__(self, response): self.response = response
     def open(self, request, timeout):
         assert request.full_url == bridge.REQUEST and timeout == 8
-        assert request.get_header('Oai-sites-authorization').startswith('Bearer ')
+        assert request.get_header('Oai-sites-authorization') is None
         return self.response
 
 class BridgeTest(unittest.TestCase):
@@ -62,25 +62,25 @@ class BridgeTest(unittest.TestCase):
     def test_authenticated_request_valid_null(self):
         r = Opener(Response(b'{"candidate_commit":null}'))
         with self.as_root(self.token):
-            self.assertTrue(bridge.request_auth_ok(self.token, r))
+            self.assertTrue(bridge.request_channel_ok(r))
 
     def test_authenticated_request_rejects_duplicate_and_redirect(self):
         for raw in (b'{"candidate_commit":null,"candidate_commit":null}',
                     b'{"candidate_commit":"abc"}', b'{}'):
-            self.assertFalse(bridge.request_auth_ok(self.token, Opener(Response(raw))))
-        self.assertFalse(bridge.request_auth_ok(self.token, Opener(Response(
+            self.assertFalse(bridge.request_channel_ok(Opener(Response(raw))))
+        self.assertFalse(bridge.request_channel_ok(Opener(Response(
             b'{"candidate_commit":null}', 'https://elsewhere.invalid'))))
 
     def test_bridge_does_not_claim_signer_or_release_pass(self):
         r = bridge.check(self.root, self.root, lambda *args: True,
-                         lambda *args: True)
+                         lambda: True)
         self.assertEqual(r['bridge'], 'BLOCKED')
         self.assertEqual(r['full_release_gate0'], 'NOT_VERIFIED')
         self.assertIn('private_signer_real_self_test', r['not_proven'])
 
     def test_checks_are_sanitized(self):
         r = bridge.check(self.root, self.root, lambda *args: False,
-                         lambda *args: False)
+                         lambda: False)
         self.assertNotIn('credential-not-real', json.dumps(r))
         self.assertTrue(all(v == 'FAIL' for v in r['checks'].values()))
 
