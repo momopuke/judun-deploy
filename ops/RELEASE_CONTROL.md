@@ -1,5 +1,7 @@
 # 居盾發布作業
 
+> **最新受信配置（2026-11-22 OIDC 閘門）**：正式 signed release PR 與 60 秒後驗改用 GitHub Actions 每次工作取得的短效 OIDC 身分，再向**獨立 VPS 本機測試站健康唯讀入口**查核；不應再把 ChatGPT Sites 全站 SIWC bypass `JUDUN_STAGE_AUTH_TOKEN` 配成 GitHub Secrets。以下舊章節提及該 secret 的描述保留為歷史失敗/RCA，**已由此 OIDC 設計取代**。唯有 `ops/JUDUN_STAGE_OIDC_GATEWAY.md` 所列 TLS ingress 和 VPS 本機實機啟用、真正 OIDC CI 完整雙站 60 秒 PASS 後，才可解除下一版發布 HOLD。程式碼及 GitHub 單測 PASS 不代表此入口已上線。
+
 每次發布由總管接手到兩站驗收完成。站主只需要提出發布需求，後續簽章、測試、安裝及回讀全部由發布團隊與既有代理處理。
 
 | 角色 | 責任 |
