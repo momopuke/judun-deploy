@@ -10,6 +10,8 @@ on:
       - "p3/test_direct_deploy_publish.py"
       - "p3/release_postcheck.py"
       - "p3/test_release_postcheck.py"
+      - "p3/stage_oidc_client.py"
+      - "p3/test_stage_oidc_client.py"
       - "p3/release_failure_report.py"
       - "p3/test_release_failure_report.py"
       - "channel/stable.json"
@@ -152,6 +154,7 @@ jobs:
         run: |
           python3 -m unittest discover -s p3 -p 'test_release_postcheck.py' -v
           python3 -m unittest discover -s p3 -p 'test_release_failure_report.py' -v
+          python3 -m unittest discover -s p3 -p 'test_stage_oidc_client.py' -v
 
   postrelease-dual-site-recheck:
     # Run the live two-pass check only for a new signed release or explicit
@@ -163,20 +166,17 @@ jobs:
     timeout-minutes: 9
     permissions:
       contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
       - name: Signed production and authorized staging initial attestation
-        env:
-          JUDUN_STAGE_AUTH_TOKEN: ${{ secrets.JUDUN_STAGE_AUTH_TOKEN }}
         run: |
           python3 -I -B p3/release_postcheck.py --phase initial --receipt "$RUNNER_TEMP/judun-postrelease-initial.json"
       - name: Wait for one-minute recheck interval
         run: sleep 65
       - name: Repeat signed two-site, full tree and payment-mode attestation
-        env:
-          JUDUN_STAGE_AUTH_TOKEN: ${{ secrets.JUDUN_STAGE_AUTH_TOKEN }}
         run: |
           python3 -I -B p3/release_postcheck.py --phase minute --receipt "$RUNNER_TEMP/judun-postrelease-initial.json" --final-receipt "$RUNNER_TEMP/judun-postrelease-final.json"
       - name: Preserve verified final two-pass evidence only
