@@ -37,9 +37,18 @@ class CaddyBridgeSafetyTests(unittest.TestCase):
         self.assertIn(b"method GET", installer.BLOCK)
         self.assertIn(b"respond \"Forbidden\" 403", installer.BLOCK)
 
-    def test_reject_docker_bridge_and_unwritable_mount(self):
+    def test_reject_bridge_and_ro_directory_but_allow_ro_file_mount(self):
         self.assertEqual(installer.candidate_caddies([docker_obj(net="bridge")]), [])
-        self.assertEqual(installer.candidate_caddies([docker_obj(rw=False)]), [])
+        # Observed VPS topology: stripchat-gateway, host network, read-only
+        # single-file bind of /root/stripchat-gateway/Caddyfile.
+        ro = docker_obj(caddyfile="/root/stripchat-gateway/Caddyfile", rw=False)
+        ro["Name"] = "/stripchat-gateway"
+        ro["Config"]["Image"] = "caddy:2-alpine"
+        self.assertEqual(installer.candidate_caddies([ro]), [(
+            "a" * 64, Path("/root/stripchat-gateway/Caddyfile"), True)])
+        directory = docker_obj(rw=False)
+        directory["Mounts"][0]["Destination"] = "/etc/caddy"
+        self.assertEqual(installer.candidate_caddies([directory]), [])
         self.assertEqual(len(installer.candidate_caddies([docker_obj()])), 1)
 
     def test_reject_extra_caddy_instances_and_non_running(self):
@@ -79,6 +88,25 @@ class CaddyBridgeSafetyTests(unittest.TestCase):
             self.assertEqual(source.stat().st_mode & 0o777, 0o600)
             installer.write_caddy_config(source, original, 0o600, st.st_uid, st.st_gid)
             self.assertEqual(source.read_bytes(), original)
+
+    def test_readonly_docker_bind_host_source_is_inode_safe(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "Caddyfile"
+            old = b"original host Caddyfile\n"
+            source.write_bytes(old)
+            obj = docker_obj(caddyfile=str(source), rw=False)
+            selected = installer.candidate_caddies([obj])
+            self.assertEqual(selected, [("a" * 64, source, True)])
+            before_inode = source.stat().st_ino
+            st = source.stat()
+            installer.write_caddy_config(source, old + installer.BLOCK,
+                0o600, st.st_uid, st.st_gid, file_bind=selected[0][2])
+            self.assertEqual(source.stat().st_ino, before_inode)
+            self.assertTrue(source.read_bytes().endswith(installer.BLOCK))
+            installer.write_caddy_config(source, old,
+                0o600, st.st_uid, st.st_gid, file_bind=True)
+            self.assertEqual(source.read_bytes(), old)
+            self.assertEqual(source.stat().st_ino, before_inode)
 
     def test_single_file_docker_bind_keeps_original_inode(self):
         # A bind of /etc/caddy/Caddyfile pins the host file's inode; replacing
