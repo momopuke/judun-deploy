@@ -545,7 +545,11 @@ def run():
         if a.candidate_acceptance:
             check_candidate_receipt(parsed, load(a.candidate_acceptance, 32768))
             print("CANDIDATE_ACCEPTANCE_IDENTITY_PASS", flush=True)
-        elif expected_candidate_receipt(parsed, allow_v189=True) and not a.verify_published:
+        elif not a.verify_published and expected_candidate_receipt(parsed, allow_v189=True):
+            # Historical v189 is the only allowed no-receipt case. For a
+            # new *publication* the full private acceptance bytes are mandatory.
+            # Verifying an already signed, protected public channel must not
+            # require the private receipt to be redistributed to the CI runner.
             deny("CANDIDATE_ACCEPTANCE_FILE_REQUIRED")
         if a.verify_published:
             verified_commit = verify_published_channel(
