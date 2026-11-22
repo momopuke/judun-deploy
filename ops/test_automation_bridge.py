@@ -2,6 +2,7 @@
 import json
 import os
 from pathlib import Path
+from types import SimpleNamespace
 import subprocess
 import tempfile
 import unittest
@@ -34,6 +35,11 @@ class BridgeTest(unittest.TestCase):
         self.token.write_text('credential-not-real-1234')
         self.token.chmod(0o600)
 
+    def as_root(self, path):
+        info = path.lstat()
+        return patch.object(Path, 'lstat', return_value=SimpleNamespace(
+            st_uid=0, st_mode=info.st_mode, st_size=info.st_size))
+
     def test_private_token_permissions_rejected(self):
         self.token.chmod(0o644)
         self.assertFalse(bridge.regular_root_file(self.token, secret=True))
@@ -47,14 +53,16 @@ class BridgeTest(unittest.TestCase):
         marker = self.root / 'isolated.enabled'
         marker.touch()
         marker.chmod(0o644)
-        self.assertTrue(bridge.root_marker(marker))
+        with self.as_root(marker):
+            self.assertTrue(bridge.root_marker(marker))
 
     def test_pinned_public_key_rejects_drift(self):
         self.assertFalse(bridge.regular_root_file(self.token, pin='0'*64))
 
     def test_authenticated_request_valid_null(self):
         r = Opener(Response(b'{"candidate_commit":null}'))
-        self.assertTrue(bridge.request_auth_ok(self.token, r))
+        with self.as_root(self.token):
+            self.assertTrue(bridge.request_auth_ok(self.token, r))
 
     def test_authenticated_request_rejects_duplicate_and_redirect(self):
         for raw in (b'{"candidate_commit":null,"candidate_commit":null}',
