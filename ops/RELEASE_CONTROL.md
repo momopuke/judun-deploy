@@ -41,3 +41,17 @@
 - 先讓發布閘門進入 `main`，以一般 PR 取得確切提交的 `judun/release-gate` 狀態。確認來源為 GitHub Actions，再由既有 GitHub 管理員套用 [main-release-protection.json](main-release-protection.json)。查詢對 `main` 實際生效的 PR、禁止強制推送及指定狀態規則。開一個乾淨 PR 重驗，並以本機測試驗證竄改封包、混入其他檔及舊發版基準會被拒絕。
 - 在既有 VPS 透過授權的維運通道啟用 [隔離測試服務](JUDUN_STAGING_ISOLATION.md)。以現有版本切換，保留原測試站的網址及擁有者權限，驗證正式站部署識別與程序。再以不同候選版本證明測試與正式的程式路徑、檔案身分及程序彼此隔離。
 - 試跑一輪完整發布，保留測試站先行、正式代理安裝，以及兩站自動回讀三段時間戳與結果。GitHub 發布授權、簽章與測試站擁有者權限使用既有核准環境。傳給發布工具的 `GITHUB_TOKEN` 使用已獲授權的 GitHub App 安裝憑證或 PAT，以觸發 `pull_request_target`。續版流程從同一授權環境執行並自行驗收。
+
+
+## 已發布版自動雙站複驗：2026-11-22
+
+本次 v1.2.190 的正式簽章發布由 PR #35 和原 `judun-autodeploy.timer` 完成，GitHub Actions `Verify JUDUN signed release and production` 已能核對 CMS+Ed25519、正式站 build/deep/ready、98/98、零差異及受保護業務路徑。本項只在**該流程完成後**新增另一個**唯讀** `postrelease-dual-site-recheck` 工作，不重新發布 v190、不操作現有付款、DB 或 rollback。
+
+- 第一回合：獨立讀取 `channel/stable.json` 的受信簽章，正式與測試兩站各取 build、deep、ready；要求 release、artifact、build instance、source tree、受管檔案數**跨兩站完全一致**，正式 `payment_mode=ecpay_live`、測試 `payment_mode=test_unlock`；再即刻重讀正式站以擋切版中 split-brain。
+- 隔至少 60 秒後：重驗原簽章及兩站相同五欄和各自金流模式；兩次收據的 signed manifest SHA、版本與兩站檢查結果都必須一致。任何 mismatch、stage 401/403、授權缺失、簽章不符即 **BLOCKED/CI FAILURE**，不是 PASS。
+- 第一回合收據以 0600 寫入 GitHub runner 暫存，僅含 release 身分與兩站**非秘密**的健康欄位。Actions 留存 30 天，不含 session token、客戶資料、API key、Email 或 PDF 內容。
+- 觸發：未來 `main` 有 signed stable channel / encrypted release 更新時，由原 `.github/workflows/verify-v1286-live.yml` 在既有 production verification 通過後自動執行；workflow 變更本身也會觸發。
+- **唯一待驗的環境前提：**GitHub Actions 必須有專用、**最小權限且僅可讀 staging health** 的 secret `JUDUN_STAGE_AUTH_TOKEN`。如未設定或權限不足，CI 必然 FAIL；不得改成跳過 staging 或把一般 Sites owner 登入憑證貼上對話／提交 repo。使用 GitHub Repository Actions Secrets 或既有授權發行環境管理，變更/撤銷憑證應有權限審核。這並不提供 VPS Shell 或 CMS/Ed25519 簽章權限。
+- **失敗處理：**此工作只做唯讀驗收、輸出精確故障代碼並將該 Actions 標記失敗；不自動替換正式包或私下回退。正式 agent 的**原有**安全回退機制與正式發布者仍是唯一具權限的修復入口；需要保留失敗 run URL、舊新版本/target SHA 與 RCA，再由授權 owner 處理。
+- 仍需另外證明原 signer 的下一版安全自測、同 SHA 獨立 QA、一次真正 v191+ 測試站與正式站端到端發布，以及回滾演練。只有實際重跑、原代理與雙站複驗俱全才能宣稱「未來每版零 FinalShell」**完整達標**。
+
