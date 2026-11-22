@@ -170,6 +170,29 @@ def caddy_check(container, mode):
     require(result.returncode == 0, "CADDY_" + mode.upper() + "_FAILED")
 
 
+def confirm_running_config_matches_caddyfile(container):
+    """Prevent reloading stale on-disk Caddyfile over newer live admin routes."""
+    # Adapt inside the SAME active Docker container, with its environment.
+    adapted = checked([
+        "docker", "exec", container, "caddy", "adapt",
+        "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile",
+    ], "CADDY_ADAPT_FAILED", timeout=30)
+    require(len(adapted) <= 1048576, "CADDY_ADAPTED_CONFIG_TOO_LARGE")
+    try:
+        with no_proxy().open(
+                Request("http://127.0.0.1:2019/config/",
+                        headers={"Cache-Control": "no-store"}), timeout=5) as response:
+            require(response.status == 200, "CADDY_ADMIN_NOT_AVAILABLE")
+            raw = response.read(1048577)
+        require(len(raw) <= 1048576, "CADDY_RUNTIME_CONFIG_TOO_LARGE")
+        actual = json.loads(raw)
+        expected = json.loads(adapted)
+    except (URLError, OSError, TimeoutError, ValueError):
+        raise Stop("CADDY_ADMIN_OR_CONFIG_COMPARE_FAILED") from None
+    require(actual == expected, "CADDYFILE_DIFFERS_FROM_RUNNING_CONFIG")
+    return True
+
+
 def backup_config(config, original):
     root = Path("/root/judun-oidc-health-caddy-backups")
     root.mkdir(mode=0o700, exist_ok=True)
@@ -231,6 +254,8 @@ def apply():
         raise Stop("NEW_OIDC_DOMAIN_DNS_UNAVAILABLE") from None
     require(IP in addrs, "NEW_OIDC_DOMAIN_DNS_MISMATCH")
     ident, config = find_active_caddy()
+    confirm_running_config_matches_caddyfile(ident)
+    print("CADDY_PERSISTED_EQUALS_ACTIVE=PASS", flush=True)
     original = config.read_bytes()
     require(b"judun.142-93-91-214.sslip.io" in original,
             "PRODUCTION_CADDY_VHOST_NOT_FOUND")
@@ -254,6 +279,7 @@ def apply():
         installed = True
         caddy_check(ident, "validate")
         caddy_check(ident, "reload")
+        confirm_running_config_matches_caddyfile(ident)
         print("CADDY_NEW_HOST_ROUTE_INSTALLED=PASS", flush=True)
         public_probe()
         require(production_identity() == before, "PRODUCTION_IDENTITY_CHANGED")
