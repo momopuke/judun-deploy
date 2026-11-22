@@ -291,9 +291,11 @@ def apply():
     try:
         # Fail closed if any other process changed the config after inspection.
         require(config.read_bytes() == original, "CADDY_CONFIG_CONCURRENTLY_CHANGED")
+        # Arm recovery before touching a Docker single-file bind: even a
+        # partial in-place write must not evade rollback if an I/O error occurs.
+        installed = True
         write_caddy_config(config, changed, stat.S_IMODE(st.st_mode), st.st_uid, st.st_gid,
                            file_bind=file_bind)
-        installed = True
         caddy_check(ident, "validate")
         caddy_check(ident, "reload")
         confirm_running_config_matches_caddyfile(ident)
@@ -302,16 +304,22 @@ def apply():
         require(production_identity() == before, "PRODUCTION_IDENTITY_CHANGED")
         print("OIDC_HTTPS_UNAUTHENTICATED_403=PASS", flush=True)
         print("PRODUCTION_IDENTITY_PRESERVED=PASS", flush=True)
-    except (Stop, OSError) as error:
-        if installed and config.read_bytes() == changed:
-            write_caddy_config(config, original, stat.S_IMODE(st.st_mode), st.st_uid, st.st_gid,
-                               file_bind=file_bind)
-            result = run(["docker", "exec", ident, "caddy", "reload", "--config",
-                          "/etc/caddy/Caddyfile", "--adapter", "caddyfile"], timeout=30)
-            print("CADDY_CONFIG_ROLLED_BACK=" +
-                  ("PASS" if result.returncode == 0 else "UNVERIFIED"), flush=True)
-        elif installed:
-            print("STOP: CADDY_CONFIG_CONCURRENT_CHANGE_MANUAL_REVIEW", flush=True)
+    except (Stop, OSError):
+        if installed:
+            current = config.read_bytes()
+            # A partial inode-preserving write is necessarily a prefix of our
+            # new config. Other unexpected contents mean concurrency -> STOP.
+            own_partial = (file_bind and current != original and
+                           (changed.startswith(current) or current.startswith(original)))
+            if current == changed or own_partial:
+                write_caddy_config(config, original, stat.S_IMODE(st.st_mode),
+                                   st.st_uid, st.st_gid, file_bind=file_bind)
+                result = run(["docker", "exec", ident, "caddy", "reload", "--config",
+                              "/etc/caddy/Caddyfile", "--adapter", "caddyfile"], timeout=30)
+                print("CADDY_CONFIG_ROLLED_BACK=" +
+                      ("PASS" if result.returncode == 0 else "UNVERIFIED"), flush=True)
+            elif current != original:
+                print("STOP: CADDY_CONFIG_CONCURRENT_CHANGE_MANUAL_REVIEW", flush=True)
         raise
 
 
