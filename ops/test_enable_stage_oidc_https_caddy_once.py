@@ -98,6 +98,33 @@ class CaddyBridgeSafetyTests(unittest.TestCase):
             self.assertEqual(source.read_bytes(), original)
             self.assertEqual(source.stat().st_ino, st.st_ino)
 
+    def test_never_reload_stale_on_disk_caddyfile_over_live_routes(self):
+        class Reply:
+            status = 200
+            def __init__(self, raw):
+                self.raw = raw
+            def read(self, size):
+                return self.raw
+            def __enter__(self):
+                return self
+            def __exit__(self, *args):
+                return False
+        class Transport:
+            def __init__(self, raw):
+                self.raw = raw
+            def open(self, request, timeout):
+                self.asserted_url = request.full_url
+                return Reply(self.raw)
+        runtime = Transport(b'{"apps":{"http":{"servers":{"srv0":{"routes":[1]}}}}}')
+        with (mock.patch.object(installer, "checked", return_value='{"apps":{"http":{"servers":{"srv0":{"routes":[1]}}}}}'),
+              mock.patch.object(installer, "no_proxy", return_value=runtime)):
+            self.assertTrue(installer.confirm_running_config_matches_caddyfile("synthetic-id"))
+        different = Transport(b'{"apps":{"http":{"servers":{"srv0":{"routes":[2]}}}}}')
+        with (mock.patch.object(installer, "checked", return_value='{"apps":{"http":{"servers":{"srv0":{"routes":[1]}}}}}'),
+              mock.patch.object(installer, "no_proxy", return_value=different)):
+            with self.assertRaisesRegex(installer.Stop, "CADDYFILE_DIFFERS_FROM_RUNNING_CONFIG"):
+                installer.confirm_running_config_matches_caddyfile("synthetic-id")
+
     def test_public_probe_refuses_http_200_leak(self):
         with mock.patch.object(installer, "response_code",
                                return_value=(200, b"should-not-be-public")):
