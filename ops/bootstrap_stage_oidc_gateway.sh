@@ -10,7 +10,10 @@ done
 for binary in python3 curl systemctl systemd-analyze ss; do
   command -v "$binary" >/dev/null || { echo "STOP: TOOL_UNAVAILABLE_$binary"; exit 2; }
 done
-python3 -c 'import cryptography' || { echo 'STOP: python3-cryptography unavailable'; exit 2; }
+[[ -x /usr/bin/python3 ]] || { echo 'STOP: SYSTEMD_PYTHON_UNAVAILABLE'; exit 2; }
+/usr/bin/python3 -c 'import cryptography' || {
+  echo 'STOP: SYSTEMD_PYTHON_CRYPTOGRAPHY_UNAVAILABLE'; exit 2;
+}
 [[ $(systemctl show -P ActiveState judun-staging-isolated.service) == active ]] || {
   echo 'STOP: STAGING_NOT_ACTIVE'; exit 2;
 }
@@ -45,7 +48,7 @@ for filename,expected in zip(sys.argv[1::2],sys.argv[2::2]):
     if oid != expected: raise SystemExit('STOP: PINNED_BLOB_MISMATCH')
 print('PINNED_GATEWAY_AND_SERVICE=PASS')
 PY
-python3 -m py_compile "$TMP/gateway.py"
+/usr/bin/python3 -m py_compile "$TMP/gateway.py"
 # Verify the two local stage health identities without changing either service.
 python3 - <<'PY'
 import json,urllib.request
@@ -82,3 +85,13 @@ ss -H -lnt '( sport = :18762 )' | grep -Eq '^LISTEN .+127\.0\.0\.1:18762 ' || {
 success=1
 echo 'LOCAL_OIDC_GATEWAY_READY=PASS'
 echo 'HTTPS_INGRESS=NOT_CONFIGURED; SIGNED_RELEASE_GATE=HOLD_UNTIL_REAL_CI_OIDC_ATTESTATION'
+if command -v nginx >/dev/null; then
+  echo '=== RELEVANT_TLS_VHOST_FILE_CANDIDATES (names only, no secrets) ==='
+  nginx -T 2>/dev/null | awk '
+    /^# configuration file / { file=$4; sub(/:$/, "", file) }
+    /server_name[[:space:]]+judun[.]142-93-91-214[.]sslip[.]io/ {
+      if (file != "") print file
+    }
+  ' | sort -u
+fi
+echo 'NEXT_GATE=REVIEW_EXACT_EXISTING_TLS_SERVER_BEFORE_ADDING_SCOPED_PROXY_LOCATION'
