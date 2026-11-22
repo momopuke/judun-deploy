@@ -1,12 +1,14 @@
 {
   "schema": "judun-autodeploy-v1",
-  "release_id": "v1.2.189-startup-fix-20261117",
-  "base_artifact_id": "JUDUN-1.2.188-RISKREVIEW20261115",
-  "target_artifact_id": "JUDUN-1.2.189-CODEX20261117",
-  "target_build_instance_id": "1.2.189-CODEX-20261117-STARTUP-FIX",
-  "expected_display_version": "v1.2.189",
+  "release_id": "v1.2.190-singlepass-20261118",
+  "base_artifact_id": "JUDUN-1.2.189-CODEX20261117",
+  "target_artifact_id": "JUDUN-1.2.190-SINGLEPASS-RC1-UNSIGNED",
+  "target_build_instance_id": "1.2.190-SINGLEPASS-RC1-20261118",
+  "expected_display_version": "v1.2.190",
   "expected_managed_file_count": 98,
-  "payload_path": "releases/v1.2.189-startup-fix-20261117.cms.b64",
-  "payload_sha256": "7343b43890b80bb330e5d0a50053301e71c091ea7a791b4a683ba605d8496b42",
-  "noop": false
+  "expected_source_tree_sha256": "1d5a73989525643a4da6c58b36263bdcc644a3f3780fb335b968e33e7de7866a",
+  "payload_path": "releases/v1.2.190-singlepass-20261118.cms.b64",
+  "payload_sha256": "f6e96fb78040127bcfeca62e43a71444326c95caa213139246c928e29452d1f4",
+  "noop": false,
+  "candidate_acceptance_sha256": "2a2c94df18f978e9783ef2dea521523a5777e2924329b1e9d2722c6b72e6b977"
 }
