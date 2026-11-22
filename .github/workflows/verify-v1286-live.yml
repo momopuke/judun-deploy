@@ -8,6 +8,8 @@ on:
       - ".github/scripts/verify_release.py"
       - "p3/direct_deploy_publish.py"
       - "p3/test_direct_deploy_publish.py"
+      - "p3/release_postcheck.py"
+      - "p3/test_release_postcheck.py"
       - "channel/stable.json"
       - "channel/stable.json.sig.b64"
       - "releases/**"
@@ -23,7 +25,7 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-24.04
-    timeout-minutes: 14
+    timeout-minutes: 18
     steps:
       - uses: actions/checkout@v5
       - name: Verify release guard regression cases
@@ -96,3 +98,41 @@ jobs:
           print('PDF_PRIVATE_MISSING_TASK_ROUTES_PASS',len(routes))
           PY
 # v1.2.133 signed release final live-base verification 2026-10-23
+
+
+  postrelease-dual-site-recheck:
+    # Read-only. Only the original authorized VPS agent can install or rollback.
+    needs: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 9
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Verify two-pass audit fault-injection tests
+        run: python3 -m unittest discover -s p3 -p 'test_release_postcheck.py' -v
+      - name: Signed production and authorized staging initial attestation
+        env:
+          JUDUN_STAGE_AUTH_TOKEN: ${{ secrets.JUDUN_STAGE_AUTH_TOKEN }}
+        run: |
+          python3 -I -B p3/release_postcheck.py --phase initial --receipt "$RUNNER_TEMP/judun-postrelease-initial.json"
+      - name: Wait for one-minute recheck interval
+        run: sleep 65
+      - name: Repeat signed two-site, full tree and payment-mode attestation
+        env:
+          JUDUN_STAGE_AUTH_TOKEN: ${{ secrets.JUDUN_STAGE_AUTH_TOKEN }}
+        run: |
+          python3 -I -B p3/release_postcheck.py --phase minute --receipt "$RUNNER_TEMP/judun-postrelease-initial.json"
+      - name: Preserve sanitized initial attestation only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: judun-signed-dual-site-one-minute-evidence
+          path: ${{ runner.temp }}/judun-postrelease-initial.json
+          if-no-files-found: ignore
+          retention-days: 30
+      - name: Explicit release blocker on attestation failure
+        if: failure()
+        run: echo 'POST_RELEASE_DUAL_SITE_BLOCKED; original signer/agent/rollback owner must investigate; NO_DEPLOYMENT_OR_ROLLBACK_BY_GITHUB'
