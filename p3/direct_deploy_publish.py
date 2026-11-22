@@ -151,14 +151,28 @@ class RejectRedirects(HTTPRedirectHandler):
         return None
 
 
+# This restricts what the *verification client* can do with a credential.
+# A Sites SIWC bypass token is still site-wide at the platform boundary, NOT a
+# read-only credential. Never make or store one in CI as though it were scoped.
+STAGING_ATTESTED_PATHS = frozenset({
+    "/health/build", "/health/artifact?deep=true", "/health/ready",
+})
+
+
 def site_get(origin, path, *, token=None):
-    if origin not in (LIVE, STAGING) or not path.startswith("/") or path.startswith("//"):
+    if origin not in (LIVE, STAGING) or not isinstance(path, str) or not path.startswith("/") or path.startswith("//"):
         deny("SITE_OR_PATH_INVALID")
-    if token and origin != STAGING:
-        deny("STAGING_AUTH_ORIGIN_MISMATCH")
+    if token is not None:
+        if origin != STAGING:
+            deny("STAGING_AUTH_ORIGIN_MISMATCH")
+        if path not in STAGING_ATTESTED_PATHS:
+            deny("STAGING_AUTH_HEALTH_PATH_ONLY")
+        if (not isinstance(token, str) or not 0 < len(token) <= 4096
+                or any(not 33 <= ord(char) <= 126 for char in token)):
+            deny("STAGING_AUTH_TOKEN_MALFORMED")
     url = origin + path
     headers = {"Cache-Control": "no-cache", "User-Agent": "JudunSignedPublish/1"}
-    if token:
+    if token is not None:
         headers["OAI-Sites-Authorization"] = "Bearer " + token
     req = Request(url, headers=headers)
     try:

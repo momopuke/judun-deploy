@@ -52,6 +52,65 @@ class SignedChannelPublisherTests(TestCase):
                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         return manifest, base64.b64encode(signed.read_bytes()), base64.b64encode(cms)
 
+    def test_staging_auth_cannot_access_admin_or_payment_routes(self):
+        for path in (
+            "/", "/admin", "/admin/email-test",
+            "/ecpay/callback", "/payment/confirm",
+            "/health/artifact?deep=false",
+            "/health/artifact?deep=true&anything=1",
+            "/health/build?session=x",
+            "//external.invalid/health/build",
+        ):
+            with self.subTest(path=path), self.assertRaisesRegex(
+                ValueError, "DIRECT_DEPLOY_(STAGING_AUTH_HEALTH_PATH_ONLY|SITE_OR_PATH_INVALID)"
+            ):
+                pub.site_get(pub.STAGING, path, token="synthetic-local-only")
+        with self.assertRaisesRegex(ValueError, "STAGING_AUTH_ORIGIN_MISMATCH"):
+            pub.site_get(pub.LIVE, "/health/build", token="synthetic-local-only")
+
+    def test_staging_auth_rejects_control_characters_and_empty_tokens(self):
+        for token in ("", "space not allowed", "line\nfeed", "return\rfeed",
+                      "tab\tchar", "x" * 4097, 47, None):
+            if token is None:
+                continue  # None is public/no-token mode; normal existing live path.
+            with self.subTest(token_type=type(token).__name__), self.assertRaisesRegex(
+                ValueError, "STAGING_AUTH_TOKEN_MALFORMED"
+            ):
+                pub.site_get(pub.STAGING, "/health/build", token=token)
+
+    def test_only_attested_staging_gets_sites_auth_header(self):
+        class FakeResponse:
+            status = 200
+            def __init__(self, url):
+                self.url = url
+            def geturl(self):
+                return self.url
+            def read(self, n):
+                return b'{"status":"ok"}'
+            def __enter__(self):
+                return self
+            def __exit__(self, *args):
+                return False
+
+        requests = []
+        class FakeOpener:
+            def open(self, request, timeout):
+                requests.append(request)
+                return FakeResponse(request.full_url)
+
+        with mock.patch.object(pub, "build_opener", return_value=FakeOpener()):
+            for path in sorted(pub.STAGING_ATTESTED_PATHS):
+                self.assertEqual(
+                    pub.site_get(pub.STAGING, path, token="synthetic-stage-health"),
+                    {"status": "ok"},
+                )
+        self.assertEqual(len(requests), 3)
+        self.assertTrue(all(req.get_method() == "GET" for req in requests))
+        self.assertTrue(all(
+            req.get_header("Oai-sites-authorization") == "Bearer synthetic-stage-health"
+            for req in requests
+        ))
+
     def test_valid_independently_signed_release(self):
         manifest, sig, payload = self.sample()
         info = pub.parse_signed_manifest(manifest, sig, payload, self.pubkey)
