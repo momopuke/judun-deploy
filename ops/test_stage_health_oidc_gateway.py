@@ -4,7 +4,10 @@ import importlib.util
 import json
 from pathlib import Path
 import time
+import threading
 import unittest
+from urllib.error import HTTPError
+from urllib.request import ProxyHandler, Request, build_opener
 from unittest import mock
 
 from cryptography.hazmat.primitives import hashes
@@ -135,6 +138,40 @@ class GatewayTests(unittest.TestCase):
     def test_not_public_bind(self):
         with self.assertRaises(gate.Blocked):
             gate.Gateway(("0.0.0.0", 18762))
+
+    def test_real_loopback_http_requires_auth_after_listener_is_ready(self):
+        # Real HTTPServer socket, not a mocked 'active' process flag.
+        # The installer must wait for HTTP 403 before marking readiness.
+        server = gate.Gateway(("127.0.0.1", 0))
+        thread = threading.Thread(
+            target=lambda: server.serve_forever(poll_interval=0.01),
+            daemon=True,
+        )
+        thread.start()
+        host, port = server.server_address
+        opener = build_opener(ProxyHandler({}))
+        try:
+            for path in (
+                gate.PREFIX + "/health/build",
+                gate.PREFIX + "/health/artifact?deep=true",
+                gate.PREFIX + "/health/ready",
+                "/__jd_stage_health/v1/admin",
+            ):
+                req = Request(f"http://{host}:{port}" + path)
+                with self.subTest(path=path), self.assertRaises(HTTPError) as captured:
+                    opener.open(req, timeout=2)
+                self.assertEqual(captured.exception.code, 403)
+            req = Request(
+                f"http://{host}:{port}" + gate.PREFIX + "/health/ready",
+                method="POST",
+            )
+            with self.assertRaises(HTTPError) as captured:
+                opener.open(req, timeout=2)
+            self.assertEqual(captured.exception.code, 405)
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=2)
 
     def test_invalid_raw_jwt(self):
         for value in ("", "wrong", "a.b.c.d", " " * 20):

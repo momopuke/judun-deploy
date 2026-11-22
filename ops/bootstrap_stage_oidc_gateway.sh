@@ -27,6 +27,15 @@ TMP=$(mktemp -d)
 installed=0 success=0
 cleanup() {
   if [[ $success -eq 0 && $installed -eq 1 ]]; then
+    # Safe diagnostic fields only: never print JWTs, bearer tokens or configs.
+    echo '=== NEW_GATEWAY_SERVICE_DIAGNOSTIC (no secrets) ===' >&2
+    systemctl show judun-stage-health-oidc.service \
+      -p ActiveState -p SubState -p Result -p ExecMainCode \
+      -p ExecMainStatus -p NRestarts --no-pager >&2 || true
+    # Only capture known failure classes; no raw journal or auth headers.
+    journalctl -u judun-stage-health-oidc.service --no-pager -n 30 -o cat 2>/dev/null \
+      | grep -E 'ModuleNotFoundError:|ImportError:|PermissionError:|Address already in use|OSError:|MemoryError|Failed at step|status=[0-9]+/|Traceback' \
+      | head -n 6 >&2 || true
     systemctl disable --now judun-stage-health-oidc.service >/dev/null 2>&1 || true
     rm -f /etc/systemd/system/judun-stage-health-oidc.service
     rm -f /srv/judun-stage-health-oidc/stage_health_oidc_gateway.py
@@ -66,19 +75,37 @@ systemd-analyze verify /etc/systemd/system/judun-stage-health-oidc.service || {
 }
 systemctl daemon-reload
 systemctl enable --now judun-stage-health-oidc.service
-systemctl is-active --quiet judun-stage-health-oidc.service || {
-  echo 'STOP: GATEWAY_SERVICE_FAILED'; exit 2;
-}
-python3 - <<'PY'
-import urllib.request,urllib.error
-req=urllib.request.Request('http://127.0.0.1:18762/__jd_stage_health/v1/health/build')
-try:
-    urllib.request.urlopen(req,timeout=8)
-    raise SystemExit('STOP: UNAUTHENTICATED_GATEWAY_EXPOSED')
-except urllib.error.HTTPError as e:
-    if e.code!=403: raise SystemExit('STOP: GATEWAY_UNEXPECTED_STATUS')
-print('GATEWAY_ANONYMOUS_REQUEST_DENIED=PASS')
+# systemd Type=simple reports active as soon as the process is spawned.
+# This does NOT prove that Python imports finished and HTTPServer has bound
+# localhost. Poll the actual HTTP response with a strict 20s monotonic bound.
+# Refused/reset sockets are transient; HTTP 200, redirect, 5xx etc are not.
+/usr/bin/python3 - <<'PY'
+import time
+from urllib.error import HTTPError, URLError
+from urllib.request import ProxyHandler, Request, build_opener
+url = 'http://127.0.0.1:18762/__jd_stage_health/v1/health/build'
+opener = build_opener(ProxyHandler({}))
+deadline = time.monotonic() + 20
+attempts = 0
+while True:
+    attempts += 1
+    try:
+        with opener.open(Request(url, headers={'Cache-Control':'no-store'}), timeout=1) as r:
+            raise SystemExit('STOP: UNAUTHENTICATED_GATEWAY_EXPOSED')
+    except HTTPError as error:
+        if error.code == 403:
+            print('GATEWAY_ANONYMOUS_REQUEST_DENIED=PASS')
+            print('GATEWAY_HTTP_READY_ATTEMPTS=' + str(attempts))
+            break
+        raise SystemExit('STOP: GATEWAY_UNEXPECTED_HTTP_' + str(error.code))
+    except (URLError, TimeoutError, ConnectionError, OSError):
+        if time.monotonic() >= deadline:
+            raise SystemExit('STOP: GATEWAY_HTTP_NOT_READY_WITHIN_20S')
+        time.sleep(min(0.3, max(0, deadline - time.monotonic())))
 PY
+systemctl is-active --quiet judun-stage-health-oidc.service || {
+  echo 'STOP: GATEWAY_SERVICE_NOT_STABLE_AFTER_HTTP_READY'; exit 2;
+}
 ss -H -lnt '( sport = :18762 )' | grep -Eq '^LISTEN .+127\.0\.0\.1:18762 ' || {
   echo 'STOP: NOT_LOOPBACK_BOUND'; exit 2;
 }
