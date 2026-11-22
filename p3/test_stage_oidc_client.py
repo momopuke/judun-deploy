@@ -66,6 +66,10 @@ class StageOidcClientTests(unittest.TestCase):
                     env={**ENV, "ACTIONS_ID_TOKEN_REQUEST_URL": url},
                     transport=Transport())
 
+    def test_dedicated_oidc_domain_never_production_host(self):
+        self.assertEqual(cli.GATEWAY, "https://judun-oidc.142-93-91-214.sslip.io")
+        self.assertNotEqual(cli.GATEWAY, "https://judun.142-93-91-214.sslip.io")
+
     def test_stage_health_exact_paths_only(self):
         transport = Transport()
         token = "a" * 100 + "." + "b" * 100 + "." + "c" * 100
