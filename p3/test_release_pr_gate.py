@@ -143,50 +143,45 @@ class ReleasePullRequestGateTests(TestCase):
                 gate.classify_and_verify(self.base, head, True)
         live.assert_called_once_with(self.base_metadata, attempts=1)
 
-    def test_signed_pr_without_staging_read_token_fails_before_merge(self):
+    def test_signed_pr_without_verified_oidc_staging_fails_before_merge(self):
         self.release(191)
-        head = self.commit("Signed candidate needing stage owner authorization")
-        with self.assertRaisesRegex(ValueError, "PR_STAGE_READ_ONLY_AUTH_MISSING"):
-            gate.classify_and_verify(
-                self.base, head, True, check_live=False,
-                check_stage=True, stage_token="",
-            )
+        head = self.commit("Signed candidate needing authenticated stage")
+        with mock.patch.object(
+            gate.oidc, "verify_candidate",
+            side_effect=ValueError("JUDUN_STAGE_OIDC_UNVERIFIED"),
+        ):
+            with self.assertRaisesRegex(ValueError, "OIDC_UNVERIFIED"):
+                gate.classify_and_verify(self.base, head, True,
+                                         check_live=False, check_stage=True)
 
-    def test_signed_pr_rejects_wrong_staging_candidate(self):
+    def test_signed_pr_rejects_wrong_oidc_staging_candidate(self):
         self.release(191)
         head = self.commit("Signed candidate must be on stage")
         with mock.patch.object(
-            gate.release, "verify_staging_live",
-            side_effect=ValueError("DIRECT_DEPLOY_STAGING_NOT_VERIFIED"),
+            gate.oidc, "verify_candidate",
+            side_effect=ValueError("DIRECT_DEPLOY_LIVE_TARGET_BUILD_MISMATCH"),
         ) as stage:
-            with self.assertRaisesRegex(ValueError, "STAGING_NOT_VERIFIED"):
-                gate.classify_and_verify(
-                    self.base, head, True, check_live=False,
-                    check_stage=True, stage_token="synthetic-limited-health-token",
-                )
+            with self.assertRaisesRegex(ValueError, "BUILD_MISMATCH"):
+                gate.classify_and_verify(self.base, head, True,
+                                         check_live=False, check_stage=True)
         stage.assert_called_once()
         self.assertEqual(stage.call_args.args[0]["expected_display_version"], "v1.2.191")
-        self.assertEqual(stage.call_args.args[1], "synthetic-limited-health-token")
-        self.assertEqual(stage.call_args.kwargs, {"attempts": 1})
 
-    def test_signed_pr_passes_only_after_current_staging_health(self):
+    def test_signed_pr_passes_only_after_oidc_staging_health(self):
         self.release(191)
         head = self.commit("Real candidate preflight fixture")
-        with mock.patch.object(gate.release, "verify_staging_live") as stage:
+        with mock.patch.object(gate.oidc, "verify_candidate") as stage:
             self.assertEqual(gate.classify_and_verify(
-                self.base, head, True, check_live=False,
-                check_stage=True, stage_token="synthetic-limited-health-token",
+                self.base, head, True, check_live=False, check_stage=True,
             ), "signed release PR")
         self.assertEqual(stage.call_args.args[0]["expected_display_version"], "v1.2.191")
-        self.assertEqual(stage.call_args.kwargs, {"attempts": 1})
 
-    def test_nonrelease_pr_not_blocked_by_stage_auth(self):
-        self.write("README.md", b"Docs-only change should not need staging secrets")
+    def test_nonrelease_pr_not_blocked_by_missing_oidc_gateway(self):
+        self.write("README.md", b"Docs-only change requires no staging network")
         head = self.commit("Docs")
-        with mock.patch.object(gate.release, "verify_staging_live") as stage:
+        with mock.patch.object(gate.oidc, "verify_candidate") as stage:
             self.assertEqual(gate.classify_and_verify(
-                self.base, head, True, check_live=False,
-                check_stage=True, stage_token=None,
+                self.base, head, True, check_live=False, check_stage=True,
             ), "non-release PR")
         stage.assert_not_called()
 
