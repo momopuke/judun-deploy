@@ -17,6 +17,7 @@ from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_ope
 ROOT = Path('/srv/judun-staging')
 CONF = Path('/etc/judun-staging-pull')
 KEY_PIN = '17c8b563d224568447c3af1db57c8bb9ce51dbeac6c21371e909bc3a5635a8db'
+STAGING_CERT_SHA256 = '8af33e638d5ba58efa24c192fb11e46f24ef7b2a5125460c2a63d5b668a2833e'
 REQUEST = 'https://raw.githubusercontent.com/momopuke/judun-deploy/main/ops/staging-request.json'
 
 class NoRedirect(HTTPRedirectHandler):
@@ -94,7 +95,7 @@ def check(root=ROOT, conf=CONF, service_check=unit_ok, channel_check=request_cha
         'stage_pull_timer_enabled': service_check('judun-staging-pull.timer', 'is-enabled'),
         'stage_pull_timer_active': service_check('judun-staging-pull.timer', 'is-active'),
         'stage_signing_public_key_pinned': regular_root_file(conf / 'release_signing_public.pem', pin=KEY_PIN),
-        'stage_recipient_cert_installed': regular_root_file(conf / 'recipient.pem'),
+        'stage_recipient_cert_installed': regular_root_file(conf / 'recipient.pem', pin=STAGING_CERT_SHA256),
         'stage_recipient_private_key_protected': regular_root_file(conf / 'recipient-key.pem', secret=True),
         'github_staging_request_reachable': channel_check(),
     }
