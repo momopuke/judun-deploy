@@ -120,6 +120,8 @@ jobs:
               "p3/test_staging_release.py",
               "p3/staging_deploy_request.py",
               "p3/test_staging_deploy_request.py",
+              "p3/release_postcheck.py",
+              "p3/test_release_postcheck.py",
           }
           exact = tooling | {"P0_UNIFIED_README.md"}
           forbidden = [
@@ -298,5 +300,9 @@ jobs:
           bash -n ops/enable_judun_staging_isolation.sh
           python3 -m unittest discover -s p3 -p 'test_staging*.py' -v
           systemd-analyze verify --recursive-errors=no ops/judun-staging-pull.service ops/judun-staging-pull.timer
+      - name: Test signed dual-site one-minute checker without real credentials
+        run: |
+          python3 -m py_compile p3/release_postcheck.py
+          python3 -m unittest discover -s p3 -p 'test_release_postcheck.py' -v
       - name: Confirm this workflow does not publish to VPS
         run: echo "GITHUB_MAIN_SIGNED_CHANNEL_VERIFIED; NO_DEPLOYMENT_PERFORMED"
