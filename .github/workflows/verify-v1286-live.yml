@@ -124,13 +124,13 @@ jobs:
         env:
           JUDUN_STAGE_AUTH_TOKEN: ${{ secrets.JUDUN_STAGE_AUTH_TOKEN }}
         run: |
-          python3 -I -B p3/release_postcheck.py --phase minute --receipt "$RUNNER_TEMP/judun-postrelease-initial.json"
-      - name: Preserve sanitized initial attestation only
+          python3 -I -B p3/release_postcheck.py --phase minute --receipt "$RUNNER_TEMP/judun-postrelease-initial.json" --final-receipt "$RUNNER_TEMP/judun-postrelease-final.json"
+      - name: Preserve verified final two-pass evidence only
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: judun-signed-dual-site-one-minute-evidence
-          path: ${{ runner.temp }}/judun-postrelease-initial.json
+          path: ${{ runner.temp }}/judun-postrelease-final.json
           if-no-files-found: ignore
           retention-days: 30
       - name: Explicit release blocker on attestation failure
