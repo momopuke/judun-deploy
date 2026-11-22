@@ -31,6 +31,7 @@ on:
       - "ops/stage_health_oidc_gateway.py"
       - "ops/test_stage_health_oidc_gateway.py"
       - "ops/judun-stage-health-oidc.service"
+      - "ops/bootstrap_stage_oidc_gateway.sh"
       - "ops/JUDUN_STAGE_OIDC_GATEWAY.md"
       - ".github/workflows/automation-bridge-tests.yml"
   pull_request:
@@ -64,6 +65,7 @@ on:
       - "ops/stage_health_oidc_gateway.py"
       - "ops/test_stage_health_oidc_gateway.py"
       - "ops/judun-stage-health-oidc.service"
+      - "ops/bootstrap_stage_oidc_gateway.sh"
       - "ops/JUDUN_STAGE_OIDC_GATEWAY.md"
       - ".github/workflows/automation-bridge-tests.yml"
   workflow_dispatch:
@@ -137,6 +139,7 @@ jobs:
               "ops/stage_health_oidc_gateway.py",
               "ops/test_stage_health_oidc_gateway.py",
               "ops/judun-stage-health-oidc.service",
+              "ops/bootstrap_stage_oidc_gateway.sh",
               "ops/JUDUN_STAGE_OIDC_GATEWAY.md",
           }
           exact = tooling | {"P0_UNIFIED_README.md"}
@@ -323,5 +326,6 @@ jobs:
           python3 -m unittest discover -s p3 -p 'test_release_failure_report.py' -v
           python3 -m unittest discover -s p3 -p 'test_stage_oidc_client.py' -v
           python3 -m unittest discover -s ops -p 'test_stage_health_oidc_gateway.py' -v
+          bash -n ops/bootstrap_stage_oidc_gateway.sh
       - name: Confirm this workflow does not publish to VPS
         run: echo "GITHUB_MAIN_SIGNED_CHANNEL_VERIFIED; NO_DEPLOYMENT_PERFORMED"
