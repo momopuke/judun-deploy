@@ -503,6 +503,17 @@ def verify_dual_site(target, token):
           json.dumps({"production": production, "staging": staging}), flush=True)
 
 
+def verify_dual_site_oidc(target):
+    """Post-publication verification using short-lived Actions OIDC identity."""
+    import stage_oidc_client
+    production = verify_target_live(target)
+    print("LIVE_DEEP_VERIFY_PASS", json.dumps(production), flush=True)
+    staging = stage_oidc_client.verify_candidate(target)
+    verify_target_live(target, attempts=1)
+    print("DUAL_SITE_HEALTH_OIDC_PASS",
+          json.dumps({"production": production, "staging": staging}), flush=True)
+
+
 def run():
     ap = argparse.ArgumentParser(description="JUDUN one-command signed channel publisher")
     for name in ("manifest", "signature", "payload", "public-key"):
@@ -534,17 +545,18 @@ def run():
         if a.candidate_acceptance:
             check_candidate_receipt(parsed, load(a.candidate_acceptance, 32768))
             print("CANDIDATE_ACCEPTANCE_IDENTITY_PASS", flush=True)
-        elif expected_candidate_receipt(parsed, allow_v189=True) and not a.verify_published:
+        elif not a.verify_published and expected_candidate_receipt(parsed, allow_v189=True):
+            # Historical v189 is the only allowed no-receipt case. For a
+            # new *publication* the full private acceptance bytes are mandatory.
+            # Verifying an already signed, protected public channel must not
+            # require the private receipt to be redistributed to the CI runner.
             deny("CANDIDATE_ACCEPTANCE_FILE_REQUIRED")
-        stage_token = os.environ.get("JUDUN_STAGE_AUTH_TOKEN")
-        if (a.publish or a.verify_published) and not stage_token:
-            deny("STAGING_AUTH_REQUIRED")
         if a.verify_published:
             verified_commit = verify_published_channel(
                 manifest, sig, cms, parsed, a.public_key,
                 os.environ.get("GITHUB_TOKEN", ""))
             print("DIRECT_DEPLOY_SIGNED_CHANNEL_RECOVERED", verified_commit, flush=True)
-            verify_dual_site(parsed, stage_token)
+            verify_dual_site_oidc(parsed)
             print("PAYMENT_AND_REPORT_PDF_E2E_STILL_REQUIRED")
             return 0
         def check():
@@ -562,8 +574,11 @@ def run():
         token = os.environ.get("GITHUB_TOKEN", "")
         if not token:
             deny("GITHUB_TOKEN_ENV_REQUIRED")
-        stage_result = verify_staging_live(parsed, stage_token, attempts=1)
-        print("STAGING_RELEASE_CANDIDATE_PASS", json.dumps(stage_result), flush=True)
+        # Publishing a reviewable PR is NOT a deployment authorization.
+        # The protected trusted-base judun/release-gate MUST verify exact
+        # candidate staging using GitHub OIDC before any merge is possible.
+        # A Sites-wide SIWC bypass token is not needed in the private builder.
+        print("STAGING_PROOF_REQUIRED_BY_PROTECTED_PR_GATE", flush=True)
         request = publish_atomic(manifest, sig, cms, parsed, a.public_key, token, check)
         print("DIRECT_DEPLOY_RELEASE_PR_OPENED_NOT_DEPLOYED", json.dumps(request), flush=True)
         return 0

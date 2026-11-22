@@ -8,6 +8,7 @@ on:
 permissions:
   contents: read
   statuses: write
+  id-token: write
 
 concurrency:
   group: judun-release-pr-${{ github.event.pull_request.number }}
@@ -27,5 +28,4 @@ jobs:
       - name: Validate Git objects and report against the PR head
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          JUDUN_STAGE_AUTH_TOKEN: ${{ secrets.JUDUN_STAGE_AUTH_TOKEN }}
         run: python3 p3/release_pr_gate.py

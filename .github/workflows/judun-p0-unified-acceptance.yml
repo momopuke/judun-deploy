@@ -28,6 +28,11 @@ on:
       - "ops/bootstrap_staging_github_pull.sh"
       - "ops/staging-request.json"
       - "ops/AUTOMATION_BRIDGE.md"
+      - "ops/stage_health_oidc_gateway.py"
+      - "ops/test_stage_health_oidc_gateway.py"
+      - "ops/judun-stage-health-oidc.service"
+      - "ops/bootstrap_stage_oidc_gateway.sh"
+      - "ops/JUDUN_STAGE_OIDC_GATEWAY.md"
       - ".github/workflows/automation-bridge-tests.yml"
   pull_request:
     paths:
@@ -57,6 +62,11 @@ on:
       - "ops/bootstrap_staging_github_pull.sh"
       - "ops/staging-request.json"
       - "ops/AUTOMATION_BRIDGE.md"
+      - "ops/stage_health_oidc_gateway.py"
+      - "ops/test_stage_health_oidc_gateway.py"
+      - "ops/judun-stage-health-oidc.service"
+      - "ops/bootstrap_stage_oidc_gateway.sh"
+      - "ops/JUDUN_STAGE_OIDC_GATEWAY.md"
       - ".github/workflows/automation-bridge-tests.yml"
   workflow_dispatch:
 permissions:
@@ -124,6 +134,13 @@ jobs:
               "p3/test_release_postcheck.py",
               "p3/release_failure_report.py",
               "p3/test_release_failure_report.py",
+              "p3/stage_oidc_client.py",
+              "p3/test_stage_oidc_client.py",
+              "ops/stage_health_oidc_gateway.py",
+              "ops/test_stage_health_oidc_gateway.py",
+              "ops/judun-stage-health-oidc.service",
+              "ops/bootstrap_stage_oidc_gateway.sh",
+              "ops/JUDUN_STAGE_OIDC_GATEWAY.md",
           }
           exact = tooling | {"P0_UNIFIED_README.md"}
           forbidden = [
@@ -307,5 +324,8 @@ jobs:
           python3 -m py_compile p3/release_postcheck.py
           python3 -m unittest discover -s p3 -p 'test_release_postcheck.py' -v
           python3 -m unittest discover -s p3 -p 'test_release_failure_report.py' -v
+          python3 -m unittest discover -s p3 -p 'test_stage_oidc_client.py' -v
+          python3 -m unittest discover -s ops -p 'test_stage_health_oidc_gateway.py' -v
+          bash -n ops/bootstrap_stage_oidc_gateway.sh
       - name: Confirm this workflow does not publish to VPS
         run: echo "GITHUB_MAIN_SIGNED_CHANNEL_VERIFIED; NO_DEPLOYMENT_PERFORMED"

@@ -18,6 +18,7 @@ import time
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / '.github' / 'scripts'))
 import verify_release as trusted_verifier
+import stage_oidc_client as stage_oidc
 
 SCHEMA = 'judun-postrelease-two-pass.v1'
 FIELDS = ('artifact_id', 'build_instance_id', 'version',
@@ -51,7 +52,10 @@ def collect(target, token, *, live=None, stage=None):
     """Read each site once, then reconfirm production to reject split-brain."""
     require(isinstance(token, str) and bool(token.strip()), 'STAGING_AUTH_MISSING')
     live = live or trusted_verifier.verify_target_live
-    stage = stage or trusted_verifier.verify_staging_live
+    if stage is None:
+        # This is OIDC identity from the *trusted* GitHub job, not a reusable
+        # Sites SIWC owner bypass secret. No stage token is stored in Actions.
+        stage = lambda item, unused, *, attempts: stage_oidc.verify_candidate(item)
     production = live(target, attempts=1)
     staging = stage(target, token, attempts=1)
     production_again = live(target, attempts=1)
@@ -148,8 +152,10 @@ def run():
     parser.add_argument('--final-receipt', type=Path)
     args = parser.parse_args()
     try:
-        token = os.environ.get('JUDUN_STAGE_AUTH_TOKEN', '')
-        require(bool(token.strip()), 'STAGING_AUTH_MISSING')
+        # The placeholder is only an internal API guard; never a credential.
+        # The actual short-lived JWT is minted by stage_oidc_client from
+        # ACTIONS_ID_TOKEN_REQUEST_URL/TOKEN inside each trusted CI job.
+        token = 'OIDC_JOB_IDENTITY'
         target = trusted_verifier.verify_package()
         current = receipt(target, token, verifier=lambda: target)
         if args.phase == 'initial':
