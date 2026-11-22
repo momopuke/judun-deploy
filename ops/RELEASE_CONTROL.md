@@ -64,3 +64,12 @@
 - 已知環境失敗 `POST_RELEASE_STAGING_AUTH_MISSING`：GitHub Actions Repository Secrets 尚未配置 `JUDUN_STAGE_AUTH_TOKEN`。這不是 v190 正式站故障，**當下一次有正式簽章發布時仍會使雙站 gate FAIL**；在最小權限測試站讀取身份合法接通前，不准宣稱自動雙站發布/自我回退已完成。
 - 一個新的只讀 checker 無權擅自回滾。若正式站版本錯誤，`verify` job 也 FAIL；由原受信任部署代理及有權限發布者針對真根因操作，禁止 GitHub Actions 偽造回滾。
 
+
+## 2026-11-22 自動失敗收據：事件觸發，不用每小時輪詢
+
+- 每次 GitHub `Verify JUDUN signed release and production` 執行，當正式簽章/版本校驗、分類、離線回歸或**應執行**的雙站一分鐘複驗 FAIL/CANCELLED 時，`report-failed-release` 會在原既有 [GitHub #22](https://github.com/momopuke/judun-deploy/issues/22) 自動發出**不含秘密**的機器事故紀錄；平常完全不觸發，也不新增 cron/systemd timer。
+- 每筆記錄固定 workflow run URL、attempt、受保護 commit、失敗 job 名稱與各工作狀態。每輪同 run+attempt 使用特定 marker 去重，只信任 GitHub Actions bot 自己的留言，防止公開留言冒充完成。**真根因尚未讀取原日誌前只能標 BLOCKED/NOT_VERIFIED，絕不亂寫「網站壞了」。**
+- 此寫入程序的 `GITHUB_TOKEN` 僅短期存在於 CI 新增的報告 job，權限僅 `issues:write` 和 `contents:read`；從不獲得任何 staging owner token、Ed25519/CMS 私鑰、VPS 權限，也不存取客戶 DB/付款紀錄。
+- 發生失敗並不代表自動修復成功；真正修復由原有授權部署專責負責，必須在 #22 紀錄 failure_id、root cause、最小修正與 regression test，才能重跑下一輪，不得把事件記錄本身當做 rollback/再次上線。
+- 此流程具事件驅動，可代替每小時輪詢檢查「有否失敗」，但**不能代替**已授權 staging-only health credential `JUDUN_STAGE_AUTH_TOKEN` 的一次性安全配置。正式版後驗缺授權仍會明確 FAIL 並留下可追溯事故。
+

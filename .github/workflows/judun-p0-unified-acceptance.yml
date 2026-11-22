@@ -122,6 +122,8 @@ jobs:
               "p3/test_staging_deploy_request.py",
               "p3/release_postcheck.py",
               "p3/test_release_postcheck.py",
+              "p3/release_failure_report.py",
+              "p3/test_release_failure_report.py",
           }
           exact = tooling | {"P0_UNIFIED_README.md"}
           forbidden = [
@@ -304,5 +306,6 @@ jobs:
         run: |
           python3 -m py_compile p3/release_postcheck.py
           python3 -m unittest discover -s p3 -p 'test_release_postcheck.py' -v
+          python3 -m unittest discover -s p3 -p 'test_release_failure_report.py' -v
       - name: Confirm this workflow does not publish to VPS
         run: echo "GITHUB_MAIN_SIGNED_CHANNEL_VERIFIED; NO_DEPLOYMENT_PERFORMED"
