@@ -85,3 +85,14 @@
 - **一般非 release PR 完全不需要 stage token**，開發工具維護不受此依賴誤阻。下一版正式 release 必須在 GitHub Secrets 確實設定 staging-only **最小讀取權限**並由真實 Site API 接受後才能通過。本對話沒有 GitHub Secrets 或 Sites owner 管理權限，不會要求使用者把令牌貼上公開訊息，也不會把一般管理者大權限 token 偽稱 read-only。
 - 這只是「發布前阻斷不可驗收候選」，不是自動簽署新版本，也沒有取消發布後 **60 秒雙站再驗**、正式 VPS 原有回滾權限或私有 QA 完整責任。尚未用下一個新版本實測 stage+正式站+rollback 三輪全自動成功之前，零 FinalShell 目標保持**未驗收**。
 
+
+
+## 新版發布閘門：維運修改與正式發版的判斷標準
+
+| 受保護 PR 類別 | 執行條件 | 安全結果 |
+| --- | --- | --- |
+| 普通文件／ops／QA PR | 原受信 base gate 檢查差異不是受管 signed release 三檔 | 不要求 Sites 授權；可經原 `judun/release-gate` 正常合併 |
+| 正式已簽章版本 PR | 僅 manifest、原簽章及單一 CMS 加密包；來源 SHA/QA/目前正式基準通過 | 再驗**候選版本**已在授權測試站且與 signed source SHA 完全相同；否則合併前 HOLD |
+| 未簽章、錯誤版本、不同公鑰或混入其他檔案 | 任何前述受信 release gate 條件不成立 | Fail-closed，不得合併，也不能靠手工取消 staging gate |
+
+**可重現驗證**：`p3/test_release_pr_gate.py` 以真 disposable Git object / 合成 Ed25519 fixture 反證上述四條；一般 PR 只需實際 GitHub `judun/release-gate` PASS，不能冒充有授權的正式新版本發布已實測。
