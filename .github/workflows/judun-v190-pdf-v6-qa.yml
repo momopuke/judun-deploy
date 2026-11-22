@@ -39,7 +39,12 @@ jobs:
                   if isinstance(node, ast.Assign) and any(
                       isinstance(t, ast.Name) and t.id == name for t in node.targets):
                       try: return ast.literal_eval(node.value)
-                      except (TypeError, ValueError): continue
+                      except (TypeError, ValueError): pass
+                      if (isinstance(node.value, ast.Call)
+                              and isinstance(node.value.func, ast.Attribute)
+                              and node.value.func.attr == 'rstrip'
+                              and len(node.value.args) == 0):
+                          return ast.literal_eval(node.value.func.value).rstrip()
               raise AssertionError(name + " missing")
           prelude=read_local('prelude')
           needle=read_local('needle')
