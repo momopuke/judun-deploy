@@ -51,7 +51,8 @@ def read_signed_package(commit, public_key, *, historical=False):
     return parsed
 
 
-def classify_and_verify(base, head, same_repository, *, check_live=True):
+def classify_and_verify(base, head, same_repository, *,
+                        check_live=True, check_stage=False, stage_token=None):
     """Return the checked scope. Never execute files from head."""
     if not all(isinstance(sha, str) and GIT_SHA.fullmatch(sha) for sha in (base, head)):
         release.deny("PR_INVALID_COMMIT")
@@ -90,6 +91,15 @@ def classify_and_verify(base, head, same_repository, *, check_live=True):
         release.deny("PR_RELEASE_STALE_SIGNED_BASE")
     if check_live:
         release.verify_target_live(current, attempts=1)
+    if check_stage:
+        # Fail *before the protected release PR can merge*, not only after
+        # the original production timer has already deployed its payload.
+        # Authorization must be staging-only and read-only. No fallback to
+        # public endpoints, production auth or a synthetic QA receipt.
+        if not isinstance(stage_token, str) or not stage_token.strip():
+            release.deny("PR_STAGE_READ_ONLY_AUTH_MISSING")
+        release.verify_staging_live(candidate, stage_token, attempts=1)
+        print("PR_EXACT_CANDIDATE_STAGING_VERIFIED", candidate["release_id"], flush=True)
     return "signed release PR"
 
 
@@ -124,7 +134,10 @@ def run():
         if observed != head:
             release.deny("PR_HEAD_CHANGED")
         head_repo = request["head"].get("repo") or {}
-        scope = classify_and_verify(base, head, head_repo.get("full_name") == release.REPO)
+        scope = classify_and_verify(
+            base, head, head_repo.get("full_name") == release.REPO,
+            check_stage=True, stage_token=os.environ.get("JUDUN_STAGE_AUTH_TOKEN"),
+        )
         if scope == "signed release PR":
             git("fetch", "--no-tags", "origin", "+refs/heads/main:refs/judun/gate-base")
             latest = git("rev-parse", "refs/judun/gate-base").decode("ascii").strip()
