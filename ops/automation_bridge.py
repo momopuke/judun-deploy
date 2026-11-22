@@ -17,7 +17,7 @@ from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_ope
 ROOT = Path('/srv/judun-staging')
 CONF = Path('/etc/judun-staging-pull')
 KEY_PIN = '17c8b563d224568447c3af1db57c8bb9ce51dbeac6c21371e909bc3a5635a8db'
-REQUEST = 'https://nexus-cloud-workspace.tony870490.chatgpt.site/api/judun/staging-request'
+REQUEST = 'https://raw.githubusercontent.com/momopuke/judun-deploy/main/ops/staging-request.json'
 
 class NoRedirect(HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
@@ -61,17 +61,11 @@ def unique_dict(pairs):
         result[key] = value
     return result
 
-def request_auth_ok(token_path, opener=None):
-    if not regular_root_file(token_path, secret=True):
-        return False
+def request_channel_ok(opener=None):
     try:
-        token = token_path.read_text('ascii').strip()
-        if not re.fullmatch(r'[A-Za-z0-9._~+/=-]{8,4096}', token):
-            return False
         if opener is None:
             opener = build_opener(ProxyHandler({}), NoRedirect())
         response = opener.open(Request(REQUEST, headers={
-            'OAI-Sites-Authorization': 'Bearer ' + token,
             'Cache-Control': 'no-cache',
         }), timeout=8)
         with response:
@@ -89,7 +83,7 @@ def request_auth_ok(token_path, opener=None):
     except (OSError, ValueError, UnicodeError, TypeError):
         return False
 
-def check(root=ROOT, conf=CONF, service_check=unit_ok, auth_check=request_auth_ok):
+def check(root=ROOT, conf=CONF, service_check=unit_ok, channel_check=request_channel_ok):
     checks = {
         'original_prod_timer_enabled': service_check('judun-autodeploy.timer', 'is-enabled'),
         'original_prod_timer_active': service_check('judun-autodeploy.timer', 'is-active'),
@@ -102,7 +96,7 @@ def check(root=ROOT, conf=CONF, service_check=unit_ok, auth_check=request_auth_o
         'stage_signing_public_key_pinned': regular_root_file(conf / 'release_signing_public.pem', pin=KEY_PIN),
         'stage_recipient_cert_installed': regular_root_file(conf / 'recipient.pem'),
         'stage_recipient_private_key_protected': regular_root_file(conf / 'recipient-key.pem', secret=True),
-        'nexus_request_authorized': auth_check(conf / 'nexus-read-token'),
+        'github_staging_request_reachable': channel_check(),
     }
     # A correct pull link is a necessary condition only: it is not Gate 0 PASS.
     return {
