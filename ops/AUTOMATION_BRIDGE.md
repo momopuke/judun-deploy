@@ -1,3 +1,16 @@
+## 2026-11-22 公開憑證驗證與簽章器交棒
+
+使用者 VPS 一次性 bootstrap 原始回報：`bridge=READY`、12/12 PASS，`STAGE_REQUEST=NONE`，`FULL_RELEASE_GATE0=NOT_VERIFIED`。站台本機生成的 **CMS 收件公開憑證** 已按原始 PEM 位元組重新計算 SHA256：
+
+- 只含**公開憑證**：`ops/staging_recipient_public.pem`
+- PEM SHA256：`8af33e638d5ba58efa24c192fb11e46f24ef7b2a5125460c2a63d5b668a2833e`
+- X.509 Subject：`CN=Judun Staging CMS Recipient`
+- 有效期：2026-11-22 09:59:07 UTC 至 2029-02-24 09:59:07 UTC
+- 本輪加入準確 SHA 鎖定；若 VPS 本機憑證與此公開 PEM 不符，原一鍵啟用器及 bridge 必須拒絕，絕不靜默轉換加密接收對象。
+- **嚴禁**把 `/etc/judun-staging-pull/recipient-key.pem` 任何私鑰上傳、傳入 AI 或放進公開 repo。
+- 原受信任**私有簽章器**須用此**公開** PEM 對相同候選 ZIP 執行 CMS 加密，繼續用原 Ed25519 signing key 真正簽 `staging/candidate.json`；只有該簽章的 immutable commit 才能由 staging agent 接收。本動作不表示已取得原 signer 金鑰／權限。
+- 獨立 QA 與簽章器可用已核對的公開 cert；正式站與 private signer 設定、正式客戶資料、v190 候選來源 SHA 不得因此改動。
+
 # 居盾現有簽章代理：GitHub 受保護發布請求
 
 > 本操作**不是** v1.2.190 上線。部署 Gate0、獨立 QA、原 CMS+Ed25519 signer、正式站發布、回退仍全部照原 `ops/RELEASE_CONTROL.md`。任何失敗都拒絕發布。

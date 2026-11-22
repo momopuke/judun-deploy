@@ -97,6 +97,7 @@ for file in recipient.pem recipient-key.pem; do
 done
 if [[ -e "$config/recipient.pem" || -e "$config/recipient-key.pem" ]]; then
   regular_root "$config/recipient.pem" && private_root "$config/recipient-key.pem" || stop 'PARTIAL_OR_UNSAFE_RECIPIENT_PAIR'
+  [[ $(sha256sum "$config/recipient.pem" | cut -d' ' -f1) == '8af33e638d5ba58efa24c192fb11e46f24ef7b2a5125460c2a63d5b668a2833e' ]] || stop 'RECIPIENT_CERT_UNEXPECTED_ROTATION'
 fi
 
 if ! request_default_off; then
@@ -139,6 +140,7 @@ if [[ ! -f "$config/recipient.pem" ]]; then
   rm -rf -- "$tmp"
 fi
 openssl x509 -in "$config/recipient.pem" -noout -checkend 86400 >/dev/null || stop 'RECIPIENT_CERT_EXPIRED'
+[[ $(sha256sum "$config/recipient.pem" | cut -d' ' -f1) == '8af33e638d5ba58efa24c192fb11e46f24ef7b2a5125460c2a63d5b668a2833e' ]] || stop 'RECIPIENT_CERT_PIN_MISMATCH'
 private_root "$config/recipient-key.pem" || stop 'RECIPIENT_KEY_PERMISSION'
 # Ensure cert matches private key and both can handle test CMS encryption.
 tmp=$(mktemp -d "$config/.pair-check.XXXXXXXX")

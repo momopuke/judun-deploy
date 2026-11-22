@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'ops/automation_bridge.py'
+      - 'ops/staging_recipient_public.pem'
       - 'ops/test_automation_bridge.py'
       - 'ops/activate_existing_staging_pull.sh'
       - 'ops/bootstrap_staging_github_pull.sh'
@@ -26,6 +27,13 @@ jobs:
           persist-credentials: false
       - name: Fail-closed bridge tests
         run: python3 -m unittest discover -s ops -p 'test_automation_bridge.py' -v
+      - name: Validate published staging recipient (public cert only)
+        run: |
+          echo '8af33e638d5ba58efa24c192fb11e46f24ef7b2a5125460c2a63d5b668a2833e  ops/staging_recipient_public.pem' | sha256sum -c -
+          openssl x509 -in ops/staging_recipient_public.pem -noout -checkend 2592000
+          printf 'synthetic-staging-only' > /tmp/judun-cms-fixture
+          openssl cms -encrypt -binary -aes256 -outform DER -in /tmp/judun-cms-fixture -out /tmp/judun-cms-fixture.der ops/staging_recipient_public.pem
+          test -s /tmp/judun-cms-fixture.der
       - name: Signed CMS request installer tests
         run: python3 -m unittest discover -s p3 -p 'test_staging_deploy_request.py' -v
       - name: Syntax validation of one-time bootstrap
