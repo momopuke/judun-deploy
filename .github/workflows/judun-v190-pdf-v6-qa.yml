@@ -1,0 +1,49 @@
+name: JUDUN v190 isolated PDF structure v6 offline QA
+on:
+  push:
+    branches:
+      - qa/judun-v190-pdf-structure-v6-20261122
+    paths:
+      - 'ops/qa/judun_v190_pdf_structure_v6.py'
+      - '.github/workflows/judun-v190-pdf-v6-qa.yml'
+permissions:
+  contents: read
+jobs:
+  source-safety:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Validate v5 and v6 source, strict PDF worker
+        run: |
+          python3 - <<'PY'
+          import ast
+          from pathlib import Path
+          v5=Path('ops/qa/judun_v190_stage_finalize_v5.py').read_text()
+          v6=Path('ops/qa/judun_v190_pdf_structure_v6.py').read_text()
+          ast.parse(v6)
+          compile(v6, 'v6', 'exec')
+          tree=ast.parse(v5)
+          worker=[ast.literal_eval(n.value) for n in tree.body
+              if isinstance(n,ast.Assign) and any(
+                  isinstance(t,ast.Name) and t.id=='WORKER' for t in n.targets)]
+          assert len(worker)==1
+          worker=worker[0]
+          assert worker.count('import app as a\n')==1
+          assert worker.count("pages=len(PdfReader(str(pdf),strict=True).pages);tool='pypdf'")==1
+          ast.parse(worker)
+          assert 'run_item_deep_dive(JOB_ID,key,status)' in worker
+          assert "if not ready:" in worker
+          assert 'PDF_PAGE_CONTENT_INVALID_' in v6
+          assert 'PDF_PAGES_OUT_OF_RANGE' in v6
+          assert 'PDF_READER_REQUIREMENT_MISSING' in v6
+          assert 'V5_SOURCE_AND_PYPDF_WHEEL_SHA=PASS' in v6
+          assert 'READER_UNAVAILABLE_IN_NATIVE_STAGE_NAMESPACE' in v6
+          assert 'FINAL_RESULT=PDF_STRUCTURE_VERIFIED_VISUAL_QA_PENDING' in v6
+          assert 'PRODUCTION_NOT_TOUCHED=TRUE' in v6
+          assert 'V5_SHA =' in v6 and 'WHEEL_SHA =' in v6
+          assert 'apt-get' not in v6 and 'pip install' not in v6
+          print('V6_AST_AND_SOURCE_SAFETY=PASS')
+          PY
