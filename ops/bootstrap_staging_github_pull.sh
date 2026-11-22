@@ -97,6 +97,7 @@ for file in recipient.pem recipient-key.pem; do
 done
 if [[ -e "$config/recipient.pem" || -e "$config/recipient-key.pem" ]]; then
   regular_root "$config/recipient.pem" && private_root "$config/recipient-key.pem" || stop 'PARTIAL_OR_UNSAFE_RECIPIENT_PAIR'
+  [[ $(sha256sum "$config/recipient.pem" | cut -d' ' -f1) == '8af33e638d5ba58efa24c192fb11e46f24ef7b2a5125460c2a63d5b668a2833e' ]] || stop 'RECIPIENT_CERT_UNEXPECTED_ROTATION'
 fi
 
 if ! request_default_off; then
