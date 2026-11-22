@@ -12,7 +12,7 @@ from urllib.request import Request, HTTPRedirectHandler, build_opener
 from urllib.error import HTTPError, URLError
 
 AUDIENCE = "judun-stage-health-v1"
-GATEWAY = "https://judun.142-93-91-214.sslip.io"
+GATEWAY = "https://judun-oidc.142-93-91-214.sslip.io"
 PREFIX = "/__jd_stage_health/v1"
 PATHS = frozenset(("/health/build", "/health/artifact?deep=true", "/health/ready"))
 
