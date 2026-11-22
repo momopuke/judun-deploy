@@ -1,0 +1,57 @@
+name: Judun v190 stage-only v5 source validation
+on:
+  push:
+    branches:
+      - qa/judun-v190-stage-native-mount-v5-20261122
+    paths:
+      - 'ops/qa/judun_v190_stage_finalize_v5.py'
+      - '.github/workflows/judun-v190-stage-v5-qa.yml'
+permissions:
+  contents: read
+jobs:
+  syntax-and-safety:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Syntax, embedded worker, immutable stage safety gates
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import ast
+          from pathlib import Path
+          p=Path('ops/qa/judun_v190_stage_finalize_v5.py')
+          s=p.read_text()
+          ast.parse(s)
+          compile(s,str(p),'exec')
+          tree=ast.parse(s)
+          strings=[ast.literal_eval(n.value) for n in tree.body
+              if isinstance(n,ast.Assign) and any(
+                  isinstance(t,ast.Name) and t.id=='WORKER' for t in n.targets)]
+          assert len(strings)==1
+          ast.parse(strings[0])
+          compile(strings[0],'embedded-worker','exec')
+          required=[
+              'STAGE_IDENTITY_98_98=PASS',
+              'ORIGINAL_SANDBOX_PAID_PROMAX=PASS',
+              'STAGE_NATIVE_ENTITLEMENT_CHECK=PASS',
+              'PRODUCTION_NOT_TOUCHED=TRUE',
+              'STAGE_CREDENTIALS_CHANGED_BEFORE_NAMESPACE',
+              'STAGE_NO_DISTINCT_MOUNT_NAMESPACE',
+              'STAGE_MOUNT_NAMESPACE_DEPENDENCY_OR_DB_ACCESS_FAILED',
+              "'--mount'",
+              "'--no-new-privs'",
+              "'--reuid'",
+              "'--regid'",
+          ]
+          assert all(x in s for x in required)
+          assert 'user=uid,group=gid,extra_groups=groups' not in s
+          assert s.count('def main():')==1
+          assert s.count('def stage_namespace_prefix(')==1
+          assert s.count('WORKER=r')==1
+          assert len(s)<25000
+          print('STAGE_V5_AST_AND_WORKER_COMPILE=PASS')
+          print('STAGE_V5_SAFETY_GATES=PASS')
+          PY
