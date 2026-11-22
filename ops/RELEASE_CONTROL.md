@@ -96,3 +96,14 @@
 | 未簽章、錯誤版本、不同公鑰或混入其他檔案 | 任何前述受信 release gate 條件不成立 | Fail-closed，不得合併，也不能靠手工取消 staging gate |
 
 **可重現驗證**：`p3/test_release_pr_gate.py` 以真 disposable Git object / 合成 Ed25519 fixture 反證上述四條；一般 PR 只需實際 GitHub `judun/release-gate` PASS，不能冒充有授權的正式新版本發布已實測。
+
+
+## 2026-11-22 測試站健康授權範圍：實證後修正
+
+ChatGPT Sites 文件 https://learn.chatgpt.com/docs/sites/data-and-connections 指出 `OAI-Sites-Authorization: Bearer ...` 是 **SIWC sign-in gate bypass**，不提供 endpoint-level read-only 權限；產生新 token 也會使舊 token 失效。**不可因原 GitHub 驗收程式只使用健康路徑，就宣稱此 bearer token 本身僅能讀健康狀態。**
+
+- 原 `p3/direct_deploy_publish.py::site_get()` 現強制：**攜帶測試站 bearer 的請求只能是** `/health/build`、`/health/artifact?deep=true`、`/health/ready`，且 origin 必須為已固定的 STAGING URL，方法固定 GET，禁止 redirect。任意 admin/payment/query 延伸路徑、正式站 origin、換行或非法 token 皆 fail closed；此為**驗收 client 的最小行為範圍**，不是 Sites 平台對 token 的真正授權限制。
+- **尚需部署側獨立最小權限**：不把可跨整個私有 Site 的 SIWC bypass 當 read-only GitHub CI 長效金鑰。優先由原授權 VPS 環境設置健康資料**專用**受信唯讀入口（只能讀上述三路徑，無其他代理、付款/後台讀取或管理能力），並具有獨立可撤銷的認證；或待 Sites 提供可證明 endpoint-scoped 的正式授權能力，先核實再安全配置。原 Sites 繼續 owner-only，不直接改成公開。
+- 在未取得前，正式版新候選仍由原 `judun/release-gate` 因 stage health 不能受信驗證而 **HOLD**。不得為了顯示綠燈跳過此 Gate，也不得把已通過的 v190 正式驗證錯稱 v191 的 stage QA。
+- 受信簽章器/部署者並不需要匯出私人 Ed25519/CMS 鑰匙到 GitHub；既有原代理、受保護 PR、獨立 QA、rollback 皆不變。
+
