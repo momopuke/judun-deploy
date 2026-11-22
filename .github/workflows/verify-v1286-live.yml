@@ -146,6 +146,9 @@ jobs:
   postrelease-guard-offline:
     runs-on: ubuntu-24.04
     timeout-minutes: 3
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v5
         with:
@@ -155,6 +158,27 @@ jobs:
           python3 -m unittest discover -s p3 -p 'test_release_postcheck.py' -v
           python3 -m unittest discover -s p3 -p 'test_release_failure_report.py' -v
           python3 -m unittest discover -s p3 -p 'test_stage_oidc_client.py' -v
+
+      - name: Verify real GitHub OIDC identity claims without exposing JWT
+        run: |
+          python3 - <<'PY'
+          import base64, json, sys
+          sys.path.insert(0, 'p3')
+          from stage_oidc_client import github_id_token
+          jwt = github_id_token()
+          body = jwt.split('.')[1]
+          claims = json.loads(base64.urlsafe_b64decode(body + '=' * (-len(body) % 4)))
+          assert claims['iss'] == 'https://token.actions.githubusercontent.com'
+          assert claims['aud'] == 'judun-stage-health-v1'
+          assert claims['repository'] == 'momopuke/judun-deploy'
+          assert str(claims['repository_id']) == '1404145305'
+          assert str(claims['repository_owner_id']) == '126347129'
+          assert claims['ref'] == 'refs/heads/main'
+          assert claims['workflow_ref'] == (
+              'momopuke/judun-deploy/.github/workflows/verify-v1286-live.yml@refs/heads/main')
+          assert claims['event_name'] in ('push', 'workflow_dispatch')
+          print('JUDUN_GITHUB_OIDC_CLAIMS_REAL_RUNNER_PASS')
+          PY
 
   postrelease-dual-site-recheck:
     # Run the live two-pass check only for a new signed release or explicit
