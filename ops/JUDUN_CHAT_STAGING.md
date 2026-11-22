@@ -1,29 +1,24 @@
-# 從 ChatGPT 對話請求部署居盾測試版
+# 居盾對話 → 已簽測試候選（現行入口）
 
-一般 ChatGPT 對話透過已連接的私人 NEXUS 外掛送出要驗收的候選。既有 VPS 的測試服務定期讀取 NEXUS 請求，從 GitHub 取得已簽候選包，驗簽、安裝並檢查候選。候選的獨立 QA 和正式發布沿用 [居盾發布作業](RELEASE_CONTROL.md)。
+**2026-11-22 更新：現行建議入口為 protected GitHub PR，不再依賴 NEXUS staging-request 寫入插件。**
 
-## 發布執行環境一次啟用
+既有 staging agent `p3/staging_deploy_request.py`、隔離版快照工具、systemd service/timer、原 Ed25519 signer 與 CMS 驗證流程不變，只有「待拉取候選 commit」指標改由 `main/ops/staging-request.json` 提供。舊 NEXUS 入口是歷史設計，不應再用它誤判「已能自動拉取」。
 
-1. 依 [居盾候選測試站隔離](JUDUN_STAGING_ISOLATION.md) 確認既有測試網址指向獨立候選服務，並以現行已驗收版本建立基準。使用相容的獨立 Python 環境。
-2. 由既有受授權的發布執行環境將 `p3/staging_release.py` 與 `p3/staging_deploy_request.py` 安裝到 `/srv/judun-staging`，檔案由 root 擁有。將儲存庫固定 Ed25519 公鑰 `keys/release_signing_public.pem` 安裝到 `/etc/judun-staging-pull/release_signing_public.pem`。
-3. 為測試站建立專用的 CMS 接收者憑證。將公開憑證安裝為 `/etc/judun-staging-pull/recipient.pem`，私鑰安裝為同目錄的 `recipient-key.pem`，權限由 root 管理且私鑰為 `0600`。授權建置程序以公開憑證加密候選包。
-4. 使用已授權的 NEXUS Sites 程式讀取憑證，將其保存在 root 專用的 `/etc/judun-staging-pull/nexus-read-token`，設為 `0600`。測試站拉取程式只會將此憑證送往固定的 NEXUS 讀取端點。
-5. 安裝 `ops/judun-staging-pull.service` 和 `ops/judun-staging-pull.timer` 後重新載入 systemd，啟用 timer。先以無請求、拒絕無效簽章、同基準成功切換與失敗回復四個情境驗收。比對正式站的版本與服務進程，並用原有 Sites 授權驗證對外測試網址。
+## 一次性啟用
 
-## 候選包
+見 `ops/AUTOMATION_BRIDGE.md`；VPS 透過 SHA-pinned 工具啟用 `judun-staging-pull.timer` 並在當地生成 stage-only CMS recipient（若兩者皆不存在），不複製 production 的金鑰。金鑰永留 VPS、公開憑證提供原 signer 加密候選。未完成前不能宣稱零 FinalShell。
 
-可信任的建置及簽章程序產生三個檔案，存於同一 GitHub commit 的固定路徑。
+## 正常發布流程（啟用一次後每版沿用）
 
-| 路徑 | 內容 |
-| --- | --- |
-| `staging/candidate.json` | 已簽章的測試版身分、目前測試基準、CMS SHA-256、解密後 ZIP SHA-256 |
-| `staging/candidate.json.sig.b64` | 原 Ed25519 簽章器對 JSON 原始位元組簽章後的 Base64 |
-| `staging/candidate.cms` | 使用測試專用憑證加密、DER 格式的完整候選 ZIP，最多 64 MiB |
+1. 私人建置與**原受信任簽章器**對同一候選 ZIP 產生 `staging/candidate.cms`、`staging/candidate.json` 及 `staging/candidate.json.sig.b64`；JSON 內有前一版 stage snapshot、目標 identity、加密封包與解密 ZIP SHA256；GitHub 只存加密內容。
+2. 利用連接 GitHub 工具經受保護 PR 將 `ops/staging-request.json` 的 `candidate_commit` 改成**已簽候選所在的完整 40 位 Git SHA**，只接受明確授權與同 SHA QA；原主程式 `judun/release-gate` 仍須通過。不得把任意 SHA、未簽候選或純測試腳本當作可發布候選。
+3. VPS 既有 timer 每三分鐘讀這個檔案，對候選驗 Ed25519 簽章、CMS SHA、解密 ZIP SHA、基準版本，然後在隔離 staging 切換。原 installer 的單一 commit 只嘗試切換一次，失敗復原舊版；同一候選已安裝則不重覆切換。
+4. 獨立 QA 實測 Basic/ProMax、報告/PDF/Email、資料遷移回退，實際 owner 授權核對公開測試站。**只有 QA PASS**，原 signer 才能簽正式 `channel/stable.json` + signature + CMS release，受保護 PR 合併後由原 `judun-autodeploy.timer` 安裝正式站。
+5. 確認兩站同版、逐檔零差異、正確金流模式，並在一分鐘後重驗；未達標就 rollback/HOLD。
 
-清單的 `schema` 為 `judun.staging-deploy.v1`，`base_snapshot` 來自現行測試站 `staging_release.py status` 的 `snapshot`。其餘欄位為 `cms_sha256`、`zip_sha256` 與 `target`。目標物件包含 `version`、`artifact_id`、`build_instance_id`、`source_tree_sha256`、`file_count`。ZIP 使用既有的 `payload/DEPLOY_MANIFEST.json` 和受管程式檔格式。加密可沿用 OpenSSL CMS 的 `-encrypt -binary -aes256 -outform DER`，簽章使用現有 Ed25519 簽章器的 `pkeyutl -sign -rawin`。GitHub 只接收加密檔、清單和簽章。
+## 重要限制
 
-## 一般 ChatGPT 對話的使用方式
-
-請 NEXUS 外掛呼叫 `nexus_request_judun_staging`，送出已核對的候選版。 `candidate_commit` 是已簽候選包所在的完整 40 位 Git SHA。外掛使用工作區版本比對及請求 ID，避免覆用過期版本或在重試時重複送出。
-
-服務從該不可變提交讀取候選檔、驗簽及檔案雜湊，核對目前測試基準後切換。每筆候選最多嘗試切換一次，失敗時既有安裝器回復上一版並重驗。中斷留下的切換紀錄由下一輪恢復。成功以既有測試網址的 `build`、`artifact?deep=true` 和 `ready` 讀回為準。獨立功能驗收通過後，由原發布流程將正式版送至正式簽章通道，最後將雙站回執與完整包記入 NEXUS。
+- 正式站和測試站的專用 CMS 私鑰分開保存；無任何私鑰提交公開 repo。
+- `ops/staging-request.json` 是**請求指標**，並非授權憑證；**只有原 Ed25519 有效簽章的候選才會被 VPS 接受**。
+- GitHub CI PASS、PR 合併、stage timer active 只代表對應關卡通過，不代表已完成實際上線。
+- 舊版的 NEXUS API 依然可能存在，但現行流程不再要求它；不可同時啟動兩套互相覆寫的 stage owner。
