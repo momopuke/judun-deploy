@@ -34,6 +34,22 @@ jobs:
           assert worker.count('import app as a\n')==1
           assert worker.count("pages=len(PdfReader(str(pdf),strict=True).pages);tool='pypdf'")==1
           ast.parse(worker)
+          def read_local(name):
+              for node in ast.walk(ast.parse(v6)):
+                  if isinstance(node, ast.Assign) and any(
+                      isinstance(t, ast.Name) and t.id == name for t in node.targets):
+                      try: return ast.literal_eval(node.value)
+                      except (TypeError, ValueError): continue
+              raise AssertionError(name + " missing")
+          prelude=read_local('prelude')
+          needle=read_local('needle')
+          original=read_local('original')
+          strengthened=read_local('strengthened')
+          assert worker.count(needle)==1 and worker.count(original)==1
+          modified=worker.replace(needle,prelude+needle).replace(original,strengthened)
+          ast.parse(modified)
+          compile(modified,'native_worker_with_v6_reader','exec')
+          print('V6_MODIFIED_NATIVE_WORKER_COMPILE=PASS')
           assert 'run_item_deep_dive(JOB_ID,key,status)' in worker
           assert "if not ready:" in worker
           assert 'PDF_PAGE_CONTENT_INVALID_' in v6
@@ -47,3 +63,11 @@ jobs:
           assert 'apt-get' not in v6 and 'pip install' not in v6
           print('V6_AST_AND_SOURCE_SAFETY=PASS')
           PY
+      - name: Download checksum-pinned pure Python reader and verify zip import
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://files.pythonhosted.org/packages/38/99/3147435e15ccd97c0451efc3d13495dc22602e9887f81e64f1b135bae821/pypdf-6.4.2-py3-none-any.whl"
+          curl -fsSL --retry 2 --max-time 30 "$URL" -o "/tmp/pypdf-6.4.2-py3-none-any.whl"
+          echo "014dcff867fd99fc0b6fc90ed1f7e1347ef2317ae038a489c2caa64106d268f4  /tmp/pypdf-6.4.2-py3-none-any.whl" | sha256sum -c -
+          python3 -I -B -c 'import sys;sys.path.insert(0,sys.argv[1]);from pypdf import PdfReader;print("V6_WHEEL_IMPORT=PASS")' "/tmp/pypdf-6.4.2-py3-none-any.whl"
