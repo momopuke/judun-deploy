@@ -110,5 +110,51 @@ class PostreleaseTest(unittest.TestCase):
                 rp.validate_pair(self.sample(100), self.sample(t))
 
 
+    def test_final_evidence_requires_60_seconds_and_two_matching_receipts(self):
+        initial = self.sample(100)
+        minute = self.sample(167)
+        final = rp.final_evidence(initial, minute)
+        self.assertEqual(final['result'], 'PASS')
+        self.assertEqual(final['observed_seconds'], 67)
+        self.assertEqual(final['release_id'], TARGET['release_id'])
+        self.assertEqual(final['signed_manifest_sha256'], 'b' * 64)
+        self.assertEqual(final['first'], initial)
+        self.assertEqual(final['minute'], minute)
+        with self.assertRaisesRegex(rp.AttestationError, 'ONE_MINUTE_NOT_ELAPSED'):
+            rp.final_evidence(initial, self.sample(155))
+
+    def test_final_evidence_does_not_accept_replaced_release(self):
+        old = self.sample(100)
+        new = self.sample(169)
+        new['signed_manifest_sha256'] = 'c' * 64
+        with self.assertRaisesRegex(rp.AttestationError, 'ONE_MINUTE_DRIFT'):
+            rp.final_evidence(old, new)
+
+    def test_final_evidence_survives_durable_round_trip_and_does_not_overwrite(self):
+        with tempfile.TemporaryDirectory() as d:
+            final_path = Path(d) / 'only-after-one-minute.json'
+            bundle = rp.final_evidence(self.sample(100), self.sample(165))
+            rp.write_receipt(final_path, bundle)
+            self.assertEqual(rp.read_receipt(final_path), bundle)
+            self.assertEqual(final_path.stat().st_mode & 0o777, 0o600)
+            with self.assertRaises(FileExistsError):
+                rp.write_receipt(final_path, bundle)
+
+    def test_receipt_rejects_signed_channel_changing_during_collection(self):
+        calls = [0]
+        def sha():
+            calls[0] += 1
+            return 'a' * 64 if calls[0] == 1 else 'b' * 64
+        from unittest.mock import patch
+        with patch.object(rp, 'stable_hash', side_effect=sha):
+            with self.assertRaisesRegex(rp.AttestationError,
+                                        'CHANNEL_CHANGED_DURING_READ'):
+                rp.receipt(TARGET, 'stage-token',
+                           verifier=lambda: TARGET,
+                           collector=lambda target, token: self.good(),
+                           now=100)
+
+
+
 if __name__ == '__main__':
     unittest.main()

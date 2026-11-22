@@ -23,6 +23,45 @@ permissions:
   contents: read
 
 jobs:
+  classify-push:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    outputs:
+      signed_release_changed: ${{ steps.scope.outputs.signed_release_changed }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Identify signed release publication versus tooling-only change
+        id: scope
+        env:
+          EVENT_KIND: ${{ github.event_name }}
+          BEFORE_SHA: ${{ github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          python3 - <<'PY'
+          import os, re, subprocess
+          from pathlib import Path
+          if os.environ['EVENT_KIND'] == 'workflow_dispatch':
+              changed = True
+          else:
+              before, head = os.environ['BEFORE_SHA'], os.environ['HEAD_SHA']
+              if not re.fullmatch('[0-9a-f]{40}', head):
+                  raise SystemExit('POST_RELEASE_HEAD_SHA_INVALID')
+              if not re.fullmatch('[0-9a-f]{40}', before) or before == '0'*40:
+                  changed = True  # fail closed on an unknown push baseline
+              else:
+                  filenames = subprocess.check_output(
+                      ['git', 'diff', '--name-only', before, head, '--',
+                       'channel/stable.json', 'channel/stable.json.sig.b64', 'releases/'],
+                      text=True, timeout=20,
+                  ).splitlines()
+                  changed = bool(filenames)
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as f:
+              print('signed_release_changed=' + str(changed).lower(), file=f)
+          print('SIGNED_RELEASE_PUBLICATION', changed)
+          PY
   verify:
     runs-on: ubuntu-24.04
     timeout-minutes: 18
@@ -100,9 +139,22 @@ jobs:
 # v1.2.133 signed release final live-base verification 2026-10-23
 
 
+  postrelease-guard-offline:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Fail-closed signing and postrelease QA regression
+        run: python3 -m unittest discover -s p3 -p 'test_release_postcheck.py' -v
+
   postrelease-dual-site-recheck:
+    # Run the live two-pass check only for a new signed release or explicit
+    # operator dispatch. Tooling-only commits still run offline safety QA.
     # Read-only. Only the original authorized VPS agent can install or rollback.
-    needs: verify
+    needs: [verify, classify-push]
+    if: needs.classify-push.outputs.signed_release_changed == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 9
     permissions:
@@ -111,8 +163,6 @@ jobs:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
-      - name: Verify two-pass audit fault-injection tests
-        run: python3 -m unittest discover -s p3 -p 'test_release_postcheck.py' -v
       - name: Signed production and authorized staging initial attestation
         env:
           JUDUN_STAGE_AUTH_TOKEN: ${{ secrets.JUDUN_STAGE_AUTH_TOKEN }}
@@ -124,13 +174,13 @@ jobs:
         env:
           JUDUN_STAGE_AUTH_TOKEN: ${{ secrets.JUDUN_STAGE_AUTH_TOKEN }}
         run: |
-          python3 -I -B p3/release_postcheck.py --phase minute --receipt "$RUNNER_TEMP/judun-postrelease-initial.json"
-      - name: Preserve sanitized initial attestation only
+          python3 -I -B p3/release_postcheck.py --phase minute --receipt "$RUNNER_TEMP/judun-postrelease-initial.json" --final-receipt "$RUNNER_TEMP/judun-postrelease-final.json"
+      - name: Preserve verified final two-pass evidence only
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: judun-signed-dual-site-one-minute-evidence
-          path: ${{ runner.temp }}/judun-postrelease-initial.json
+          path: ${{ runner.temp }}/judun-postrelease-final.json
           if-no-files-found: ignore
           retention-days: 30
       - name: Explicit release blocker on attestation failure
