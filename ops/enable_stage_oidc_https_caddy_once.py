@@ -136,12 +136,12 @@ def candidate_caddies(items):
                 continue
             target = m.get("Destination", "")
             if target == "/etc/caddy/Caddyfile":
-                valid.append((len(target), Path(m["Source"])))
+                valid.append((len(target), Path(m["Source"]), True))
             elif target == "/etc/caddy":
-                valid.append((len(target), Path(m["Source"]) / "Caddyfile"))
+                valid.append((len(target), Path(m["Source"]) / "Caddyfile", False))
         if valid:
-            valid.sort(reverse=True)
-            result.append((obj["Id"], valid[0][1]))
+            valid.sort(key=lambda item: item[0], reverse=True)
+            result.append((obj["Id"], valid[0][1], valid[0][2]))
     return result
 
 
@@ -151,7 +151,7 @@ def find_active_caddy():
     data = json.loads(checked(["docker", "inspect", *ids], "DOCKER_INSPECT_FAILED"))
     choices = candidate_caddies(data)
     require(len(choices) == 1, "CADDY_HOST_MOUNT_AMBIGUOUS")
-    ident, config = choices[0]
+    ident, config, file_bind = choices[0]
     require(len(ident) >= 12 and config.is_file() and not config.is_symlink(),
             "CADDY_CONFIG_NOT_REGULAR_BIND")
     mode = config.stat()
@@ -160,7 +160,7 @@ def find_active_caddy():
             "CADDY_CONFIG_OWNER_OR_SIZE_INVALID")
     # Check the actual Caddy executable, never use nginx to serve TLS here.
     checked(["docker", "exec", ident, "caddy", "version"], "CADDY_BINARY_UNAVAILABLE")
-    return ident, config
+    return ident, config, file_bind
 
 
 def caddy_check(container, mode):
@@ -209,19 +209,35 @@ def backup_config(config, original):
     print("ORIGINAL_CADDYFILE_BACKUP_VERIFIED=PASS", flush=True)
 
 
-def atomic_replace(config, data, mode, owner, group):
-    fd, temp = tempfile.mkstemp(prefix=".judun-oidc.", dir=config.parent)
-    try:
+def write_caddy_config(config, data, mode, owner, group, *, file_bind=False):
+    if file_bind:
+        # Docker bind-mounting a *single file* pins its inode. os.replace()
+        # would write a new host inode invisible inside the running container.
+        # Keep the existing inode and reload Caddy only after fsync.
+        fd = os.open(config, os.O_WRONLY | os.O_CLOEXEC | os.O_NOFOLLOW)
         with os.fdopen(fd, "wb") as f:
+            st = os.fstat(f.fileno())
+            require(st.st_uid == owner and st.st_gid == group
+                    and stat.S_ISREG(st.st_mode),
+                    "CADDY_BIND_FILE_OWNER_CHANGED")
+            f.seek(0)
             f.write(data)
+            f.truncate()
             f.flush()
             os.fsync(f.fileno())
-            os.fchmod(f.fileno(), mode)
-            os.fchown(f.fileno(), owner, group)
-        os.replace(temp, config)
-    finally:
-        if os.path.lexists(temp):
-            os.unlink(temp)
+    else:
+        fd, temp = tempfile.mkstemp(prefix=".judun-oidc.", dir=config.parent)
+        try:
+            with os.fdopen(fd, "wb") as f:
+                f.write(data)
+                f.flush()
+                os.fsync(f.fileno())
+                os.fchmod(f.fileno(), mode)
+                os.fchown(f.fileno(), owner, group)
+            os.replace(temp, config)
+        finally:
+            if os.path.lexists(temp):
+                os.unlink(temp)
 
 
 def public_probe():
@@ -253,7 +269,7 @@ def apply():
     except OSError:
         raise Stop("NEW_OIDC_DOMAIN_DNS_UNAVAILABLE") from None
     require(IP in addrs, "NEW_OIDC_DOMAIN_DNS_MISMATCH")
-    ident, config = find_active_caddy()
+    ident, config, file_bind = find_active_caddy()
     confirm_running_config_matches_caddyfile(ident)
     print("CADDY_PERSISTED_EQUALS_ACTIVE=PASS", flush=True)
     original = config.read_bytes()
@@ -275,7 +291,8 @@ def apply():
     try:
         # Fail closed if any other process changed the config after inspection.
         require(config.read_bytes() == original, "CADDY_CONFIG_CONCURRENTLY_CHANGED")
-        atomic_replace(config, changed, stat.S_IMODE(st.st_mode), st.st_uid, st.st_gid)
+        write_caddy_config(config, changed, stat.S_IMODE(st.st_mode), st.st_uid, st.st_gid,
+                           file_bind=file_bind)
         installed = True
         caddy_check(ident, "validate")
         caddy_check(ident, "reload")
@@ -287,7 +304,8 @@ def apply():
         print("PRODUCTION_IDENTITY_PRESERVED=PASS", flush=True)
     except (Stop, OSError) as error:
         if installed and config.read_bytes() == changed:
-            atomic_replace(config, original, stat.S_IMODE(st.st_mode), st.st_uid, st.st_gid)
+            write_caddy_config(config, original, stat.S_IMODE(st.st_mode), st.st_uid, st.st_gid,
+                               file_bind=file_bind)
             result = run(["docker", "exec", ident, "caddy", "reload", "--config",
                           "/etc/caddy/Caddyfile", "--adapter", "caddyfile"], timeout=30)
             print("CADDY_CONFIG_ROLLED_BACK=" +
