@@ -1,0 +1,26 @@
+name: JUDUN existing automation bridge offline QA
+
+on:
+  pull_request:
+    paths:
+      - 'ops/automation_bridge.py'
+      - 'ops/test_automation_bridge.py'
+      - 'ops/activate_existing_staging_pull.sh'
+      - 'ops/AUTOMATION_BRIDGE.md'
+      - '.github/workflows/automation-bridge-tests.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  bridge-offline-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Fail-closed unit tests (no VPS secrets)
+        run: python3 -m unittest discover -s ops -p 'test_automation_bridge.py' -v
+      - name: Validate one-time activation script syntax
+        run: bash -n ops/activate_existing_staging_pull.sh
