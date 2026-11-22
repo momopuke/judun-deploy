@@ -71,14 +71,32 @@ class CaddyBridgeSafetyTests(unittest.TestCase):
             source.write_bytes(b"judun.142-93-91-214.sslip.io {\n reverse_proxy 127.0.0.1:8888\n}\n")
             original = source.read_bytes()
             st = source.stat()
-            installer.atomic_replace(
+            installer.write_caddy_config(
                 source, original + installer.BLOCK,
                 0o600, st.st_uid, st.st_gid)
             self.assertTrue(source.read_bytes().startswith(original))
             self.assertTrue(source.read_bytes().endswith(installer.BLOCK))
             self.assertEqual(source.stat().st_mode & 0o777, 0o600)
-            installer.atomic_replace(source, original, 0o600, st.st_uid, st.st_gid)
+            installer.write_caddy_config(source, original, 0o600, st.st_uid, st.st_gid)
             self.assertEqual(source.read_bytes(), original)
+
+    def test_single_file_docker_bind_keeps_original_inode(self):
+        # A bind of /etc/caddy/Caddyfile pins the host file's inode; replacing
+        # it would NOT update what Docker's Caddy process sees.
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "Caddyfile"
+            original = b"old safe Caddyfile\n"
+            source.write_bytes(original)
+            st = source.stat()
+            installer.write_caddy_config(
+                source, original + installer.BLOCK,
+                0o600, st.st_uid, st.st_gid, file_bind=True)
+            self.assertEqual(source.stat().st_ino, st.st_ino)
+            self.assertTrue(source.read_bytes().endswith(installer.BLOCK))
+            installer.write_caddy_config(
+                source, original, 0o600, st.st_uid, st.st_gid, file_bind=True)
+            self.assertEqual(source.read_bytes(), original)
+            self.assertEqual(source.stat().st_ino, st.st_ino)
 
     def test_public_probe_refuses_http_200_leak(self):
         with mock.patch.object(installer, "response_code",
