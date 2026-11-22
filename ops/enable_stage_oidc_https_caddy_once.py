@@ -6,6 +6,7 @@ production vhost or edit the app, payment processor, Ed25519 signer or VPS agent
 If the live Caddy configuration cannot be established unambiguously, it stops.
 """
 import argparse
+import fcntl
 import hashlib
 import json
 import os
@@ -309,8 +310,8 @@ def apply():
             current = config.read_bytes()
             # A partial inode-preserving write is necessarily a prefix of our
             # new config. Other unexpected contents mean concurrency -> STOP.
-            own_partial = (file_bind and current != original and
-                           (changed.startswith(current) or current.startswith(original)))
+            own_partial = (file_bind and current != original
+                           and changed.startswith(current))
             if current == changed or own_partial:
                 write_caddy_config(config, original, stat.S_IMODE(st.st_mode),
                                    st.st_uid, st.st_gid, file_bind=file_bind)
@@ -328,7 +329,12 @@ def main():
     parser.add_argument("--apply", action="store_true")
     args = parser.parse_args()
     require(args.apply, "EXPLICIT_APPLY_REQUIRED")
-    apply()
+    with open("/run/lock/judun-oidc-caddy.lock", "a") as lock:
+        try:
+            fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise Stop("ANOTHER_OIDC_INSTALLER_IS_RUNNING") from None
+        apply()
     print("JUDUN_OIDC_HTTPS_BRIDGE=READY", flush=True)
     print("SIGNATURE_RELEASE_VERSION_NOT_CHANGED=TRUE", flush=True)
     print("NEXT_CHECK=RUN_SIGNED_GITHUB_OIDC_60_SECOND_SITE_ATTESTATION", flush=True)
