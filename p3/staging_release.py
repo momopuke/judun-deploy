@@ -335,6 +335,30 @@ def fetch_health(port, endpoint, timeout):
     return data
 
 
+
+# The sole previously accepted R1 Sandbox snapshot runs an isolated ECPay
+# sandbox. Older staging snapshots and production-compatible RC1 candidates
+# must retain test_unlock. This pin is exact, not a general mode allowlist.
+KNOWN_R1_SANDBOX_IDENTITY = (
+    "1.2.190",
+    "JUDUN-1.2.190-STAGE-SANDBOX-E2E-R1-UNSIGNED",
+    "1.2.190-STAGE-SANDBOX-E2E-R1-20261122",
+    "464a6d76b1ecb723c8a4767c0e4b354d649f582f6c565c1174ccdd3f89c55c32",
+    98,
+)
+
+
+def expected_stage_payment_mode(release):
+    identity = (
+        release.version,
+        release.artifact_id,
+        release.build_instance_id,
+        release.source_tree_sha256,
+        release.file_count,
+    )
+    return "ecpay_stage" if identity == KNOWN_R1_SANDBOX_IDENTITY else "test_unlock"
+
+
 def check_running(release, port=8011, timeout=75):
     deadline = time.monotonic() + timeout
     expected = {field: getattr(release, field) for field in (
@@ -346,7 +370,7 @@ def check_running(release, port=8011, timeout=75):
             ready = fetch_health(port, "/health/ready", 3)
             if (all(all(data.get(key) == value for key, value in expected.items())
                     for data in (build, deep))
-                    and build.get("payment_mode") == "test_unlock"
+                    and build.get("payment_mode") == expected_stage_payment_mode(release)
                     and build.get("status") == deep.get("status") == "ok"
                     and deep.get("deep_verified") is True and type(deep.get("mismatch_count")) is int
                     and deep["mismatch_count"] == 0

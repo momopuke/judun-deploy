@@ -6,11 +6,13 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 from zipfile import ZipFile
 
 from staging_release import (
-    MANIFEST, Release, initialize, prepare, process_state, recover, selection,
-    store_lock, verify_snapshot,
+    MANIFEST, KNOWN_R1_SANDBOX_IDENTITY, Release, check_running,
+    initialize, prepare, process_state, recover, selection, store_lock,
+    verify_snapshot,
 )
 
 
@@ -90,6 +92,59 @@ class StagingReleaseTest(unittest.TestCase):
                 process_state(self.root, old.name, lambda: None, lambda release: None)
             recover(self.root, lambda: None, lambda target: self.assertEqual(target, old))
         self.assertEqual(selection(self.root).name, old.name)
+
+
+
+class StagingPaymentModeGateTest(unittest.TestCase):
+    """Live stage proof must accept the pinned R1, never another sandbox."""
+
+    def setUp(self):
+        self.r1 = Release(*KNOWN_R1_SANDBOX_IDENTITY)
+        self.rc1 = Release(
+            "1.2.190", "JUDUN-1.2.190-SINGLEPASS-RC1-UNSIGNED",
+            "1.2.190-SINGLEPASS-RC1-20261118",
+            "1d5a73989525643a4da6c58b36263bdcc644a3f3780fb335b968e33e7de7866a", 98)
+
+    def verify(self, release, payment_mode, accepted):
+        common = dict(
+            version=release.version, artifact_id=release.artifact_id,
+            build_instance_id=release.build_instance_id,
+            source_tree_sha256=release.source_tree_sha256,
+        )
+        responses = {
+            "/health/build": {**common, "payment_mode": payment_mode, "status": "ok"},
+            "/health/artifact?deep=true": {
+                **common, "status": "ok", "deep_verified": True,
+                "mismatch_count": 0, "files_verified": release.file_count,
+                "manifest_file_count": release.file_count,
+            },
+            "/health/ready": {"status": "ready", "version": release.version},
+        }
+        with patch("staging_release.fetch_health",
+                   side_effect=lambda port, endpoint, timeout: responses[endpoint]):
+            if accepted:
+                self.assertIsNone(check_running(release, timeout=0))
+            else:
+                with self.assertRaisesRegex(RuntimeError, "Staging health did not match"):
+                    check_running(release, timeout=0)
+
+    def test_existing_exact_r1_sandbox_is_a_valid_pre_switch_and_rollback_base(self):
+        self.verify(self.r1, "ecpay_stage", True)
+
+    def test_r1_cannot_silently_claim_test_unlock(self):
+        self.verify(self.r1, "test_unlock", False)
+
+    def test_rc1_remains_test_unlock_only(self):
+        self.verify(self.rc1, "test_unlock", True)
+        self.verify(self.rc1, "ecpay_stage", False)
+
+    def test_r1_tree_drift_is_not_allowed_to_claim_sandbox(self):
+        self.verify(replace(self.r1, source_tree_sha256="0" * 64), "ecpay_stage", False)
+
+    def test_no_live_ecpay_mode_is_accepted(self):
+        self.verify(self.r1, "ecpay_live", False)
+        self.verify(self.rc1, "ecpay_live", False)
+
 
 
 if __name__ == "__main__":
