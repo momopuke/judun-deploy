@@ -80,7 +80,10 @@ class GatewayTests(unittest.TestCase):
                    "e": enc(nums.e.to_bytes(3, "big"))}]
         with self.assertRaises(gate.Blocked):
             gate.check_token(self.issue(), others, now=1700000100)
-        corrupt = self.issue()[:-1] + ("A" if self.issue()[-1] != "A" else "B")
+        good = self.issue()
+        signed_head, signed_payload, signature = good.split(".")
+        bad_first = "Z" if signature[0] != "Z" else "Y"
+        corrupt = signed_head + "." + signed_payload + "." + bad_first + signature[1:]
         with self.assertRaises(gate.Blocked):
             gate.check_token(corrupt, self.jwks, now=1700000100)
 
