@@ -101,7 +101,7 @@ def preflight():
 
 def verify_part(src, folder, targetdir, base, target):
     raw = src.read(folder + "/candidate.json")
-    signature = base64.b64decode(src.read(folder + "/candidate.json.sig.b64"), validate=True)
+    signature = base64.b64decode(b"".join(src.read(folder + "/candidate.json.sig.b64").split()), validate=True)
     if len(signature) != 64:
         stop("BAD_SIGNATURE_LENGTH_" + folder)
     manifest = json.loads(raw)
@@ -208,4 +208,4 @@ if __name__ == "__main__":
     try:
         main()
     except (OSError, ValueError, KeyError, RuntimeError, TimeoutError, subprocess.SubprocessError) as e:
-        stop("OPERATOR_PRECONDITION_OR_COMMAND_" + type(e).__name__)
+        stop("OPERATOR_PRECONDITION_OR_COMMAND_" + type(e).__module__ + "." + type(e).__name__ + " DETAILS=" + str(e)[:240].replace("\\n", " "))
