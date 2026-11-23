@@ -36,8 +36,16 @@ EXPECTED = (
 )
 EVIDENCE = Path("/root/judun-stage-drill-evidence/signed-stage-drill-20261123T125300Z.json")
 TIME = "2026-11-23T12:53:00+00:00"
+DEPLOY_KEY = Path("/root/.ssh/judun_stage_repo_ed25519")
+KNOWN_HOSTS = Path("/root/.ssh/judun_stage_github_known_hosts")
+GITHUB_HOST_KEY = "[ssh.github.com]:443 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl"
+SSH_COMMAND = (
+    f"ssh -i {DEPLOY_KEY} -o IdentitiesOnly=yes "
+    f"-o UserKnownHostsFile={KNOWN_HOSTS} -o StrictHostKeyChecking=yes "
+    "-o BatchMode=yes -o ConnectTimeout=15 -o HostName=ssh.github.com -p 443"
+)
 ENV = dict(os.environ, GIT_TERMINAL_PROMPT="0", GCM_INTERACTIVE="never",
-           GIT_SSH_COMMAND="ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15")
+           GIT_SSH_COMMAND=SSH_COMMAND)
 
 def stop(reason):
     print("STOP: " + reason, flush=True)
@@ -72,8 +80,16 @@ def ensure_root_file(file, expected=None):
 def preflight():
     if os.geteuid() != 0:
         stop("ROOT_REQUIRED")
-    if not shutil.which("git") or not shutil.which("openssl"):
-        stop("GIT_OR_OPENSSL_MISSING")
+    if not shutil.which("git") or not shutil.which("openssl") or not shutil.which("ssh"):
+        stop("GIT_OPENSSL_OR_SSH_MISSING")
+    if not DEPLOY_KEY.is_file() or not KNOWN_HOSTS.is_file():
+        stop("GITHUB_DEPLOY_KEY_NOT_INSTALLED")
+    ensure_root_file(DEPLOY_KEY)
+    ensure_root_file(KNOWN_HOSTS)
+    if DEPLOY_KEY.stat().st_mode & 0o077:
+        stop("DEPLOY_KEY_PERMISSIONS_NOT_0600")
+    if KNOWN_HOSTS.read_text().strip() != GITHUB_HOST_KEY:
+        stop("GITHUB_HOST_PUBLIC_KEY_PIN_MISMATCH")
     if shutil.disk_usage("/root").free < 600 * 1024 * 1024:
         stop("DISK_BELOW_600MB")
     for f, dig in ((ARCHIVE, ARCHIVE_SHA), (PUB, PUB_SHA)):
@@ -185,7 +201,7 @@ def main():
         print("LOCAL_GIT_CANDIDATES_SIGNED=PASS", flush=True)
         for folder, branch, commit in commits:
             pushed = False
-            for remote in (REPO, SSH_REPO):
+            for remote in (SSH_REPO,):
                 git("remote", "set-url", "origin", remote, repo=work)
                 result = git("push", "--porcelain", "origin",
                              commit + ":refs/heads/" + branch,
@@ -193,8 +209,17 @@ def main():
                 if result.returncode == 0:
                     pushed = True
                     break
+                error = result.stderr.decode("utf-8", "replace")
+                if "Permission denied (publickey)" in error:
+                    stop("GITHUB_DEPLOY_KEY_NOT_REGISTERED_OR_NO_ACCESS_" + folder)
+                if "Repository not found" in error:
+                    stop("GITHUB_DEPLOY_KEY_REPO_ACCESS_MISSING_" + folder)
+                if "Host key verification failed" in error:
+                    stop("GITHUB_HOST_KEY_VERIFICATION_FAILED_" + folder)
+                if "Permission to " in error and "denied" in error:
+                    stop("GITHUB_DEPLOY_KEY_WRITE_ACCESS_NOT_ENABLED_" + folder)
             if not pushed:
-                stop("GITHUB_WRITE_AUTH_UNAVAILABLE_OR_PUSH_REJECTED_" + folder)
+                stop("GITHUB_SSH_PUSH_REJECTED_CHECK_NETWORK_OR_BRANCH_RULE_" + folder)
             ref = git("ls-remote", "--heads", "origin", "refs/heads/" + branch,
                       repo=work, timeout=45).stdout.decode().strip().split()
             if not ref or ref[0] != commit:
