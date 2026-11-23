@@ -3,7 +3,7 @@ name: JUDUN release PR gate
 on:
   pull_request_target:
     branches: [main]
-    types: [opened, reopened, synchronize, ready_for_review, edited, closed]
+    types: [opened, reopened, synchronize, ready_for_review, edited]
 
 permissions:
   contents: read
@@ -16,7 +16,6 @@ concurrency:
 
 jobs:
   release-pr-gate:
-    if: github.event.action != 'closed'
     runs-on: ubuntu-24.04
     timeout-minutes: 8
     steps:
@@ -30,53 +29,3 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: python3 p3/release_pr_gate.py
-
-  staging-request-readback:
-    if: github.event.action == 'closed' && github.event.pull_request.merged
-    runs-on: ubuntu-24.04
-    timeout-minutes: 12
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - name: Check out protected main
-        uses: actions/checkout@v5
-        with:
-          ref: refs/heads/main
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Select an active request from the merged main revision
-        id: request
-        env:
-          MERGED: ${{ github.event.pull_request.merge_commit_sha }}
-        run: |
-          set -eu
-          git merge-base --is-ancestor "$MERGED" HEAD
-          if git diff --quiet "$MERGED^1" "$MERGED" -- ops/staging-request.json p3/staging_request_readback.py; then
-            exit 0
-          fi
-          git diff --exit-code "$MERGED" HEAD -- ops/staging-request.json
-          python3 -I -B - <<'PY'
-          import os, sys
-          from pathlib import Path
-          sys.path.insert(0, str(Path('p3').resolve()))
-          from staging_deploy_request import read_regular, request_commit
-          pointer = Path('ops/staging-request.json')
-          commit = request_commit(lambda _, limit: read_regular(pointer, limit))
-          if commit:
-              with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
-                  print(f'commit={commit}', file=output)
-          PY
-      - name: Attest requested staging identity and readiness through OIDC
-        if: steps.request.outputs.commit != ''
-        env:
-          STAGE_COMMIT: ${{ steps.request.outputs.commit }}
-        run: python3 -I -B p3/staging_request_readback.py "$STAGE_COMMIT"
-      - name: Save the verified staging receipt
-        if: steps.request.outputs.commit != ''
-        uses: actions/upload-artifact@v4
-        with:
-          name: judun-staging-readback-${{ steps.request.outputs.commit }}
-          path: ${{ runner.temp }}/judun-staging-readback.json
-          if-no-files-found: error
-          retention-days: 30
