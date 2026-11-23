@@ -18,6 +18,7 @@ on:
       - "channel/stable.json.sig.b64"
       - "releases/**"
       - "ops/oidc-verify-request.json"
+      - "ops/staging-request.json"
   workflow_dispatch:
 
 concurrency:
