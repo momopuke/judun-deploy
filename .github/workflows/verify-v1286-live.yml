@@ -160,7 +160,7 @@ jobs:
 
   postrelease-guard-offline:
     runs-on: ubuntu-24.04
-    timeout-minutes: 3
+    timeout-minutes: 14
     permissions:
       contents: read
       id-token: write
@@ -195,11 +195,39 @@ jobs:
           print('JUDUN_GITHUB_OIDC_CLAIMS_REAL_RUNNER_PASS')
           PY
 
+      - name: Read the protected staging request
+        id: stage_request
+        run: |
+          python3 -I -B - <<'PY'
+          import os, sys
+          from pathlib import Path
+          sys.path.insert(0, str(Path('p3').resolve()))
+          from staging_deploy_request import read_regular, request_commit
+          pointer = Path('ops/staging-request.json')
+          commit = request_commit(lambda _, limit: read_regular(pointer, limit))
+          if commit:
+              with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+                  print(f'commit={commit}', file=output)
+          PY
+      - name: Attest live staging against its signed request twice
+        if: steps.stage_request.outputs.commit != ''
+        env:
+          STAGE_COMMIT: ${{ steps.stage_request.outputs.commit }}
+        run: python3 -I -B p3/staging_request_readback.py "$STAGE_COMMIT"
+      - name: Preserve the two-pass staging receipt
+        if: steps.stage_request.outputs.commit != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: judun-staging-readback-${{ steps.stage_request.outputs.commit }}
+          path: ${{ runner.temp }}/judun-staging-readback.json
+          if-no-files-found: error
+          retention-days: 30
+
   postrelease-dual-site-recheck:
     # Run live two-pass for signed release, explicit dispatch or a valid
     # protected-main ops/oidc-verify-request.json change. Tool-only edits skip.
     # Read-only. Only the original authorized VPS agent can install or rollback.
-    needs: [verify, classify-push]
+    needs: [verify, classify-push, postrelease-guard-offline]
     if: needs.classify-push.outputs.signed_release_changed == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 9

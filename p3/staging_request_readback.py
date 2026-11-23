@@ -6,7 +6,7 @@ import re
 import sys
 from tempfile import TemporaryDirectory
 import time
-from urllib.error import URLError
+from urllib.error import HTTPError, URLError
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import stage_oidc_client as oidc
@@ -39,6 +39,12 @@ def attest(commit):
         try:
             first = oidc.verify_candidate(target)
             break
+        except oidc.Denied:
+            raise
+        except HTTPError as error:
+            if error.code in (401, 403) or time.monotonic() >= deadline:
+                raise
+            time.sleep(15)
         except (ValueError, URLError, TimeoutError) as error:
             if time.monotonic() >= deadline:
                 raise RuntimeError("Staging did not reach the signed target before timeout") from error
