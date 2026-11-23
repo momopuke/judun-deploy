@@ -14,7 +14,7 @@ class StagingReadbackTest(unittest.TestCase):
     commit = "a" * 40
     live = {"version": "v1.2.189", "managed_files": 98, "payment_mode": "test_unlock"}
 
-    def observe(self, readings, *, latest=None, elapsed=65):
+    def observe(self, readings, *, latest=None, elapsed=65, retry_checks=0):
         with ExitStack() as stack:
             temp = Path(stack.enter_context(TemporaryDirectory()))
             stack.enter_context(patch.dict(os.environ, RUNNER_TEMP=str(temp), GITHUB_RUN_ID="123"))
@@ -22,11 +22,11 @@ class StagingReadbackTest(unittest.TestCase):
             stack.enter_context(patch.object(readback.oidc, "verify_candidate", side_effect=readings))
             stack.enter_context(patch.object(readback.agent, "request_commit", return_value=latest or self.commit))
             stack.enter_context(patch.object(readback.time, "sleep"))
-            stack.enter_context(patch.object(readback.time, "monotonic", side_effect=[0, 0, elapsed]))
+            stack.enter_context(patch.object(readback.time, "monotonic", side_effect=[0] + [0] * retry_checks + [0, elapsed]))
             path = temp / "judun-staging-readback.json"
             try:
                 readback.attest(self.commit)
-            except ValueError:
+            except (ValueError, OSError):
                 self.assertFalse(path.exists())
                 raise
             return json.loads(path.read_text())
@@ -50,6 +50,20 @@ class StagingReadbackTest(unittest.TestCase):
     def test_failed_second_read_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "verification failed"):
             self.observe([self.live, ValueError("verification failed")])
+
+    def test_gateway_denial_requires_two_subsequent_verified_readings(self):
+        url = readback.oidc.GATEWAY + readback.oidc.PREFIX + "/health/build"
+        denied = readback.HTTPError(url, 403, "Forbidden", {}, None)
+        result = self.observe([denied, self.live, self.live], retry_checks=1)
+        self.assertEqual(result["result"], "PASS")
+        with self.assertRaises(readback.HTTPError):
+            self.observe([denied, denied, denied], retry_checks=2)
+
+    def test_token_issuer_denial_fails_immediately(self):
+        denied = readback.HTTPError("https://pipelines.actions.githubusercontent.com/", 403,
+                                    "Forbidden", {}, None)
+        with self.assertRaises(readback.HTTPError):
+            self.observe([denied])
 
     def test_invalid_oidc_bootstrap_fails_immediately(self):
         with self.assertRaises(readback.oidc.Denied):

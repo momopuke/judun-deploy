@@ -35,6 +35,7 @@ def attest(commit):
         raise ValueError("Invalid staging commit")
     target = signed_target(commit)
     deadline = time.monotonic() + 480
+    gateway_denials = 0
     while True:
         try:
             first = oidc.verify_candidate(target)
@@ -42,7 +43,14 @@ def attest(commit):
         except oidc.Denied:
             raise
         except HTTPError as error:
-            if error.code in (401, 403) or time.monotonic() >= deadline:
+            if error.code == 403:
+                # The health gateway also returns 403 when the local staging
+                # process is restarting. Require a successful read after it.
+                health_urls = {oidc.GATEWAY + oidc.PREFIX + path for path in oidc.PATHS}
+                gateway_denials += 1
+                if error.geturl() not in health_urls or gateway_denials >= 3:
+                    raise
+            if error.code == 401 or time.monotonic() >= deadline:
                 raise
             time.sleep(15)
         except (ValueError, URLError, TimeoutError) as error:
