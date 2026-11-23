@@ -1,0 +1,13 @@
+{
+  "schema": "judun.staging-deploy.v1",
+  "base_snapshot": "JUDUN-1.2.190-SINGLEPASS-RC1-UNSIGNED-1d5a73989525643a4da6c58b36263bdcc644a3f3780fb335b968e33e7de7866a",
+  "target": {
+    "version": "1.2.191",
+    "artifact_id": "JUDUN-1.2.191-PIPELINE-CANARY-20261124",
+    "build_instance_id": "1.2.191-PIPELINE-CANARY-20261124",
+    "source_tree_sha256": "141654ca761a07e3ec56cf8417403adfa69f4414098e890a860338532dbe1fd8",
+    "file_count": 98
+  },
+  "cms_sha256": "49966399cb50ef22f1c7b6d6e559476db376302cffee44292fc465cd1d654b9b",
+  "zip_sha256": "e4b7d8a97c4b4db6b545259e4d2c983e57602d088f4f4d8279d0d454f8a5558c"
+}
