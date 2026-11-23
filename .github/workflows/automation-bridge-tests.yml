@@ -41,10 +41,28 @@ jobs:
           bash -n ops/bootstrap_staging_github_pull.sh
           bash -n ops/activate_existing_staging_pull.sh
           python3 -m py_compile p3/staging_deploy_request.py ops/automation_bridge.py
-      - name: Disabled by default, strict schema
+      - name: Verify the staging request against the original signing key
         run: |
-          python3 - <<'PY'
-          import json
+          python3 -I -B - <<'PY'
           from pathlib import Path
-          assert json.loads(Path('ops/staging-request.json').read_text()) == {'candidate_commit': None}
+          from tempfile import TemporaryDirectory
+          import sys
+
+          sys.path.insert(0, str(Path('p3').resolve()))
+          import staging_deploy_request as agent
+
+          request = Path('ops/staging-request.json')
+          commit = agent.request_commit(lambda _, limit: agent.read_regular(request, limit))
+          if commit is not None:
+              prefix = f'{commit}/staging/candidate'
+              with TemporaryDirectory() as directory:
+                  work = Path(directory)
+                  raw = agent.fetch(prefix + '.json', 8192)
+                  signature = agent.fetch(prefix + '.json.sig.b64', 1024)
+                  manifest, target, _ = agent.signed_candidate(
+                      raw, signature, work, Path('keys/release_signing_public.pem'))
+                  envelope = work / 'candidate.cms'
+                  agent.fetch(prefix + '.cms', agent.MAX_CMS, envelope)
+                  agent.verify_sha(envelope, manifest['cms_sha256'])
+                  print(f'Verified staging candidate {commit} for {target.version}', flush=True)
           PY
