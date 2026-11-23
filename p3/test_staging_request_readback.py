@@ -51,6 +51,10 @@ class StagingReadbackTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "verification failed"):
             self.observe([self.live, ValueError("verification failed")])
 
+    def test_invalid_oidc_bootstrap_fails_immediately(self):
+        with self.assertRaises(readback.oidc.Denied):
+            self.observe([readback.oidc.Denied("OIDC_RUNNER_BOOTSTRAP_MISSING")])
+
     def test_malformed_commit_rejected_before_network(self):
         with patch.object(readback, "signed_target") as fetch, self.assertRaises(ValueError):
             readback.attest("main")

@@ -40,13 +40,18 @@ def github_id_token(*, env=None, transport=None):
     origin = env.get("ACTIONS_ID_TOKEN_REQUEST_URL", "")
     bootstrap = env.get("ACTIONS_ID_TOKEN_REQUEST_TOKEN", "")
     uri = urlsplit(origin)
-    fail(uri.scheme == "https" and uri.hostname is not None
-         and (uri.hostname == "actions.githubusercontent.com"
-              or uri.hostname.endswith(".actions.githubusercontent.com"))
-         and uri.port in (None, 443) and not uri.username and not uri.password
-         and uri.fragment == "" and isinstance(bootstrap, str)
-         and 0 < len(bootstrap) <= 4096
-         and all(33 <= ord(c) <= 126 for c in bootstrap))
+    if not origin or not bootstrap:
+        raise Denied("OIDC_RUNNER_BOOTSTRAP_MISSING")
+    if not (uri.scheme == "https" and uri.hostname is not None
+            and (uri.hostname == "actions.githubusercontent.com"
+                 or uri.hostname.endswith(".actions.githubusercontent.com"))
+            and uri.port in (None, 443) and not uri.username and not uri.password
+            and uri.fragment == ""):
+        raise Denied("OIDC_RUNNER_ORIGIN_REJECTED")
+    if not isinstance(bootstrap, str) or len(bootstrap) > 4096:
+        raise Denied("OIDC_RUNNER_BOOTSTRAP_SIZE_REJECTED")
+    if not all(33 <= ord(c) <= 126 for c in bootstrap):
+        raise Denied("OIDC_RUNNER_BOOTSTRAP_CHARACTERS_REJECTED")
     params = parse_qsl(uri.query, keep_blank_values=True, strict_parsing=True)
     fail(not any(k == "audience" for k, _ in params))
     token_url = urlunsplit((uri.scheme, uri.netloc, uri.path,
