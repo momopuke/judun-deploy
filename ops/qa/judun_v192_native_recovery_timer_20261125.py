@@ -39,10 +39,14 @@ def loadq():
 def read(q,p):
     need(q['valid_private'](p),'STOP_PRIVATE_STATE')
     return json.loads(p.read_text())
+def stop_timer():
+    r=subprocess.run(['systemctl','disable','--now',TIMER],capture_output=True,timeout=30)
+    emit('RECOVERY_TIMER_STOP',status='PASS' if r.returncode==0 else 'HOLD_TIMER_STOP_FAILED')
 def terminal(q,ledger,state,code):
     state.update(phase='terminal',outcome=code)
     q['atom'](ledger,state)
     emit(code,attempts=state['attempts'],production_release='HOLD')
+    stop_timer()
 def main():
     selftest()
     if sys.argv[1:]==['--self-test']:return
@@ -73,6 +77,7 @@ def main():
     need(sys.argv[1:]==['--run'],'STOP_ARGUMENTS')
     if state['phase']=='terminal':
         emit('TERMINAL_NO_PROVIDER_CALL',outcome=state.get('outcome'))
+        stop_timer()
         return
     if state['phase']!='idle':
         terminal(q,ledger,state,'HOLD_INTERRUPTED_ATTEMPT')
@@ -146,4 +151,7 @@ if __name__=='__main__':
         os.umask(0o077);main()
     except Exception as e:
         msg=str(e);emit('HOLD',error=msg if msg.startswith('STOP_') and msg.isascii() and len(msg)<160 else type(e).__name__)
+        if sys.argv[1:]==['--run'] and os.geteuid()==0:
+            try:stop_timer()
+            except Exception:emit('HOLD_TIMER_STOP_FAILED')
         sys.exit(2)
