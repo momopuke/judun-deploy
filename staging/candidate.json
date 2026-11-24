@@ -1,0 +1,13 @@
+{
+  "schema": "judun.staging-deploy.v1",
+  "base_snapshot": "JUDUN-1.2.191-PIPELINE-CANARY-20261124-141654ca761a07e3ec56cf8417403adfa69f4414098e890a860338532dbe1fd8",
+  "target": {
+    "version": "1.2.192",
+    "artifact_id": "JUDUN-1.2.192-OCR-PROVIDER-RECOVERY-20261125",
+    "build_instance_id": "1.2.192-OCR-PROVIDER-RECOVERY-20261125",
+    "source_tree_sha256": "29a007c6329cfdca27aeda9952ca6e1ad904707ec2130f6b33a0d2785f5447e1",
+    "file_count": 98
+  },
+  "cms_sha256": "5e4527e4623781583f5ca214b3bee2ebc6b64103cc4daf87f55a04d4d6033b0c",
+  "zip_sha256": "3427a968df4e3be2f6d476fabb3062f77b6228e7dd0b7ca92a34a1e96f5f9bd3"
+}
