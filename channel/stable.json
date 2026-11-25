@@ -1,14 +1,14 @@
 {
   "schema": "judun-autodeploy-v1",
-  "release_id": "v1.2.190-singlepass-20261118",
-  "base_artifact_id": "JUDUN-1.2.189-CODEX20261117",
-  "target_artifact_id": "JUDUN-1.2.190-SINGLEPASS-RC1-UNSIGNED",
-  "target_build_instance_id": "1.2.190-SINGLEPASS-RC1-20261118",
-  "expected_display_version": "v1.2.190",
+  "release_id": "v1.2.192-ocr-provider-recovery-20261125",
+  "base_artifact_id": "JUDUN-1.2.190-SINGLEPASS-RC1-UNSIGNED",
+  "target_artifact_id": "JUDUN-1.2.192-OCR-PROVIDER-RECOVERY-20261125",
+  "target_build_instance_id": "1.2.192-OCR-PROVIDER-RECOVERY-20261125",
+  "expected_display_version": "v1.2.192",
   "expected_managed_file_count": 98,
-  "expected_source_tree_sha256": "1d5a73989525643a4da6c58b36263bdcc644a3f3780fb335b968e33e7de7866a",
-  "payload_path": "releases/v1.2.190-singlepass-20261118.cms.b64",
-  "payload_sha256": "f6e96fb78040127bcfeca62e43a71444326c95caa213139246c928e29452d1f4",
+  "expected_source_tree_sha256": "29a007c6329cfdca27aeda9952ca6e1ad904707ec2130f6b33a0d2785f5447e1",
+  "payload_path": "releases/v1.2.192-ocr-provider-recovery-20261125.cms.b64",
+  "payload_sha256": "3a796e18a1915f8ca75855efc595901d68fdec9eb14df285313678b93673981d",
   "noop": false,
-  "candidate_acceptance_sha256": "2a2c94df18f978e9783ef2dea521523a5777e2924329b1e9d2722c6b72e6b977"
+  "candidate_acceptance_sha256": "438155a8e2cca4a1825765388a9c71767f985ddf2e95a861d3e86c5954f78d67"
 }
