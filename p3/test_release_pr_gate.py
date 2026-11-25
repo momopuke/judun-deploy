@@ -167,14 +167,34 @@ class ReleasePullRequestGateTests(TestCase):
         stage.assert_called_once()
         self.assertEqual(stage.call_args.args[0]["expected_display_version"], "v1.2.191")
 
-    def test_signed_pr_passes_only_after_oidc_staging_health(self):
+    def test_signed_pr_passes_only_after_oidc_staging_health_and_native_qa(self):
         self.release(191)
         head = self.commit("Real candidate preflight fixture")
-        with mock.patch.object(gate.oidc, "verify_candidate") as stage:
+        proof = {"native_qa_status": "PASS", "native_qa_receipt_sha256": "a" * 64,
+                 "native_qa_file_count": 98}
+        with mock.patch.object(gate.oidc, "verify_candidate",
+                               return_value={"native_qa": proof}) as stage:
             self.assertEqual(gate.classify_and_verify(
                 self.base, head, True, check_live=False, check_stage=True,
             ), "signed release PR")
         self.assertEqual(stage.call_args.args[0]["expected_display_version"], "v1.2.191")
+        self.assertEqual(stage.call_args.kwargs, {"include_native_qa": True})
+
+    def test_signed_pr_blocks_pending_missing_and_malformed_native_qa(self):
+        self.release(191)
+        head = self.commit("Candidate without valid native QA")
+        valid = {"native_qa_status": "PASS", "native_qa_receipt_sha256": "a" * 64,
+                 "native_qa_file_count": 98}
+        for response in ({}, {"native_qa": {}},
+                         {"native_qa": gate.oidc.native_qa_summary({}, 98)},
+                         {"native_qa": {**valid, "native_qa_file_count": 97}},
+                         {"native_qa": {**valid, "native_qa_receipt_sha256": "bad"}},
+                         {"native_qa": {**valid, "native_qa_status": "FAIL"}}):
+            with self.subTest(response=response):
+                with mock.patch.object(gate.oidc, "verify_candidate", return_value=response):
+                    with self.assertRaisesRegex(ValueError, "PR_NATIVE_QA_REQUIRED|JUDUN_STAGE_OIDC_UNVERIFIED"):
+                        gate.classify_and_verify(self.base, head, True,
+                                                 check_live=False, check_stage=True)
 
     def test_nonrelease_pr_not_blocked_by_missing_oidc_gateway(self):
         self.write("README.md", b"Docs-only change requires no staging network")
