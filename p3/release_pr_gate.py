@@ -96,8 +96,14 @@ def classify_and_verify(base, head, same_repository, *,
         # Trust only a short-lived GitHub Actions OIDC identity accepted by
         # the isolated loopback-only stage health gateway, never a Sites owner
         # login bypass or an arbitrary bearer from untrusted PR code.
-        oidc.verify_candidate(candidate)
+        attested = oidc.verify_candidate(candidate, include_native_qa=True)
+        proof = oidc.native_qa_summary(attested.get("native_qa", {}),
+                                      candidate["expected_managed_file_count"])
+        if proof["native_qa_status"] != "PASS":
+            release.deny("PR_NATIVE_QA_REQUIRED")
         print("PR_EXACT_CANDIDATE_STAGING_OIDC_VERIFIED", candidate["release_id"], flush=True)
+        print("PR_NATIVE_QA_VERIFIED", proof["native_qa_receipt_sha256"],
+              proof["native_qa_file_count"], flush=True)
     return "signed release PR"
 
 
@@ -148,6 +154,8 @@ def run():
         status("failure", "Release boundary rejected; inspect verification run")
         if str(error).startswith("DIRECT_DEPLOY_"):
             print(str(error), flush=True)
+        elif str(error) == "PR_NATIVE_QA_REQUIRED":
+            print("PR_NATIVE_QA_REQUIRED", flush=True)
         elif isinstance(error, oidc.Denied):
             # Only fixed, non-secret codes from the trusted OIDC client.
             allowed = {"OIDC_RUNNER_BOOTSTRAP_MISSING", "OIDC_RUNNER_ORIGIN_REJECTED",
