@@ -108,5 +108,26 @@ class StageOidcClientTests(unittest.TestCase):
                 cli.fetch_health("/health/ready", token, transport=Transport())
 
 
+    def test_native_qa_missing_pending_and_valid(self):
+        pending = cli.native_qa_summary({}, 98)
+        self.assertEqual(pending["native_qa_status"], "PENDING")
+        self.assertEqual(cli.native_qa_summary(pending, 98), pending)
+        proof = {"native_qa_status": "PASS", "native_qa_receipt_sha256": "a"*64,
+                 "native_qa_file_count": 98}
+        self.assertEqual(cli.native_qa_summary({**proof, "secret": "not exported"}, 98), proof)
+
+    def test_native_qa_malformed_receipts_denied(self):
+        proof = {"native_qa_status": "PASS", "native_qa_receipt_sha256": "a"*64,
+                 "native_qa_file_count": 98}
+        for invalid in ({"native_qa_status": "PASS"},
+                        {**proof, "native_qa_receipt_sha256": "A"*64},
+                        {**proof, "native_qa_receipt_sha256": ""},
+                        {**proof, "native_qa_file_count": 97},
+                        {**proof, "native_qa_file_count": True},
+                        {**proof, "native_qa_status": "FAIL"},
+                        {**proof, "native_qa_status": "PENDING"}):
+            with self.subTest(invalid=invalid), self.assertRaises(cli.Denied):
+                cli.native_qa_summary(invalid, 98)
+
 if __name__ == "__main__":
     unittest.main()
