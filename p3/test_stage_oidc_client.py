@@ -56,6 +56,21 @@ class StageOidcClientTests(unittest.TestCase):
                          "bearer github-oidc-request-synthetic")
         self.assertNotIn(ENV["ACTIONS_ID_TOKEN_REQUEST_TOKEN"], request.full_url)
 
+    def test_bootstrap_accepts_larger_github_request_token_with_bound(self):
+        for size in (4096, 4097, 8192, 16384):
+            with self.subTest(size=size):
+                transport = Transport()
+                token = "a" * size
+                cli.github_id_token(env={**ENV, "ACTIONS_ID_TOKEN_REQUEST_TOKEN": token},
+                                    transport=transport)
+                self.assertEqual(transport.calls[0].get_header("Authorization"), "bearer " + token)
+        for token in ("a" * 16385, "a" * 4097 + "\r\n"):
+            transport = Transport()
+            with self.assertRaises(cli.Denied):
+                cli.github_id_token(env={**ENV, "ACTIONS_ID_TOKEN_REQUEST_TOKEN": token},
+                                    transport=transport)
+            self.assertEqual(transport.calls, [])
+
     def test_no_untrusted_token_origin(self):
         for url in ("http://pipelines.actions.githubusercontent.com/oidc",
                     "https://example.net/oidc",
