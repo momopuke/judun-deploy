@@ -38,7 +38,7 @@ def attest(commit):
     gateway_denials = 0
     while True:
         try:
-            first = oidc.verify_candidate(target)
+            first = oidc.verify_candidate(target, include_native_qa=True)
             break
         except oidc.Denied:
             raise
@@ -61,8 +61,10 @@ def attest(commit):
     started = time.monotonic()
     first_at = time.time()
     time.sleep(65)
-    second = oidc.verify_candidate(target)
+    second = oidc.verify_candidate(target, include_native_qa=True)
     elapsed = time.monotonic() - started
+    first_qa, second_qa = first.pop("native_qa"), second.pop("native_qa")
+    native_qa = first_qa if first_qa == second_qa else oidc.native_qa_summary({}, target["expected_managed_file_count"])
     if first != second or elapsed < 60:
         raise ValueError("Staging identities or interval do not match")
     if agent.request_commit(agent.fetch) != commit:
@@ -72,6 +74,7 @@ def attest(commit):
         "result": "PASS", "candidate_commit": commit, "run_id": os.environ["GITHUB_RUN_ID"],
         "first_at_epoch": first_at, "second_at_epoch": time.time(),
         "observed_seconds": round(elapsed, 3), "first": first, "second": second,
+        "native_qa": native_qa, "native_qa_first": first_qa, "native_qa_second": second_qa,
     }
     encoded = json.dumps(receipt, sort_keys=True)
     (Path(os.environ["RUNNER_TEMP"]) / "judun-staging-readback.json").write_text(encoded + "\n")
