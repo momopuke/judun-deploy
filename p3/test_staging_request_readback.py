@@ -14,11 +14,17 @@ class StagingReadbackTest(unittest.TestCase):
     commit = "a" * 40
     live = {"version": "v1.2.189", "managed_files": 98, "payment_mode": "test_unlock"}
 
+    qa = {"native_qa_status": "PASS", "native_qa_receipt_sha256": "a" * 64,
+          "native_qa_file_count": 98}
+
     def observe(self, readings, *, latest=None, elapsed=65, retry_checks=0):
+        # The real client returns fresh dicts including the summary on every call.
+        readings = [{"native_qa": dict(self.qa), **x} if isinstance(x, dict) else x
+                    for x in readings]
         with ExitStack() as stack:
             temp = Path(stack.enter_context(TemporaryDirectory()))
             stack.enter_context(patch.dict(os.environ, RUNNER_TEMP=str(temp), GITHUB_RUN_ID="123"))
-            stack.enter_context(patch.object(readback, "signed_target", return_value={}))
+            stack.enter_context(patch.object(readback, "signed_target", return_value={"expected_managed_file_count": 98}))
             stack.enter_context(patch.object(readback.oidc, "verify_candidate", side_effect=readings))
             stack.enter_context(patch.object(readback.agent, "request_commit", return_value=latest or self.commit))
             stack.enter_context(patch.object(readback.time, "sleep"))
@@ -37,6 +43,17 @@ class StagingReadbackTest(unittest.TestCase):
         self.assertEqual(result["first"], result["second"])
         self.assertEqual(result["observed_seconds"], 65)
         self.assertEqual(result["result"], "PASS")
+        self.assertEqual(result["native_qa"], self.qa)
+        self.assertEqual(result["native_qa_first"], self.qa)
+        self.assertEqual(result["native_qa_second"], self.qa)
+
+    def test_changed_native_qa_is_pending_not_health_failure(self):
+        other = {**self.qa, "native_qa_receipt_sha256": "b" * 64}
+        result = self.observe([self.live, {**self.live, "native_qa": other}])
+        self.assertEqual(result["result"], "PASS")
+        self.assertEqual(result["native_qa"]["native_qa_status"], "PENDING")
+        self.assertEqual(result["native_qa_first"], self.qa)
+        self.assertEqual(result["native_qa_second"], other)
 
     def test_no_receipt_for_drift_or_short_interval(self):
         for readings, elapsed in (([self.live, {}], 65), ([self.live, self.live], 59)):
