@@ -148,6 +148,13 @@ def run():
         status("failure", "Release boundary rejected; inspect verification run")
         if str(error).startswith("DIRECT_DEPLOY_"):
             print(str(error), flush=True)
+        elif isinstance(error, oidc.Denied):
+            # Only fixed, non-secret codes from the trusted OIDC client.
+            allowed = {"OIDC_RUNNER_BOOTSTRAP_MISSING", "OIDC_RUNNER_ORIGIN_REJECTED",
+                       "OIDC_RUNNER_BOOTSTRAP_SIZE_REJECTED", "OIDC_RUNNER_BOOTSTRAP_CHARACTERS_REJECTED",
+                       "JUDUN_STAGE_OIDC_UNVERIFIED"}
+            code = str(error)
+            print("PR_RELEASE_GATE_OIDC_DENIED", code if code in allowed else "UNKNOWN", flush=True)
         else:
             print("PR_RELEASE_GATE_ERROR", type(error).__name__, flush=True)
         return 1
