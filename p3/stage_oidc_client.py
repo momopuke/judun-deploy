@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from urllib.parse import urlencode, urlsplit, parse_qsl, urlunsplit
 from urllib.request import Request, HTTPRedirectHandler, build_opener
 from urllib.error import HTTPError, URLError
@@ -87,13 +88,43 @@ def fetch_health(path, token, *, transport=None):
     return obj
 
 
-def verify_candidate(target, *, transport=None, env=None):
+def native_qa_summary(build, count):
+    """Only expose the three allowlisted summary fields for the verified build."""
+    pending = {"native_qa_status": "PENDING", "native_qa_receipt_sha256": "",
+               "native_qa_file_count": 0}
+    fields = set(pending)
+    if not fields.intersection(build):
+        return pending
+    fail(fields.issubset(build))
+    result = {key: build[key] for key in pending}
+    status, digest, files = (result[key] for key in pending)
+    if status == "PENDING":
+        fail(digest == "" and type(files) is int and files == 0)
+        return pending
+    fail(status == "PASS" and isinstance(digest, str)
+         and re.fullmatch(r"[a-f0-9]{64}", digest) is not None
+         and type(files) is int and files == count)
+    return result
+
+
+def verify_candidate(target, *, transport=None, env=None, include_native_qa=False):
     """Reuse original strict signed target identity & payment-mode checks."""
     import direct_deploy_publish as original
     identity = github_id_token(env=env, transport=transport)
-    return original.verify_target_live(
-        target,
-        getter=lambda path: fetch_health(path, identity, transport=transport),
-        payment_mode="test_unlock",
-        attempts=1,
+    summaries = []
+
+    def getter(path):
+        build = fetch_health(path, identity, transport=transport)
+        if include_native_qa and path == "/health/build":
+            summaries.append(build)
+        return build
+
+    result = original.verify_target_live(
+        target, getter=getter, payment_mode="test_unlock", attempts=1,
     )
+    if include_native_qa:
+        fail(len(summaries) == 2)
+        first, second = (native_qa_summary(x, result["managed_files"]) for x in summaries)
+        # A changing receipt is not a stable proof; health remains independent.
+        result["native_qa"] = first if first == second else native_qa_summary({}, result["managed_files"])
+    return result
