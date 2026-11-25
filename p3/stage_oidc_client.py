@@ -48,7 +48,7 @@ def github_id_token(*, env=None, transport=None):
             and uri.port in (None, 443) and not uri.username and not uri.password
             and uri.fragment == ""):
         raise Denied("OIDC_RUNNER_ORIGIN_REJECTED")
-    if not isinstance(bootstrap, str) or len(bootstrap) > 4096:
+    if not isinstance(bootstrap, str) or len(bootstrap) > 16384:
         raise Denied("OIDC_RUNNER_BOOTSTRAP_SIZE_REJECTED")
     if not all(33 <= ord(c) <= 126 for c in bootstrap):
         raise Denied("OIDC_RUNNER_BOOTSTRAP_CHARACTERS_REJECTED")
