@@ -27,6 +27,24 @@ class SignedChannelPublisherTests(TestCase):
     def tearDownClass(cls):
         cls.tmp.cleanup()
 
+    def test_stage_mismatch_reports_only_release_identity(self):
+        target = {"target_artifact_id": "new", "target_build_instance_id": "build",
+                  "expected_display_version": "v1.2.193"}
+        build = {"status": "ok", "manifest_status": "ok", "artifact_id": "new",
+                 "build_instance_id": "build", "display_version": "v1.2.193",
+                 "version": "1.2.192", "source_tree_sha256": "a" * 64,
+                 "payment_mode": "test_unlock", "unrelated": "private data"}
+        for version, tree, expected_version, expected_tree in (
+            ("1.2.192", "a" * 64, "1.2.192", "a" * 64),
+            ("private data", {"raw": "private data"}, "unknown", "unknown"),
+        ):
+            with self.subTest(version=version), self.assertRaises(ValueError) as caught:
+                pub.check_target_build({**build, "version": version, "source_tree_sha256": tree},
+                                       target, "b" * 64, "test_unlock")
+            self.assertEqual(str(caught.exception),
+                             "DIRECT_DEPLOY_LIVE_TARGET_BUILD_MISMATCH fields=version,source_tree_sha256 "
+                             f"observed_version={expected_version} observed_tree={expected_tree}")
+
     def sample(self, **change):
         cms = b"\x30\x03synthetic-cms-not-a-live-release"
         data = {
