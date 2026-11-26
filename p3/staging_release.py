@@ -118,7 +118,7 @@ def load_manifest(raw, release):
 
 
 @contextmanager
-def source_reader(source, signed_root_release=None):
+def source_reader(source):
     source = outside_production(source)
     if source.is_dir():
         def read(relative, maximum):
@@ -135,15 +135,8 @@ def source_reader(source, signed_root_release=None):
                 raise ValueError("Duplicate ZIP entry")
             names[info.filename] = info
 
-        prefix = "payload/"
-        if MANIFEST in names:
-            if prefix + MANIFEST in names:
-                raise ValueError("Ambiguous ZIP manifest layout")
-            if signed_root_release is not None:
-                prefix = ""
-
         def read(relative, maximum):
-            info = names.get(prefix + relative)
+            info = names.get("payload/" + relative)
             if (info is None or info.is_dir() or info.file_size > maximum
                     or stat.S_IFMT(info.external_attr >> 16) not in (0, stat.S_IFREG)):
                 raise ValueError(f"Missing or invalid ZIP entry: {relative}")
@@ -152,10 +145,6 @@ def source_reader(source, signed_root_release=None):
             if len(data) != info.file_size or len(data) > maximum:
                 raise ValueError(f"Invalid ZIP entry size: {relative}")
             return data
-        if prefix == "":
-            rows = load_manifest(read(MANIFEST, MANIFEST_MAX), signed_root_release)
-            if set(names) != set(rows) | {MANIFEST}:
-                raise ValueError("Unexpected entries in signed root ZIP")
         yield read
 
 
@@ -207,7 +196,7 @@ def verify_bytes(name, data, size, digest):
         raise ValueError(f"Candidate contents mismatch: {name}")
 
 
-def prepare(root, source, release, *, allow_signed_root_zip=False):
+def prepare(root, source, release):
     root = outside_production(root)
     source = outside_production(source)
     if source == root or source in root.parents or root in source.parents:
@@ -219,7 +208,7 @@ def prepare(root, source, release, *, allow_signed_root_zip=False):
             return verify_snapshot(target, release)
         temp = Path(tempfile.mkdtemp(prefix=".prepare-", dir=target.parent))
         try:
-            with source_reader(source, release if allow_signed_root_zip else None) as read:
+            with source_reader(source) as read:
                 raw = read(MANIFEST, MANIFEST_MAX)
                 for name, (size, digest) in load_manifest(raw, release).items():
                     data = read(name, size)
