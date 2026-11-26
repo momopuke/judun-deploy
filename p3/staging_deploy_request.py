@@ -160,7 +160,8 @@ def install_request(root, state, config, get, restart, health):
                 "-recip", str(config / "recipient.pem"),
                 "-inkey", str(config / "recipient-key.pem"), "-out", str(package))
         verify_sha(package, data["zip_sha256"])
-        prepare(root, package, target)
+        # The original signature and exact decrypted ZIP SHA are verified above.
+        prepare(root, package, target, allow_signed_root_zip=True)
         with store_lock(root):
             if verify_snapshot(selection(root)).name != expected_current:
                 raise ValueError("Staging baseline changed before switching")
