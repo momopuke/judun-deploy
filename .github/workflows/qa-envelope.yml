@@ -1,0 +1,36 @@
+name: Judun encrypted synthetic QA delivery
+on:
+  push:
+    branches: ['judun-qa-evidence/**']
+permissions:
+  contents: read
+jobs:
+  envelope:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Validate ciphertext-only envelope
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,pathlib,re,os
+          p=pathlib.Path('evidence.cms'); m=json.loads(pathlib.Path('metadata.json').read_text())
+          assert set(m)=={'schema','tree','native_receipt_sha256','ciphertext_sha256','ciphertext_bytes','recipient_cert_der_sha256'}
+          assert m['schema']=='judun.synthetic-qa-encrypted-delivery.v1'
+          for k in ('tree','native_receipt_sha256','ciphertext_sha256','recipient_cert_der_sha256'):
+              assert re.fullmatch('[a-f0-9]{64}',m[k])
+          assert os.environ['GITHUB_REF']=='refs/heads/judun-qa-evidence/'+m['tree']+'-'+m['native_receipt_sha256']
+          assert 0<p.stat().st_size<=32*1024*1024+65536 and p.stat().st_size==m['ciphertext_bytes']
+          assert hashlib.sha256(p.read_bytes()).hexdigest()==m['ciphertext_sha256']
+          assert set(x.name for x in pathlib.Path('.').iterdir())=={'.git','.github','evidence.cms','metadata.json'}
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: judun-encrypted-qa-envelope
+          path: |
+            evidence.cms
+            metadata.json
+          retention-days: 3
+          if-no-files-found: error
