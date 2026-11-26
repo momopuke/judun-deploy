@@ -116,6 +116,50 @@ class StagingRequestTest(unittest.TestCase):
         self.assertEqual(self.restarts, [self.target.name])
         self.assertEqual(self.downloads.count(self.prefix + ".cms"), 1)
 
+    def rewrite_root_package(self, extra=None, tamper=False):
+        with ZipFile(self.candidate) as archive:
+            entries = [(name.removeprefix("payload/"), archive.read(name))
+                       for name in archive.namelist()]
+        with ZipFile(self.candidate, "w") as archive:
+            for name, data in entries:
+                archive.writestr(name, data + b"!" if tamper and name == "app.py" else data)
+            if extra:
+                archive.writestr(extra, b"unexpected")
+
+    def test_original_signed_root_layout_installs(self):
+        self.rewrite_root_package()
+        self.approve()
+        self.assertEqual(self.install()["status"], "installed")
+        self.assertEqual(stage.verify_snapshot(stage.selection(self.root)), self.target)
+        self.assertEqual(self.restarts, [self.target.name])
+
+    def test_unsigned_root_layout_still_rejected_by_default(self):
+        self.rewrite_root_package()
+        with self.assertRaisesRegex(ValueError, "Missing or invalid ZIP entry"):
+            stage.prepare(self.root, self.candidate, self.target)
+        self.assertEqual(stage.verify_snapshot(stage.selection(self.root)), self.previous)
+
+    def test_signed_root_extra_file_rejected(self):
+        self.rewrite_root_package(extra="payload/app.py")
+        self.approve()
+        with self.assertRaisesRegex(ValueError, "Unexpected entries"):
+            self.install()
+        self.assertFalse(self.restarts)
+
+    def test_signed_dual_manifest_rejected(self):
+        self.rewrite_root_package(extra="payload/DEPLOY_MANIFEST.json")
+        self.approve()
+        with self.assertRaisesRegex(ValueError, "Ambiguous ZIP"):
+            self.install()
+        self.assertFalse(self.restarts)
+
+    def test_signed_root_tampered_contents_rejected(self):
+        self.rewrite_root_package(tamper=True)
+        self.approve()
+        with self.assertRaisesRegex(ValueError, "Missing or invalid ZIP entry|Candidate contents mismatch"):
+            self.install()
+        self.assertFalse(self.restarts)
+
     def test_no_request_leaves_the_running_snapshot_in_place(self):
         self.files[channel.REQUEST] = b'{"candidate_commit":null}'
         self.assertEqual(self.install(), {"status": "no_request"})
