@@ -1,0 +1,13 @@
+{
+  "schema": "judun.staging-deploy.v1",
+  "base_snapshot": "JUDUN-1.2.192-OCR-PROVIDER-RECOVERY-20261125-29a007c6329cfdca27aeda9952ca6e1ad904707ec2130f6b33a0d2785f5447e1",
+  "target": {
+    "version": "1.2.193",
+    "artifact_id": "JUDUN-1.2.193-LIVE-ITEM-PROGRESS-20261125",
+    "build_instance_id": "1.2.193-LIVE-ITEM-PROGRESS-20261125",
+    "source_tree_sha256": "f264d49a458994f80125633afbbd0591ac2520fb014d7786aaff77003dde5886",
+    "file_count": 98
+  },
+  "cms_sha256": "f61fd93d9b3420bada2ef7aacc2ee649849710812f1ce4f5c9f80f9a375c5f4d",
+  "zip_sha256": "197bebf3923fc3f54ddb0e9d22c1115544c673458840dca09fd716e0aa640ca5"
+}
