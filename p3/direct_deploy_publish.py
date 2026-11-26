@@ -432,12 +432,26 @@ def check_candidate_receipt(target, receipt):
 
 
 def check_target_build(build, target, tree, payment_mode):
-    if (build.get("status") != "ok" or build.get("manifest_status") != "ok"
-            or build.get("artifact_id") != target["target_artifact_id"]
-            or build.get("build_instance_id") != target["target_build_instance_id"]
-            or build.get("display_version") != target["expected_display_version"]
-            or build.get("version") != target["expected_display_version"].removeprefix("v")
-            or build.get("source_tree_sha256") != tree):
+    expected = {
+        "status": "ok",
+        "manifest_status": "ok",
+        "artifact_id": target["target_artifact_id"],
+        "build_instance_id": target["target_build_instance_id"],
+        "display_version": target["expected_display_version"],
+        "version": target["expected_display_version"].removeprefix("v"),
+        "source_tree_sha256": tree,
+    }
+    mismatch = [field for field, value in expected.items() if build.get(field) != value]
+    if mismatch:
+        if payment_mode == "test_unlock":
+            # Only bounded release metadata may appear in public workflow logs.
+            version, observed_tree = build.get("version"), build.get("source_tree_sha256")
+            if not isinstance(version, str) or not re.fullmatch(r"[0-9]{1,4}(?:\.[0-9]{1,4}){2}", version):
+                version = "unknown"
+            if not isinstance(observed_tree, str) or not re.fullmatch(r"[0-9a-f]{64}", observed_tree):
+                observed_tree = "unknown"
+            deny(f"LIVE_TARGET_BUILD_MISMATCH fields={','.join(mismatch)} "
+                 f"observed_version={version} observed_tree={observed_tree}")
         deny("LIVE_TARGET_BUILD_MISMATCH")
     if build.get("payment_mode") != payment_mode:
         deny("LIVE_PAYMENT_MODE_MISMATCH")
