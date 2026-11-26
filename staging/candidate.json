@@ -1,0 +1,13 @@
+{
+  "schema": "judun.staging-deploy.v1",
+  "base_snapshot": "JUDUN-1.2.193-LIVE-ITEM-PROGRESS-20261125-f264d49a458994f80125633afbbd0591ac2520fb014d7786aaff77003dde5886",
+  "target": {
+    "version": "1.2.194",
+    "artifact_id": "JUDUN-1.2.194-PIPELINE-CANARY-20261126",
+    "build_instance_id": "1.2.194-PIPELINE-CANARY-20261126",
+    "source_tree_sha256": "dc67871276b57b5a9b8450030220e539dde35687340859cae2319b5e3b85c355",
+    "file_count": 98
+  },
+  "cms_sha256": "e62d604675a31d03f9a13d329d5b340d9faa5b6b7cefbada17f85691d0bb9b8b",
+  "zip_sha256": "1b987d8fc8332ae25b10edc8e33231424dc8120a60a5cf4fa34a5eb202594777"
+}
