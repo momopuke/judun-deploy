@@ -6,11 +6,12 @@ import json
 import os
 from pathlib import Path
 import re
+import stat
 import subprocess
 import sys
 import tempfile
 from urllib.request import ProxyHandler, Request, build_opener
-from zipfile import BadZipFile
+from zipfile import BadZipFile, ZipFile
 
 if __name__ == "__main__":
     # The systemd unit uses Python's isolated mode. Both scripts are installed
@@ -18,7 +19,8 @@ if __name__ == "__main__":
     sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from staging_release import (
-    HEX, STAGE_ROOT, NoRedirect, Release, check_name, check_running,
+    HEX, MANIFEST, MANIFEST_MAX, STAGE_ROOT, NoRedirect, Release, check_name, check_running,
+    load_manifest, verify_bytes,
     enforce_service, prepare, process_state, read_regular, recover,
     restart_service, selection, store_lock, sync_directory, verify_snapshot,
 )
@@ -118,6 +120,44 @@ def verify_sha(path, expected):
         raise ValueError("Staging package SHA-256 mismatch")
 
 
+def normalize_verified_zip(package, target):
+    """Canonicalize only the already signature/SHA-verified root layout."""
+    normalized = package.with_name("canonical-payload.zip")
+    with ZipFile(package) as source:
+        names = {}
+        for info in source.infolist():
+            if info.filename in names:
+                raise ValueError("Duplicate ZIP entry")
+            names[info.filename] = info
+        if MANIFEST not in names:
+            return package
+        if "payload/" + MANIFEST in names:
+            raise ValueError("Ambiguous ZIP manifest layout")
+
+        def read(relative, maximum):
+            info = names.get(relative)
+            if (info is None or info.is_dir() or info.file_size > maximum
+                    or stat.S_IFMT(info.external_attr >> 16) not in (0, stat.S_IFREG)):
+                raise ValueError(f"Missing or invalid ZIP entry: {relative}")
+            with source.open(info) as entry:
+                data = entry.read(maximum + 1)
+            if len(data) != info.file_size or len(data) > maximum:
+                raise ValueError(f"Invalid ZIP entry size: {relative}")
+            return data
+
+        raw = read(MANIFEST, MANIFEST_MAX)
+        rows = load_manifest(raw, target)
+        if set(names) != set(rows) | {MANIFEST}:
+            raise ValueError("Unexpected entries in signed root ZIP")
+        with ZipFile(normalized, "x") as destination:
+            destination.writestr("payload/" + MANIFEST, raw)
+            for name, (size, digest) in rows.items():
+                data = read(name, size)
+                verify_bytes(name, data, size, digest)
+                destination.writestr("payload/" + name, data)
+    return normalized
+
+
 def record_attempt(state, commit, target):
     with tempfile.NamedTemporaryFile(mode="w", dir=state, delete=False) as file:
         temporary = Path(file.name)
@@ -160,8 +200,7 @@ def install_request(root, state, config, get, restart, health):
                 "-recip", str(config / "recipient.pem"),
                 "-inkey", str(config / "recipient-key.pem"), "-out", str(package))
         verify_sha(package, data["zip_sha256"])
-        # The original signature and exact decrypted ZIP SHA are verified above.
-        prepare(root, package, target, allow_signed_root_zip=True)
+        prepare(root, normalize_verified_zip(package, target), target)
         with store_lock(root):
             if verify_snapshot(selection(root)).name != expected_current:
                 raise ValueError("Staging baseline changed before switching")
