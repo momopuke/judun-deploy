@@ -1,14 +1,14 @@
 {
   "schema": "judun-autodeploy-v1",
-  "release_id": "v1.2.193-live-item-progress-20261125",
-  "base_artifact_id": "JUDUN-1.2.192-OCR-PROVIDER-RECOVERY-20261125",
-  "target_artifact_id": "JUDUN-1.2.193-LIVE-ITEM-PROGRESS-20261125",
-  "target_build_instance_id": "1.2.193-LIVE-ITEM-PROGRESS-20261125",
-  "expected_display_version": "v1.2.193",
+  "release_id": "v1.2.194-pipeline-canary-20261126",
+  "base_artifact_id": "JUDUN-1.2.193-LIVE-ITEM-PROGRESS-20261125",
+  "target_artifact_id": "JUDUN-1.2.194-PIPELINE-CANARY-20261126",
+  "target_build_instance_id": "1.2.194-PIPELINE-CANARY-20261126",
+  "expected_display_version": "v1.2.194",
   "expected_managed_file_count": 98,
-  "expected_source_tree_sha256": "f264d49a458994f80125633afbbd0591ac2520fb014d7786aaff77003dde5886",
-  "payload_path": "releases/v1.2.193-live-item-progress-20261125.cms.b64",
-  "payload_sha256": "83cf1ade2cff237afd0e9500c4a869861534a4de670e16240febfcb28fb85aca",
+  "expected_source_tree_sha256": "dc67871276b57b5a9b8450030220e539dde35687340859cae2319b5e3b85c355",
+  "payload_path": "releases/v1.2.194-pipeline-canary-20261126.cms.b64",
+  "payload_sha256": "ff77206dfd3778b64d7a15c3a38fa7fa531a321f00797ea25805ac5a045738f9",
   "noop": false,
-  "candidate_acceptance_sha256": "0d9587009a5823fa1d3dc5de7c1108dc4f47cef11a46b704b526f572a3ff3e93"
+  "candidate_acceptance_sha256": "147ed6d324ba7a03c630ecc777af2d8ca0234249a8da3987feb991e60f52a887"
 }
