@@ -22,5 +22,15 @@ class Gate(unittest.TestCase):
  def test_unsigned_plan(self):self.files[self.paths[0]]+=b' ';self.assertRaises(ValueError,self.verify)
  def test_partial_plan(self):self.plan['checks']=['vendor_markup'];self.files.update(zip(self.paths[:2],self.sign(self.plan)));self.assertRaises(ValueError,self.verify)
  def test_wrong_approval(self):self.review['candidate_acceptance_sha256']='f'*64;self.files.update(zip(self.paths[2:],self.sign(self.review)));self.assertRaises(ValueError,self.verify)
- def test_other_version_scope(self):t={**self.target,'expected_display_version':'v1.2.196','target_artifact_id':'JUDUN-1.2.196-FIXTURE','target_build_instance_id':'1.2.196-FIXTURE','expected_source_tree_sha256':'f'*64};self.assertFalse(p.required(t,lambda x:False));self.assertTrue(p.required(t,lambda x:x==p.paths(t)[0]))
+ def test_v196_missing_plan_required(self):
+  t={**self.target,'expected_display_version':'v1.2.196','target_artifact_id':'JUDUN-1.2.196-FIXTURE','target_build_instance_id':'1.2.196-FIXTURE','expected_source_tree_sha256':'f'*64}
+  self.assertTrue(p.required(t,lambda x:False))
+ def test_v196_tree_required_even_if_version_changes(self):
+  t={**self.target,'expected_display_version':'v1.2.197','target_artifact_id':'JUDUN-1.2.197-FIXTURE','target_build_instance_id':'1.2.197-FIXTURE','expected_source_tree_sha256':p.V196_TREE}
+  self.assertTrue(p.required(t,lambda x:False))
+ def test_v196_partial_plan_rejected(self):
+  self.target={**self.target,'expected_display_version':'v1.2.196','target_artifact_id':'JUDUN-1.2.196-FIXTURE','target_build_instance_id':'1.2.196-FIXTURE','expected_source_tree_sha256':p.V196_TREE}
+  self.paths=p.paths(self.target);self.plan['identity']=p.target_identity(self.target);self.plan['checks']=['vendor_markup'];self.files=dict(zip(self.paths[:2],self.sign(self.plan)))
+  with self.assertRaisesRegex(ValueError,'MANDATORY_ALL_CHECKS_REQUIRED'):self.verify()
+ def test_other_version_scope(self):t={**self.target,'expected_display_version':'v1.2.197','target_artifact_id':'JUDUN-1.2.197-FIXTURE','target_build_instance_id':'1.2.197-FIXTURE','expected_source_tree_sha256':'f'*64};self.assertFalse(p.required(t,lambda x:False));self.assertTrue(p.required(t,lambda x:x==p.paths(t)[0]))
 if __name__=='__main__':unittest.main(verbosity=2)
