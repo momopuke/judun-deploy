@@ -1,0 +1,17 @@
+{
+  "checks": [
+    "vendor_markup",
+    "native_model_trace",
+    "preview_110"
+  ],
+  "identity": {
+    "artifact_id": "JUDUN-1.2.195-COMPANY-PREVIEW-HYDROGEN-20261127",
+    "build_instance_id": "1.2.195-COMPANY-PREVIEW-HYDROGEN-20261127",
+    "count": 98,
+    "source_tree_sha256": "36c9920d2bab3e66defca3d5da10c600a4188f4b887ae2206bf741e95de3a292",
+    "version": "1.2.195"
+  },
+  "max_preview_seconds": 900,
+  "schema": "judun.feature-qa-plan.v1",
+  "target_model": "gemini-4-hydrogen"
+}
