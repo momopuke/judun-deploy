@@ -1,0 +1,13 @@
+{
+  "schema": "judun.staging-deploy.v1",
+  "base_snapshot": "JUDUN-1.2.194-PIPELINE-CANARY-20261126-dc67871276b57b5a9b8450030220e539dde35687340859cae2319b5e3b85c355",
+  "target": {
+    "version": "1.2.195",
+    "artifact_id": "JUDUN-1.2.195-COMPANY-PREVIEW-HYDROGEN-20261127",
+    "build_instance_id": "1.2.195-COMPANY-PREVIEW-HYDROGEN-20261127",
+    "source_tree_sha256": "36c9920d2bab3e66defca3d5da10c600a4188f4b887ae2206bf741e95de3a292",
+    "file_count": 98
+  },
+  "cms_sha256": "48c79afd71da3d29f3c45455b7541093b3eb4252020b91f6d3a355ba5c4198a3",
+  "zip_sha256": "8d88e84258cd962d7ef0eb86fdc6c143e62e3cf376a6b43644e50a61f0fc4504"
+}
