@@ -1,0 +1,17 @@
+{
+  "checks": [
+    "vendor_markup",
+    "native_model_trace",
+    "preview_110"
+  ],
+  "identity": {
+    "artifact_id": "JUDUN-1.2.196-PAID-503-RECOVERY-20261127",
+    "build_instance_id": "1.2.196-PAID-503-RECOVERY-20261127",
+    "count": 98,
+    "source_tree_sha256": "e9980a9cf1c0afa3f7ed052f80ff5f65e9d63f429607dd24839093e1790a9305",
+    "version": "1.2.196"
+  },
+  "max_preview_seconds": 900,
+  "schema": "judun.feature-qa-plan.v1",
+  "target_model": "gemini-4-hydrogen"
+}
