@@ -86,6 +86,31 @@ class StagingReadbackTest(unittest.TestCase):
         with self.assertRaises(readback.oidc.Denied):
             self.observe([readback.oidc.Denied("OIDC_RUNNER_BOOTSTRAP_MISSING")])
 
+    def test_feature_summary_is_independent_of_health_pass(self):
+        r = self.observe([self.live, self.live])
+        self.assertEqual(r["feature_qa"]["feature_qa_status"], "PENDING")
+        self.assertEqual(r["feature_qa_builds"], [])
+
+    def test_feature_double_readback_and_stale_hash(self):
+        target = {"target_artifact_id": "JUDUN-1.2.195-FIXTURE",
+                  "target_build_instance_id": "1.2.195-FIXTURE",
+                  "expected_display_version": "v1.2.195",
+                  "expected_source_tree_sha256": "b"*64,
+                  "expected_managed_file_count": 98}
+        b = {"status": "ok", "manifest_status": "ok", "payment_mode": "test_unlock",
+             "version": "1.2.195", "artifact_id": target["target_artifact_id"],
+             "build_instance_id": target["target_build_instance_id"],
+             "source_tree_sha256": "b"*64, **self.qa,
+             "feature_qa_status": "EVIDENCE_READY_NOT_RELEASE_APPROVAL",
+             "feature_receipt_sha256": "c"*64, "feature_plan_sha256": "d"*64}
+        a, observed = readback.feature_readback(target, [b,b], [b,b], self.qa)
+        self.assertEqual(a["feature_receipt_sha256"], "c"*64)
+        self.assertEqual(len(observed), 2)
+        bad = {**b, "feature_receipt_sha256": "e"*64}
+        a, observed = readback.feature_readback(target, [b,b], [b,bad], self.qa)
+        self.assertEqual(a["feature_qa_status"], "PENDING")
+        self.assertEqual(observed, [])
+
     def test_malformed_commit_rejected_before_network(self):
         with patch.object(readback, "signed_target") as fetch, self.assertRaises(ValueError):
             readback.attest("main")
