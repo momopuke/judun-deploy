@@ -144,6 +144,10 @@ jobs:
               "p3/test_release_failure_report.py",
               "p3/stage_oidc_client.py",
               "p3/test_stage_oidc_client.py",
+              "p3/feature_evidence.py",
+              "p3/feature_qa_contract.py",
+              "p3/feature_gate_policy.py",
+              "p3/test_feature_gate_policy.py",
               "ops/stage_health_oidc_gateway.py",
               "ops/test_stage_health_oidc_gateway.py",
               "ops/judun-stage-health-oidc.service",
@@ -325,6 +329,7 @@ jobs:
           python3 -m py_compile p3/direct_deploy_publish.py p3/release_pr_gate.py
           python3 -m unittest discover -s p3 -p 'test_direct_deploy_publish.py' -v
           python3 -m unittest discover -s p3 -p 'test_release_pr_gate.py' -v
+          python3 -m unittest discover -s p3 -p 'test_feature_gate_policy.py' -v
       - name: Validate staging snapshot and service switch tooling
         run: |
           bash -n ops/enable_judun_staging_isolation.sh

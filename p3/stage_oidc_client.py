@@ -107,11 +107,13 @@ def native_qa_summary(build, count):
     return result
 
 
-def verify_candidate(target, *, transport=None, env=None, include_native_qa=False):
+def verify_candidate(target, *, transport=None, env=None, include_native_qa=False,
+                     include_feature_qa=False):
     """Reuse original strict signed target identity & payment-mode checks."""
     import direct_deploy_publish as original
     identity = github_id_token(env=env, transport=transport)
     summaries = []
+    include_native_qa = include_native_qa or include_feature_qa
 
     def getter(path):
         build = fetch_health(path, identity, transport=transport)
@@ -127,4 +129,6 @@ def verify_candidate(target, *, transport=None, env=None, include_native_qa=Fals
         first, second = (native_qa_summary(x, result["managed_files"]) for x in summaries)
         # A changing receipt is not a stable proof; health remains independent.
         result["native_qa"] = first if first == second else native_qa_summary({}, result["managed_files"])
+        if include_feature_qa:
+            result["feature_qa_builds"] = summaries
     return result
