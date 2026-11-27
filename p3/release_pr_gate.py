@@ -10,6 +10,7 @@ import tempfile
 
 import direct_deploy_publish as release
 import stage_oidc_client as oidc
+import feature_gate_policy as feature_policy
 
 
 MANIFEST = "channel/stable.json"
@@ -96,11 +97,20 @@ def classify_and_verify(base, head, same_repository, *,
         # Trust only a short-lived GitHub Actions OIDC identity accepted by
         # the isolated loopback-only stage health gateway, never a Sites owner
         # login bypass or an arbitrary bearer from untrusted PR code.
-        attested = oidc.verify_candidate(candidate, include_native_qa=True)
+        feature_required = feature_policy.required(
+            candidate, lambda path: bool(git("ls-tree", "-z", base, "--", path)))
+        opts = {"include_native_qa": True}
+        if feature_required:
+            opts["include_feature_qa"] = True
+        attested = oidc.verify_candidate(candidate, **opts)
         proof = oidc.native_qa_summary(attested.get("native_qa", {}),
                                       candidate["expected_managed_file_count"])
         if proof["native_qa_status"] != "PASS":
             release.deny("PR_NATIVE_QA_REQUIRED")
+        if feature_required:
+            digest = feature_policy.verify(candidate, lambda path, limit: read_blob(base, path, limit),
+                                           key, attested, pin=release.RELEASE_KEY_SHA256)
+            print("PR_FEATURE_INDEPENDENT_REVIEW_VERIFIED", digest, flush=True)
         print("PR_EXACT_CANDIDATE_STAGING_OIDC_VERIFIED", candidate["release_id"], flush=True)
         print("PR_NATIVE_QA_VERIFIED", proof["native_qa_receipt_sha256"],
               proof["native_qa_file_count"], flush=True)
@@ -147,7 +157,8 @@ def run():
             latest = git("rev-parse", "refs/judun/gate-base").decode("ascii").strip()
             # Normal code/docs merges are fine. A concurrent release change
             # requires rerunning against the new, verified production base.
-            for path in (MANIFEST, SIGNATURE, KEY):
+            target = json.loads(read_blob(head, MANIFEST, 8192))
+            for path in (MANIFEST, SIGNATURE, KEY, *feature_policy.paths(target)):
                 if git("ls-tree", "-z", latest, "--", path) != git("ls-tree", "-z", base, "--", path):
                     release.deny("PR_BASE_RELEASE_CHANGED")
     except Exception as error:

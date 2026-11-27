@@ -196,6 +196,19 @@ class ReleasePullRequestGateTests(TestCase):
                         gate.classify_and_verify(self.base, head, True,
                                                  check_live=False, check_stage=True)
 
+    def test_v195_real_pr_missing_feature_review_is_rejected(self):
+        self.release(195, base_artifact_id=self.base_metadata["target_artifact_id"])
+        head = self.commit("Feature candidate lacking independent evidence")
+        proof = {"native_qa_status": "PASS", "native_qa_receipt_sha256": "a" * 64,
+                 "native_qa_file_count": 98}
+        with mock.patch.object(gate.oidc, "verify_candidate",
+                               return_value={"native_qa": proof}) as stage:
+            with self.assertRaises(ValueError):
+                gate.classify_and_verify(self.base, head, True,
+                                         check_live=False, check_stage=True)
+        self.assertEqual(stage.call_args.kwargs,
+                         {"include_native_qa": True, "include_feature_qa": True})
+
     def test_nonrelease_pr_not_blocked_by_missing_oidc_gateway(self):
         self.write("README.md", b"Docs-only change requires no staging network")
         head = self.commit("Docs")
