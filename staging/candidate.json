@@ -1,0 +1,13 @@
+{
+  "schema": "judun.staging-deploy.v1",
+  "base_snapshot": "JUDUN-1.2.195-COMPANY-PREVIEW-HYDROGEN-20261127-36c9920d2bab3e66defca3d5da10c600a4188f4b887ae2206bf741e95de3a292",
+  "target": {
+    "version": "1.2.196",
+    "artifact_id": "JUDUN-1.2.196-PAID-503-RECOVERY-20261127",
+    "build_instance_id": "1.2.196-PAID-503-RECOVERY-20261127",
+    "source_tree_sha256": "e9980a9cf1c0afa3f7ed052f80ff5f65e9d63f429607dd24839093e1790a9305",
+    "file_count": 98
+  },
+  "cms_sha256": "ac6ca8004bc867a5be266ed975f1674407dcc2343b624862ae2b49aedffcc616",
+  "zip_sha256": "c8ec354da3f3cf8cb7275cee5acd46c6e36c6604262adc7add6c9eb56e9cc652"
+}
