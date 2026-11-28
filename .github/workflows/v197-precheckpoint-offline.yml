@@ -1,0 +1,18 @@
+name: v197 pre-checkpoint recovery offline only
+on:
+  push:
+    branches: [ops/v197-precheckpoint-recovery-20261128]
+permissions:
+  contents: read
+jobs:
+  offline-only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - run: |
+          python3 -m py_compile ops/qa/v197_precheckpoint_recovery.py
+          python3 -I -B ops/qa/v197_precheckpoint_recovery.py --self-test
+          sha256sum ops/qa/v197_precheckpoint_recovery.py
