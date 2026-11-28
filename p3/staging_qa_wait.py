@@ -12,6 +12,10 @@ import sys
 import time
 from urllib.error import HTTPError, URLError
 
+# Isolated Python (-I) omits the script directory from sys.path. Resolve only
+# sibling modules from this checked-out, protected repository.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
 READY = 'EVIDENCE_READY_NOT_RELEASE_APPROVAL'
 HEX = re.compile(r'[0-9a-f]{64}\Z')
 MAX_SECONDS = 70 * 60
@@ -117,7 +121,7 @@ def wait(commit, target, plan_sha, initial, *, pointer, read_build, attest, cloc
             # A changing summary is not approval; wait for the next stable one.
 
 
-def main(commit):
+def main(commit, *, check_only=False):
     import staging_request_readback as rb
     import stage_oidc_client as oidc
     import staging_deploy_request as agent
@@ -136,6 +140,14 @@ def main(commit):
     initial_path = Path(os.environ['RUNNER_TEMP']) / 'judun-staging-readback.json'
     ready_path = Path(os.environ['RUNNER_TEMP']) / 'judun-staging-qa-ready.json'
     need(not ready_path.exists(), 'QA_WAIT_OUTPUT_ALREADY_EXISTS')
+    if check_only:
+        need(agent.request_commit(agent.fetch) == commit, 'QA_WAIT_SUPERSEDED')
+        initial_ready = receipt_ready(json.loads(initial_path.read_bytes()), target, commit, plan_sha)
+        live_ready = build_ready(oidc.fetch_health('/health/build', oidc.github_id_token()), target, plan_sha)
+        need(agent.request_commit(agent.fetch) == commit, 'QA_WAIT_SUPERSEDED')
+        print('QA_WAIT_PREFLIGHT_PASS_NOT_RELEASE_APPROVAL',
+              'EVIDENCE_READY' if initial_ready and live_ready else 'PENDING', flush=True)
+        return
     def attest():
         rb.attest(commit)
         return json.loads(initial_path.read_bytes())
@@ -148,5 +160,6 @@ def main(commit):
 
 
 if __name__ == '__main__':
-    need(len(sys.argv) == 2 and re.fullmatch(r'[a-f0-9]{40}', sys.argv[1]) is not None, 'QA_WAIT_COMMIT')
-    main(sys.argv[1])
+    need(len(sys.argv) in (2, 3) and re.fullmatch(r'[a-f0-9]{40}', sys.argv[1]) is not None
+         and (len(sys.argv) == 2 or sys.argv[2] == '--check-only'), 'QA_WAIT_COMMIT')
+    main(sys.argv[1], check_only=len(sys.argv) == 3)
