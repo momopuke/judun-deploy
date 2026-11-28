@@ -37,13 +37,21 @@ def early(rows,record):
     pending=[parse(m) for m in g if parse(m).get("status")=="NATIVE_QA_PENDING"]
     need(all(d.get("commit")==COMMIT and d.get("identity")==IDENTITY for d in pending),"PRIOR_PENDING_IDENTITY")
     errors=[]
+    # A missing EXACT_STAGE_IDENTITY log alone is not enough (journal loss).
+    # Only a launcher HOLD before it emits NATIVE_QA_PENDING, or an explicit
+    # native check unique to the pre-checkpoint path, is positive evidence.
     for m in g:
         d=parse(m)
         e=d.get("error") if d.get("check")=="HOLD" else m.removeprefix("HOLD: ") if m.startswith("HOLD: ") else None
         if isinstance(e,str) and re.fullmatch("(?:STOP_[A-Z0-9_]{1,100}|[A-Za-z][A-Za-z0-9_]{0,60})",e):
-            errors.append(e)
+            errors.append((e,d.get("check")=="HOLD"))
     need(len(errors)==1,"EARLY_FAILURE_CODE_NOT_PROVEN")
-    return errors[0]
+    e,native=errors[0]
+    print("ORIGINAL_SANITIZED_FAILURE="+e,flush=True)
+    unique_native={"STOP_ROOT_REQUIRED","STOP_EXPECTED_IDENTITY_FORMAT","STOP_QA_DIR_UNSAFE"}
+    need((not native and not pending and e in {"Stop","ValueError","FileNotFoundError","HTTPError","URLError","TimeoutExpired","PermissionError"}) or
+         (native and len(pending)==1 and e in unique_native),"PRECHECKPOINT_CAUSE_NOT_PROVEN")
+    return e
 
 def self_test():
     record={"status":"HOLD","artifact":ARTIFACT,"tree":TREE,"reason":"QA_EXIT_2"}
@@ -53,11 +61,11 @@ def self_test():
     end=json.dumps(record)
     good=rows("HOLD: Stop",end)
     assert early(good,record)=="Stop"
-    for sample in (rows(end),rows("HOLD: Stop",json.dumps({"check":"EXACT_STAGE_IDENTITY"}),end),rows("HOLD: Stop"),rows("HOLD: Stop","HOLD: ValueError",end),rows("HOLD: Stop",json.dumps({"status":"NATIVE_QA_PENDING","commit":"0"*40}),end)):
+    for sample in (rows(end),rows("HOLD: Stop",json.dumps({"check":"EXACT_STAGE_IDENTITY"}),end),rows("HOLD: Stop"),rows("HOLD: Stop","HOLD: ValueError",end),rows("HOLD: Stop",json.dumps({"status":"NATIVE_QA_PENDING","commit":"0"*40}),end),rows(json.dumps({"check":"HOLD","error":"STOP_FREE_TIMEOUT"}),end),rows("HOLD: Stop",json.dumps({"status":"NATIVE_QA_PENDING","commit":COMMIT,"identity":IDENTITY}),end)):
         try: early(sample,record)
         except ValueError: pass
         else: raise AssertionError("unsafe replay accepted")
-    print("PRECHECKPOINT_POLICY_SELF_TEST=6/6_PASS",flush=True)
+    print("PRECHECKPOINT_POLICY_SELF_TEST=8/8_PASS",flush=True)
 
 def main():
     need(os.geteuid()==0,"ROOT_REQUIRED")
