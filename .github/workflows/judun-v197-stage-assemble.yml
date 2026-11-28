@@ -1,0 +1,41 @@
+name: Judun v197 encrypted staging candidate assembly
+on:
+  push:
+    branches:
+      - stage/v197-transfer-20261128-3ce58d45734d
+permissions:
+  contents: write
+jobs:
+  assemble-stage-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: true
+      - name: Verify exact CMS chunks and original Ed25519 signature
+        run: python3 stage-transfer/v197/assemble.py
+      - name: Publish immutable signed stage-only candidate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BASE=00c77764350f06fd2cd038e5d0950d6c993dea9c
+          BRANCH=stage/v197-candidate-20261128-3ce58d45734d
+          git fetch --no-tags origin refs/heads/main --depth=1
+          test "$(git rev-parse FETCH_HEAD)" = "$BASE"
+          if git ls-remote --exit-code --heads origin "refs/heads/$BRANCH" >/dev/null; then
+            echo 'STOP:JUDUN_CANDIDATE_BRANCH_ALREADY_EXISTS'
+            exit 1
+          fi
+          git switch --detach "$BASE"
+          git switch -c "$BRANCH"
+          mkdir -p staging
+          cp "$RUNNER_TEMP/candidate.cms" staging/candidate.cms
+          cp "$RUNNER_TEMP/candidate.json" staging/candidate.json
+          cp "$RUNNER_TEMP/candidate.json.sig.b64" staging/candidate.json.sig.b64
+          test "$(sha256sum staging/candidate.cms | cut -d' ' -f1)" = 4a952397ef04bc8b0a9b83cd9a0dddc1805b3045770d2f2838d5f53d9d8e54a6
+          git add staging/candidate.cms staging/candidate.json staging/candidate.json.sig.b64
+          git -c user.name='judun-stage-ci' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Prepare v1.2.197 immutable signed encrypted staging candidate'
+          git push origin "HEAD:refs/heads/$BRANCH"
+          echo "JUDUN_V197_SIGNED_STAGE_CANDIDATE_PUSH_PASS $(git rev-parse HEAD)"

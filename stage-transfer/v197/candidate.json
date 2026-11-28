@@ -1,0 +1,13 @@
+{
+  "schema": "judun.staging-deploy.v1",
+  "base_snapshot": "JUDUN-1.2.196-PAID-503-RECOVERY-20261127-e9980a9cf1c0afa3f7ed052f80ff5f65e9d63f429607dd24839093e1790a9305",
+  "target": {
+    "version": "1.2.197",
+    "artifact_id": "JUDUN-1.2.197-CORE-PREVIEW-TIMEOUT-RECOVERY-20261128",
+    "build_instance_id": "1.2.197-CORE-PREVIEW-TIMEOUT-RECOVERY-20261128",
+    "source_tree_sha256": "3ce58d45734dd0681903413f3b8639747215d4007573c2c24a50a0f3a50f9172",
+    "file_count": 98
+  },
+  "cms_sha256": "4a952397ef04bc8b0a9b83cd9a0dddc1805b3045770d2f2838d5f53d9d8e54a6",
+  "zip_sha256": "889a3dfef92e812b41f06bce7877f4effd31087e0615c7b34e0b8d42a27d3626"
+}
