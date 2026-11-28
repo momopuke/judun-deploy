@@ -1,0 +1,19 @@
+name: native QA read-only preflight v2 offline
+on:
+  push:
+    branches: [ops/native-qa-preflight-retry-20261128]
+permissions:
+  contents: read
+jobs:
+  offline-only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - run: |
+          cd ops/qa
+          python3 -m py_compile stage_native_qa_launcher_preflight_v2.py
+          python3 -B -m unittest -v test_native_qa_preflight_v2
+          sha256sum stage_native_qa_launcher_preflight_v2.py
