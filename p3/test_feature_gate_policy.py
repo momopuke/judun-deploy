@@ -32,5 +32,14 @@ class Gate(unittest.TestCase):
   self.target={**self.target,'expected_display_version':'v1.2.196','target_artifact_id':'JUDUN-1.2.196-FIXTURE','target_build_instance_id':'1.2.196-FIXTURE','expected_source_tree_sha256':p.V196_TREE}
   self.paths=p.paths(self.target);self.plan['identity']=p.target_identity(self.target);self.plan['checks']=['vendor_markup'];self.files=dict(zip(self.paths[:2],self.sign(self.plan)))
   with self.assertRaisesRegex(ValueError,'MANDATORY_ALL_CHECKS_REQUIRED'):self.verify()
- def test_other_version_scope(self):t={**self.target,'expected_display_version':'v1.2.197','target_artifact_id':'JUDUN-1.2.197-FIXTURE','target_build_instance_id':'1.2.197-FIXTURE','expected_source_tree_sha256':'f'*64};self.assertFalse(p.required(t,lambda x:False));self.assertTrue(p.required(t,lambda x:x==p.paths(t)[0]))
+ def test_other_version_scope(self):t={**self.target,'expected_display_version':'v1.2.198','target_artifact_id':'JUDUN-1.2.198-FIXTURE','target_build_instance_id':'1.2.198-FIXTURE','expected_source_tree_sha256':'f'*64};self.assertFalse(p.required(t,lambda x:False));self.assertTrue(p.required(t,lambda x:x==p.paths(t)[0]))
+ def test_v197_mandatory_version_and_tree(self):
+  t={**self.target,'expected_display_version':'v1.2.197','target_artifact_id':'JUDUN-1.2.197-FIXTURE','target_build_instance_id':'1.2.197-FIXTURE','expected_source_tree_sha256':'f'*64}
+  self.assertTrue(p.required(t,lambda x:False))
+  t.update(expected_display_version='v1.2.198',target_artifact_id='JUDUN-1.2.198-FIXTURE',target_build_instance_id='1.2.198-FIXTURE',expected_source_tree_sha256=p.V197_TREE)
+  self.assertTrue(p.required(t,lambda x:False))
+ def test_v197_partial_plan_rejected(self):
+  self.target={**self.target,'expected_display_version':'v1.2.197','target_artifact_id':'JUDUN-1.2.197-FIXTURE','target_build_instance_id':'1.2.197-FIXTURE','expected_source_tree_sha256':p.V197_TREE}
+  self.paths=p.paths(self.target);self.plan['identity']=p.target_identity(self.target);self.plan['checks']=['vendor_markup'];self.files=dict(zip(self.paths[:2],self.sign(self.plan)))
+  with self.assertRaisesRegex(ValueError,'MANDATORY_ALL_CHECKS_REQUIRED'):self.verify()
 if __name__=='__main__':unittest.main(verbosity=2)
