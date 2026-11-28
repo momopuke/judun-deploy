@@ -14,6 +14,6 @@ jobs:
           persist-credentials: false
       - run: |
           cd ops/qa
-          python3 -m py_compile stage_native_qa_launcher_preflight_v2.py
-          python3 -B -m unittest -v test_native_qa_preflight_v2
-          sha256sum stage_native_qa_launcher_preflight_v2.py
+          python3 -m py_compile stage_native_qa_launcher_preflight_v2.py native_qa_preflight_service.py
+          python3 -B -m unittest -v test_native_qa_preflight_v2 test_native_qa_preflight_service
+          sha256sum stage_native_qa_launcher_preflight_v2.py native_qa_preflight_service.py
