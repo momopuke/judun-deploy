@@ -1,3 +1,10 @@
+import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import tempfile
 import unittest
 from unittest.mock import Mock
 from urllib.error import HTTPError, URLError
@@ -62,4 +69,34 @@ class WaitTests(unittest.TestCase):
     def test_error_fails_closed(self):
         with self.assertRaises(OSError):self.setup_call([OSError('read failure')])
         self.attest.assert_not_called()
+class IsolatedEntryTests(unittest.TestCase):
+    def invoke(self, args, initial, build, pointer=C):
+        # Exercise the real -I -B command with local-only fixtures. No secrets,
+        # network, application requests, or release mutations are possible.
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d); shutil.copyfile(w.__file__, root/'staging_qa_wait.py')
+            (root/'staging_request_readback.py').write_text('def signed_target(commit): return '+repr(T)+'\ndef attest(commit): raise AssertionError("unexpected attestation")\n')
+            (root/'stage_oidc_client.py').write_text('def github_id_token(): return "fixture"\ndef fetch_health(path, token): return '+repr(build)+'\n')
+            (root/'staging_deploy_request.py').write_text('fetch=None\ndef request_commit(get): return '+repr(pointer)+'\n')
+            (root/'feature_gate_policy.py').write_text('def paths(target): return []\ndef required(target, exists): return False\n')
+            (root/'feature_qa_contract.py').write_text('def decode(raw): raise AssertionError("unexpected plan")\n')
+            (root/'judun-staging-readback.json').write_text(json.dumps(initial))
+            proc=subprocess.run([sys.executable,'-I','-B',str(root/'staging_qa_wait.py'),C,*args],cwd=root,env={**os.environ,'RUNNER_TEMP':str(root)},capture_output=True,text=True,timeout=10)
+            ready=root/'judun-staging-qa-ready.json'
+            return proc, json.loads(ready.read_text()) if ready.exists() else None
+    def test_real_isolated_entry_preflight_pending(self):
+        p,artifact=self.invoke(['--check-only'],receipt(),{**B,**PN,**PF})
+        self.assertEqual(p.returncode,0,p.stderr);self.assertIn('PENDING',p.stdout);self.assertIsNone(artifact)
+    def test_real_isolated_entry_ready(self):
+        p,artifact=self.invoke([],receipt(N),B)
+        self.assertEqual(p.returncode,0,p.stderr);self.assertEqual(artifact,receipt(N))
+    def test_real_isolated_entry_wrong_identity(self):
+        p,artifact=self.invoke(['--check-only'],receipt(),{**B,'payment_mode':'ecpay_live'})
+        self.assertNotEqual(p.returncode,0);self.assertIn('QA_WAIT_STAGE_IDENTITY_DRIFT',p.stderr);self.assertIsNone(artifact)
+    def test_real_isolated_entry_superseded(self):
+        p,artifact=self.invoke(['--check-only'],receipt(),B,'f'*40)
+        self.assertNotEqual(p.returncode,0);self.assertIn('QA_WAIT_SUPERSEDED',p.stderr);self.assertIsNone(artifact)
+    def test_real_isolated_entry_invalid_flag(self):
+        p,artifact=self.invoke(['--anything'],receipt(),B)
+        self.assertNotEqual(p.returncode,0);self.assertIn('QA_WAIT_COMMIT',p.stderr);self.assertIsNone(artifact)
 if __name__=='__main__':unittest.main()

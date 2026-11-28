@@ -234,6 +234,12 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+      - name: Verify real isolated QA continuation entry on tooling-only main change
+        if: steps.stage_request.outputs.commit != '' && needs.classify-push.outputs.staging_request_changed == 'false' && needs.classify-push.outputs.signed_release_changed == 'false'
+        env:
+          STAGE_COMMIT: ${{ steps.stage_request.outputs.commit }}
+        run: python3 -I -B p3/staging_qa_wait.py "$STAGE_COMMIT" --check-only
+
       # Only a new protected staging pointer starts the bounded QA receipt wait.
       # A release/tooling push never repeats native/feature QA; this job only reads.
       - name: Continue automatically to stable QA evidence on new staging request
