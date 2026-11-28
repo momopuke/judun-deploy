@@ -7,8 +7,9 @@ from feature_qa_contract import decode,verify_signature,ALLOWED
 V195_TREE='36c9920d2bab3e66defca3d5da10c600a4188f4b887ae2206bf741e95de3a292'
 
 V196_TREE='e9980a9cf1c0afa3f7ed052f80ff5f65e9d63f429607dd24839093e1790a9305'
-MANDATORY_FEATURE_VERSIONS=frozenset({'1.2.195','1.2.196'})
-MANDATORY_FEATURE_TREES=frozenset({V195_TREE,V196_TREE})
+V197_TREE='3ce58d45734dd0681903413f3b8639747215d4007573c2c24a50a0f3a50f9172'
+MANDATORY_FEATURE_VERSIONS=frozenset({'1.2.195','1.2.196','1.2.197'})
+MANDATORY_FEATURE_TREES=frozenset({V195_TREE,V196_TREE,V197_TREE})
 
 def mandatory(i):
     return i['version'] in MANDATORY_FEATURE_VERSIONS or i['source_tree_sha256'] in MANDATORY_FEATURE_TREES
@@ -22,7 +23,7 @@ def paths(target):
 
 def required(target,exists):
     p=paths(target);i=target_identity(target)
-    # All v195/v196 product builds must have the reviewed plan; if a later tree has
+    # All v195/v196/v197 product builds must have the reviewed plan; if a later tree has
     # any feature-control artifact, partial/missing counterparts fail closed.
     # Other future releases retain original native QA until their classification
     # policy is explicitly defined; never infer a changed feature from a version.
