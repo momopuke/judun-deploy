@@ -15,6 +15,7 @@ jobs:
       - run: |
           bash -n ops/qa/install_native_qa_preflight_v2.sh
           cd ops/qa
-          python3 -m py_compile stage_native_qa_launcher_preflight_v2.py native_qa_preflight_service.py
+          python3 -m py_compile stage_native_qa_launcher_preflight_v2.py native_qa_preflight_service.py feature_readonly_diagnostic.py
+          python3 -I -B feature_readonly_diagnostic.py --self-test
           python3 -B -m unittest -v test_native_qa_preflight_v2 test_native_qa_preflight_service
-          sha256sum stage_native_qa_launcher_preflight_v2.py native_qa_preflight_service.py install_native_qa_preflight_v2.sh
+          sha256sum stage_native_qa_launcher_preflight_v2.py native_qa_preflight_service.py install_native_qa_preflight_v2.sh feature_readonly_diagnostic.py
