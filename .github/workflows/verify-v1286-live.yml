@@ -12,6 +12,8 @@ on:
       - "p3/test_release_postcheck.py"
       - "p3/stage_oidc_client.py"
       - "p3/test_stage_oidc_client.py"
+      - "p3/staging_qa_wait.py"
+      - "p3/test_staging_qa_wait.py"
       - "p3/release_failure_report.py"
       - "p3/test_release_failure_report.py"
       - "channel/stable.json"
@@ -34,6 +36,7 @@ jobs:
     timeout-minutes: 3
     outputs:
       signed_release_changed: ${{ steps.scope.outputs.signed_release_changed }}
+      staging_request_changed: ${{ steps.scope.outputs.staging_request_changed }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -49,6 +52,7 @@ jobs:
           python3 - <<'PY'
           import os, re, subprocess, json
           from pathlib import Path
+          staging_changed = False
           if os.environ['EVENT_KIND'] == 'workflow_dispatch':
               changed = True
           else:
@@ -65,6 +69,9 @@ jobs:
                       text=True, timeout=20,
                   ).splitlines()
                   changed = bool(filenames)
+                  staging_changed = bool(subprocess.check_output(
+                      ['git', 'diff', '--name-only', before, head, '--',
+                       'ops/staging-request.json'], text=True, timeout=20).strip())
                   # Trusted protected-main, event-driven request to perform a
                   # real two-pass OIDC staging check without new signed release.
                   # A malformed request must FAIL closed, never silently skip.
@@ -80,6 +87,7 @@ jobs:
                           raise SystemExit('OIDC_REQUEST_INVALID_OR_STALE')
           with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as f:
               print('signed_release_changed=' + str(changed).lower(), file=f)
+              print('staging_request_changed=' + str(staging_changed).lower(), file=f)
           print('SIGNED_RELEASE_PUBLICATION', changed)
           PY
   verify:
@@ -160,8 +168,9 @@ jobs:
 
 
   postrelease-guard-offline:
+    needs: [classify-push]
     runs-on: ubuntu-24.04
-    timeout-minutes: 14
+    timeout-minutes: 100
     permissions:
       contents: read
       id-token: write
@@ -174,6 +183,7 @@ jobs:
           python3 -m unittest discover -s p3 -p 'test_release_postcheck.py' -v
           python3 -m unittest discover -s p3 -p 'test_release_failure_report.py' -v
           python3 -m unittest discover -s p3 -p 'test_stage_oidc_client.py' -v
+          python3 -m unittest discover -s p3 -p 'test_staging_qa_wait.py' -v
 
       - name: Verify real GitHub OIDC identity claims without exposing JWT
         run: |
@@ -221,6 +231,23 @@ jobs:
         with:
           name: judun-staging-readback-${{ steps.stage_request.outputs.commit }}
           path: ${{ runner.temp }}/judun-staging-readback.json
+          if-no-files-found: error
+          retention-days: 30
+
+      # Only a new protected staging pointer starts the bounded QA receipt wait.
+      # A release/tooling push never repeats native/feature QA; this job only reads.
+      - name: Continue automatically to stable QA evidence on new staging request
+        id: qa_wait
+        if: steps.stage_request.outputs.commit != '' && needs.classify-push.outputs.staging_request_changed == 'true' && needs.classify-push.outputs.signed_release_changed == 'false'
+        env:
+          STAGE_COMMIT: ${{ steps.stage_request.outputs.commit }}
+        run: python3 -I -B p3/staging_qa_wait.py "$STAGE_COMMIT"
+      - name: Preserve stable QA evidence for independent review (not approval)
+        if: steps.qa_wait.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: judun-staging-qa-ready-${{ steps.stage_request.outputs.commit }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/judun-staging-qa-ready.json
           if-no-files-found: error
           retention-days: 30
 

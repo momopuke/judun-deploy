@@ -12,6 +12,8 @@ on:
       - 'ops/AUTOMATION_BRIDGE.md'
       - 'p3/staging_deploy_request.py'
       - 'p3/test_staging_deploy_request.py'
+      - 'p3/staging_qa_wait.py'
+      - 'p3/test_staging_qa_wait.py'
       - '.github/workflows/automation-bridge-tests.yml'
 
 permissions:
@@ -36,6 +38,8 @@ jobs:
           test -s /tmp/judun-cms-fixture.der
       - name: Signed CMS request installer tests
         run: python3 -m unittest discover -s p3 -p 'test_staging_deploy_request.py' -v
+      - name: Bounded QA evidence continuation tests
+        run: python3 -m unittest discover -s p3 -p 'test_staging_qa_wait.py' -v
       - name: Syntax validation of one-time bootstrap
         run: |
           bash -n ops/bootstrap_staging_github_pull.sh
