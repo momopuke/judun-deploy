@@ -138,6 +138,8 @@ jobs:
               "p3/test_staging_deploy_request.py",
               "p3/staging_request_readback.py",
               "p3/test_staging_request_readback.py",
+              "p3/staging_qa_wait.py",
+              "p3/test_staging_qa_wait.py",
               "p3/release_postcheck.py",
               "p3/test_release_postcheck.py",
               "p3/release_failure_report.py",
